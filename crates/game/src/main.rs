@@ -1,5 +1,6 @@
 //! The game binary: app setup and plugin wiring.
 
+pub mod audio;
 mod camera;
 mod combat;
 mod devtools;
@@ -37,6 +38,7 @@ fn main() -> AppExit {
         .insert_resource(Time::<Fixed>::from_hz(TICK_HZ))
         .add_plugins((
             render::PixelRenderPlugin,
+            audio::AudioPlugin,
             tuning::TuningPlugin,
             input::InputPlugin,
             rooms::RoomsPlugin,

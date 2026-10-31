@@ -186,3 +186,31 @@ Development builds use Bevy's dynamic linking and asset hot reloading.
 Tuning files, levels and shaders reload while the game runs.
 The debug panels and the inspector exist only behind a `dev` feature,
 so they never ship.
+
+## Sound effects
+
+`cargo xtask sfx` rebuilds 16 seeded effects in `assets/sfx/` as 44.1 kHz,
+16-bit mono WAVs, and prints duration, peak, RMS and sub-80 Hz levels.
+The plots in `target/sfx/` show the waveform above an 80 Hz low-pass trace,
+with the same amplitude scale in both panels.
+Heavy impacts peak at -3 dBFS; movement and footsteps have lower peaks for the mix.
+
+The effects use plain Rust DSP: filtered noise, decaying tones and pitch drops.
+These short recipes need no synthesis graph; `hound` writes the files.
+Both live behind `assetgen`'s `sfx` feature, enabled by `xtask` only.
+The game keeps using `assetgen` for tiles without compiling the sound renderer.
+
+`audio::AudioPlugin` loads the rendered effects and owns Kira's default backend.
+Native builds read `assets/sfx/` under Bevy's asset root;
+web builds embed the WAVs through the generated `assets/sfx/catalog.rs` list.
+Rebuild that list with the sounds, before building the game.
+A missing device logs once and leaves the game running silently.
+Browser playback still needs user activation, as described in [audio](audio.md).
+
+Send `PlaySfx::new(Sfx::HitHeavy)` to play an effect.
+Its public `volume` is linear gain and `pitch` is playback rate, both defaulting to 1.0.
+Set `exact_pitch: true`, or call `.exact()`, to disable the default ±3% variation.
+Send `Duck` separately to lower only the music bus by 6 dB for 150 ms,
+then recover over 300 ms; repeated requests restart the hold.
+Future music plays through `Audio::music_track()` with `NonSendMut<Audio>`.
+Gameplay systems do not send these messages yet.
