@@ -43,7 +43,8 @@ the costume silhouette the art direction asks for, a coat or hair, needs new rig
 Dust from running and jumping is faint in dark rooms.
 Guests do not jump, block or circle. They approach and swing; the light guest then skips back,
 and the medium guest keeps its spear's distance.
-There is no sound yet, so the sub-bass thump and the music dip on heavy hits are missing.
+Sounds are synthesised and wired in, but nobody has listened to them yet;
+they were judged by their waveforms and levels alone. The music dip on heavy hits works but has no music to dip.
 
 ## Further
 
@@ -55,7 +56,10 @@ Also the candelabrum, the third weapon: a polearm of three burning candles whose
 leave fire on the floor that burns guests standing in it. Mid-swing, seen edge-on,
 its head can turn out of view; it reads best at rest and in wide arcs.
 
-Next: sound effects and the audio layer, then backgrounds and a first music sketch.
+And sound: sixteen effects rendered by `cargo xtask sfx` and played through `kira`,
+with heavy hits ducking the music bus and the mood colouring every impact.
+
+Next: backgrounds, then a first music sketch.
 
 ## For the director
 

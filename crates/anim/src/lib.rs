@@ -106,6 +106,8 @@ pub struct Animator {
     from: Option<Pose>,
     was_grounded: bool,
     facing: i32,
+    /// A foot came down during the last update.
+    stepped: bool,
 }
 
 impl Default for Animator {
@@ -118,6 +120,7 @@ impl Default for Animator {
             from: None,
             was_grounded: true,
             facing: 1,
+            stepped: false,
         }
     }
 }
@@ -127,6 +130,11 @@ impl Animator {
         self.state
     }
 
+    /// Whether a running foot came down during the last update, for footstep sounds.
+    pub fn stepped(&self) -> bool {
+        self.stepped
+    }
+
     /// Advances by `dt` seconds of motion.
     pub fn update(&mut self, m: Motion, dt: f64) {
         if m.grounded && !self.was_grounded {
@@ -134,8 +142,14 @@ impl Animator {
         }
         self.was_grounded = m.grounded;
         self.landing = (self.landing - dt).max(0.0);
+        self.stepped = false;
         if m.grounded {
+            let before = self.run_phase;
             self.run_phase = (self.run_phase + (m.vx.abs() as f64 * dt) / STRIDE).fract();
+            // A foot lands twice a stride: at the start of the cycle and halfway through it.
+            let half = |p: f64| (p * 2.0).floor();
+            self.stepped = self.state == State::Run
+                && (half(self.run_phase) != half(before) || self.run_phase < before);
         }
         // A wall slide faces away from the wall; everything else faces the way the body does.
         self.facing = if m.wall != 0 { -m.wall } else { m.facing };
@@ -453,6 +467,30 @@ mod tests {
         );
         assert_eq!(a.state(), State::WallSlide);
         assert_eq!(a.pose().face, -1, "a wall slide faces away from the wall");
+    }
+
+    #[test]
+    fn running_steps_twice_a_stride() {
+        let mut a = Animator::default();
+        let m = Motion {
+            vx: 150.0,
+            ..motion()
+        };
+        let mut steps = 0;
+        for _ in 0..120 {
+            a.update(m, 1.0 / 120.0);
+            steps += a.stepped() as u32;
+        }
+        // 150 px in a second over a 64 px stride is about 2.3 strides, so 4 or 5 steps.
+        assert!((4..=5).contains(&steps), "{steps} steps in a second");
+        a.update(
+            Motion {
+                vx: 0.0,
+                ..motion()
+            },
+            0.5,
+        );
+        assert!(!a.stepped());
     }
 
     #[test]

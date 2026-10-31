@@ -20,6 +20,7 @@ use world::combat::{
     resolve_body_collisions,
 };
 
+use crate::audio::{Duck, PlaySfx, Sfx};
 use crate::camera::Shake;
 use crate::effects::SpawnFx;
 use crate::input::TickSet;
@@ -376,6 +377,7 @@ fn swing_effects(
     mut fx: MessageWriter<SpawnFx>,
     active: Res<crate::rooms::ActiveRoom>,
     mut images: ResMut<Assets<Image>>,
+    mut sfx: MessageWriter<PlaySfx>,
 ) {
     for (mut f, t, player, guest) in &mut fighters {
         let phase = f.combat.attacker.phase();
@@ -388,6 +390,11 @@ fn swing_effects(
         {
             let k = g.class.scale() as f32;
             let at = t.translation.truncate() + Vec2::new(facing as f32 * 8.0 * k, 26.0 * k);
+            sfx.write(PlaySfx {
+                volume: 0.7,
+                pitch: 1.15 / k,
+                ..PlaySfx::new(Sfx::GuestWindup)
+            });
             commands.spawn((
                 Name::new("glint"),
                 crate::rooms::RoomPart,
@@ -410,6 +417,25 @@ fn swing_effects(
             continue;
         }
         let feet = t.translation.truncate();
+        // The whoosh of the swing, on its first active frame.
+        let heavy = matches!(id, AttackId::Combo3 | AttackId::Charged | AttackId::Air2);
+        let swing = match (player.map(|p| p.carried), guest.map(|g| g.class)) {
+            (Some(crate::player::Carried::Jeroboam), _) => PlaySfx::new(Sfx::BottleSwing),
+            (Some(crate::player::Carried::Candelabrum), _) => PlaySfx {
+                pitch: 1.1,
+                ..PlaySfx::new(Sfx::SwingHeavy)
+            },
+            (_, Some(anim::guest::Class::Heavy)) => PlaySfx {
+                pitch: 0.85,
+                ..PlaySfx::new(Sfx::SwingHeavy)
+            },
+            _ if heavy => PlaySfx::new(Sfx::SwingHeavy),
+            _ => PlaySfx::new(Sfx::SwingLight),
+        };
+        sfx.write(PlaySfx {
+            volume: if guest.is_some() { 0.75 } else { 1.0 },
+            ..swing
+        });
         let mut req = SpawnFx::new(EffectId::SwordSlash, feet).facing(facing);
         let (radius, angle) = match id {
             AttackId::Combo3 | AttackId::Air2 => (38.0, 0.0),
@@ -497,7 +523,23 @@ fn impact(
     gamepads: Query<Entity, With<Gamepad>>,
     mut rumble: MessageWriter<GamepadRumbleRequest>,
     mut slow: ResMut<SlowMotion>,
+    mood: Res<Mood>,
+    mut sfx: MessageWriter<PlaySfx>,
+    mut duck: MessageWriter<Duck>,
 ) {
+    // The High makes impacts louder and deeper; the Comedown thinner and quieter.
+    let (loud, deep) = match mood.name {
+        "the High" => (1.15, 0.93),
+        "the Comedown" => (0.65, 1.1),
+        _ => (1.0, 1.0),
+    };
+    let mut impact_sound = |sound: Sfx| {
+        sfx.write(PlaySfx {
+            volume: loud,
+            pitch: deep,
+            ..PlaySfx::new(sound)
+        });
+    };
     let mut pulse = |strong: f32, weak: f32, ms: u64| {
         let k = tuning.juice.rumble;
         if k <= 0.0 {
@@ -527,6 +569,21 @@ fn impact(
                 let Some((target, target_is_player)) = body_of(h.target) else {
                     continue;
                 };
+                let bottle = fighters
+                    .get(Entity::from_bits(h.attacker))
+                    .ok()
+                    .and_then(|(_, _, p, _)| p)
+                    .is_some_and(|p| p.carried == crate::player::Carried::Jeroboam);
+                impact_sound(match h.weight {
+                    _ if bottle => Sfx::BottleHit,
+                    Weight::Light => Sfx::HitLight,
+                    Weight::Heavy => Sfx::HitHeavy,
+                    Weight::Charged => Sfx::HitCharged,
+                });
+                // Heavy blows take room in the mix.
+                if h.weight != Weight::Light || bottle {
+                    duck.write(Duck);
+                }
                 let at = centre(&target) + Vec2::new(-(h.direction as f32) * 3.0, -8.0);
                 let mut spark = SpawnFx::new(EffectId::HitSpark, at).facing(h.direction);
                 spark.options.light = if h.weight == Weight::Light { 0.8 } else { 1.3 };
@@ -561,6 +618,7 @@ fn impact(
                 }
                 shake.kick(Vec2::Y, 3.0);
                 pulse(0.4, 0.6, 140);
+                impact_sound(Sfx::Parry);
                 flashes.push((attacker, 0.1));
             }
             CombatEvent::WallSplat {
@@ -576,6 +634,8 @@ fn impact(
                 }
                 shake.kick(Vec2::new(incoming_speed.signum(), 0.0), 4.0);
                 pulse(0.8, 0.2, 150);
+                impact_sound(Sfx::WallSplat);
+                duck.write(Duck);
                 splats.push(target);
                 flashes.push((target, 0.07));
             }
@@ -599,6 +659,7 @@ fn impact(
                 }
                 shake.kick(Vec2::new(velocity.0.signum(), 0.0), 2.0);
                 flashes.push((target, 0.07));
+                impact_sound(Sfx::HitLight);
             }
         }
     }
@@ -620,6 +681,8 @@ fn impact(
         }
         shake.kick(Vec2::new(f.direction as f32, -0.6), 6.0);
         pulse(1.0, 0.6, 260);
+        impact_sound(Sfx::Finisher);
+        duck.write(Duck);
         flashes.push((f.target, 0.15));
         slow.left = FINISHER_SLOW.0;
         slow.speed = FINISHER_SLOW.1;

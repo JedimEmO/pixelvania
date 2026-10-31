@@ -380,6 +380,7 @@ pub(crate) fn animate(
     mut players: Query<(&Player, &mut Look, &mut Fighting)>,
     mut images: ResMut<Assets<Image>>,
     mut frame_no: Local<u32>,
+    mut sfx: MessageWriter<crate::audio::PlaySfx>,
 ) {
     *frame_no = frame_no.wrapping_add(1);
     for (p, mut look, mut f) in &mut players {
@@ -405,6 +406,12 @@ pub(crate) fn animate(
             },
             dt,
         );
+        if look.animator.stepped() {
+            sfx.write(crate::audio::PlaySfx {
+                volume: 0.7,
+                ..crate::audio::PlaySfx::new(crate::audio::Sfx::Footstep)
+            });
+        }
         let charge = weapons.get(&f.weapon).map_or(48, |w| w.0.charge_ticks);
         let standing = c.grounded && c.vx.abs() < 10.0;
         let pose = combat_pose(&f, charge, standing).unwrap_or_else(|| carry(look.animator.pose()));
@@ -513,6 +520,7 @@ pub(crate) fn react(
     tuning: Res<Tuning>,
     mut players: Query<(&mut Player, &Children, &Transform)>,
     mut fx: MessageWriter<SpawnFx>,
+    mut sfx: MessageWriter<crate::audio::PlaySfx>,
     mut shake: ResMut<crate::camera::Shake>,
     mut shapes: Query<&mut Shape>,
     gamepads: Query<Entity, With<Gamepad>>,
@@ -559,6 +567,15 @@ pub(crate) fn react(
                 pulse(0.45, 0.2, 110);
             }
             // A slam from a fast fall cracks the floor; an ordinary landing puffs dust.
+            use crate::audio::{PlaySfx, Sfx};
+            if speed > m.max_fall + 20.0 {
+                sfx.write(PlaySfx::new(Sfx::LandHeavy));
+            } else if speed >= 150.0 {
+                sfx.write(PlaySfx {
+                    volume: (speed / m.max_fall).clamp(0.4, 1.0),
+                    ..PlaySfx::new(Sfx::Land)
+                });
+            }
             if speed > m.max_fall + 20.0 {
                 fx.write(SpawnFx::new(EffectId::HeavyLanding, feet));
                 shake.kick(Vec2::NEG_Y, 3.0);
@@ -568,11 +585,22 @@ pub(crate) fn react(
         }
         if ev.jumped {
             fx.write(SpawnFx::dust(feet, DustVariant::Jump).facing(facing));
+            sfx.write(crate::audio::PlaySfx::new(crate::audio::Sfx::Jump));
+        }
+        if ev.swooned || ev.wall_jumped.is_some() {
+            sfx.write(crate::audio::PlaySfx {
+                pitch: 1.2,
+                volume: 0.8,
+                ..crate::audio::PlaySfx::new(crate::audio::Sfx::Jump)
+            });
         }
         if let Some(away) = ev.wall_jumped {
             // Kicked off the wall behind the player, at mid height.
             let wall = feet + Vec2::new(-away as f32 * SIZE.x as f32 / 2.0, 10.0);
             fx.write(SpawnFx::dust(wall, DustVariant::Jump).facing(away));
+        }
+        if ev.lunged {
+            sfx.write(crate::audio::PlaySfx::new(crate::audio::Sfx::Lunge));
         }
         if ev.lunged && p.ctrl.grounded {
             fx.write(SpawnFx::dust(feet, DustVariant::Run).facing(facing));
