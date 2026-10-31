@@ -5,6 +5,7 @@ mod combat;
 mod devtools;
 mod effects;
 mod enemies;
+mod hud;
 mod input;
 mod player;
 mod render;
@@ -41,6 +42,7 @@ fn main() -> AppExit {
             player::PlayerPlugin,
             combat::CombatPlugin,
             enemies::EnemiesPlugin,
+            hud::HudPlugin,
             camera::CameraPlugin,
             effects::EffectsPlugin,
             devtools::DevToolsPlugin,
