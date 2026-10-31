@@ -138,6 +138,7 @@ pub fn take_controls(mut input: ResMut<TickInput>, mut controls: ResMut<TickCont
         jump_held: input.jump_held,
         jump_pressed: std::mem::take(&mut input.jump_pressed),
         lunge_pressed: std::mem::take(&mut input.lunge_pressed),
+        ..Controls::default()
     };
 }
 

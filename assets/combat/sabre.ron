@@ -1,0 +1,73 @@
+// Phase durations and ranges are ticks at 120 Hz. Ranges exclude their end.
+(
+    name: "sabre",
+    charge_ticks: 48,
+    combo: (
+        (
+            windup: 10, active: 8, recovery: 18, cancel_window: 4,
+            hitboxes: [(rect: (x: 4.0, y: -32.0, w: 42.0, h: 30.0), ticks: None)],
+            damage: 12.0, poise_damage: 8.0, hit_stop: 0.04,
+            knockback: (110.0, -80.0), launches: false,
+            weight: Light, armour: false, step: Some(45.0),
+            chain: Some((next: Combo2, window: (start: 1, end: 18))), air_hang: 0,
+        ),
+        (
+            windup: 12, active: 8, recovery: 20, cancel_window: 4,
+            hitboxes: [(rect: (x: 4.0, y: -32.0, w: 42.0, h: 30.0), ticks: None)],
+            damage: 14.0, poise_damage: 10.0, hit_stop: 0.04,
+            knockback: (130.0, -100.0), launches: false,
+            weight: Light, armour: false, step: Some(55.0),
+            chain: Some((next: Combo3, window: (start: 3, end: 20))), air_hang: 0,
+        ),
+        (
+            windup: 22, active: 10, recovery: 30, cancel_window: 4,
+            hitboxes: [(rect: (x: 4.0, y: -32.0, w: 42.0, h: 30.0), ticks: None)],
+            damage: 24.0, poise_damage: 26.0, hit_stop: 0.09,
+            knockback: (300.0, -300.0), launches: true,
+            weight: Heavy, armour: false, step: Some(70.0),
+            chain: None, air_hang: 0,
+        ),
+    ),
+    charged: (
+        windup: 28, active: 12, recovery: 40, cancel_window: 4,
+        hitboxes: [(rect: (x: 4.0, y: -32.0, w: 42.0, h: 30.0), ticks: None)],
+        damage: 40.0, poise_damage: 55.0, hit_stop: 0.16,
+        knockback: (350.0, -340.0), launches: true,
+        weight: Charged, armour: true, step: Some(40.0),
+        chain: None, air_hang: 0,
+    ),
+    rising: (
+        windup: 16, active: 10, recovery: 26, cancel_window: 4,
+        hitboxes: [(rect: (x: 0.0, y: -64.0, w: 30.0, h: 64.0), ticks: None)],
+        damage: 18.0, poise_damage: 20.0, hit_stop: 0.09,
+        knockback: (160.0, -370.0), launches: true,
+        weight: Heavy, armour: false, step: Some(25.0),
+        chain: None, air_hang: 0,
+    ),
+    air: (
+        (
+            windup: 10, active: 8, recovery: 18, cancel_window: 4,
+            hitboxes: [(rect: (x: 4.0, y: -32.0, w: 42.0, h: 30.0), ticks: None)],
+            damage: 12.0, poise_damage: 8.0, hit_stop: 0.04,
+            knockback: (90.0, -80.0), launches: false,
+            weight: Light, armour: false, step: Some(30.0),
+            chain: Some((next: Air2, window: (start: 1, end: 18))), air_hang: 18,
+        ),
+        (
+            windup: 16, active: 10, recovery: 24, cancel_window: 4,
+            hitboxes: [(rect: (x: 4.0, y: -32.0, w: 42.0, h: 30.0), ticks: None)],
+            damage: 20.0, poise_damage: 20.0, hit_stop: 0.09,
+            knockback: (230.0, -260.0), launches: true,
+            weight: Heavy, armour: false, step: Some(40.0),
+            chain: None, air_hang: 24,
+        ),
+    ),
+    pogo: (
+        windup: 12, active: 10, recovery: 24, cancel_window: 4,
+        hitboxes: [(rect: (x: -10.0, y: -4.0, w: 28.0, h: 36.0), ticks: None)],
+        damage: 16.0, poise_damage: 16.0, hit_stop: 0.09,
+        knockback: (100.0, -160.0), launches: true,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+)

@@ -148,3 +148,52 @@ and fights can be recorded and replayed against new tuning.
 Fights should be demanding, and the game offers ways to soften them without a separate easy mode.
 An assist menu can reduce damage taken, slow the game down, and widen the Toast window.
 Assists never lock content or achievements.
+
+## Core timing decisions
+
+`world::combat` runs at 120 Hz without Bevy.
+Load weapons with `Weapon::from_ron`; it validates frame ranges and impact values.
+An active swing keeps its data when a weapon reloads.
+Tick indices start at zero, and ranges include their start but exclude their end.
+Hit-stop and Toast round up to whole ticks: 0.04 s is 5 ticks,
+0.09 s is 11, and Toast's 0.12 s window is 15.
+
+A press starts a normal attack immediately.
+Holding for 48 ticks with the sabre or 72 with the Jeroboam arms a charged release.
+That release waits for the current swing's full recovery;
+charging cannot bypass commitment, even on a miss.
+Armour lasts through the charged move's recovery, but death and Toast override it.
+Up selects rising on the ground; down selects pogo in the air.
+
+The attack buffer lasts 18 simulation ticks and pauses during hit-stop.
+Each chain window covers the last 17 recovery ticks, so every accepted press survives until recovery ends.
+Chaining starts the next move after full recovery, whether the previous swing hit or missed.
+Only a connected swing permits a Lunge cancel: recovery tick 4 for the sabre, 10 for the Jeroboam.
+A failed Lunge attempt leaves the attack running.
+Air hang lasts 18/24 ticks for the sabre's two air hits and 24/24 for the Jeroboam.
+A pogo hit stores a 340 px/s upward bounce until hit-stop ends.
+
+Light hits flinch for 12 ticks; broken poise staggers for 72.
+Heavy hits launch Light bodies and knock Medium bodies down for 48 ticks.
+Those reactions take precedence over a poise break; Heavy bodies only stagger on a break.
+Poise regains 30 points per second after 120 unfrozen ticks without damage.
+A launched body hitting a wall at 180 px/s or faster takes 12 damage
+and bounces with 45% of its horizontal speed.
+Body collisions transfer 60% of momentum, deal 6 damage and 20 poise damage,
+and can hit allies once per flight.
+The Jeroboam slam adds a ground shockwave on active ticks 6 through 17.
+
+For each fixed tick, call `Combatant::tick_controller` for every controlled fighter.
+It advances combat, applies movement locks and reactions, and skips frozen movement.
+Then build `Fighter` views with unique IDs and world-space hurtboxes,
+call `resolve`, and call `resolve_body_collisions`.
+Consume the returned events for impact effects; `shivering()` identifies frozen victims.
+Custom enemy movement can use `Combatant::tick` and `move_body` instead;
+a false tick result means all movement must wait.
+
+Weapon contacts use a snapshot, so simultaneous blows trade regardless of slice order.
+Toast stops the incoming swing before any of its other contacts land.
+Equal teams ignore weapon hits; thrown bodies can strike either team.
+High scales hit-stop/knockback/poise/shake by 1.2/1.15/1.2/1.25;
+Comedown uses 0.7/0.75/0.75/0.6. Damage and frame windows stay unchanged.
+These are starting values for the combat lab, particularly charge commitment and the late chain windows.
