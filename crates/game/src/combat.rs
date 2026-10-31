@@ -34,6 +34,7 @@ impl Plugin for CombatPlugin {
             .register_asset_loader(WeaponLoader)
             .init_resource::<Mood>()
             .init_resource::<CombatLog>()
+            .init_resource::<SlowMotion>()
             .add_systems(Startup, load_weapons)
             .add_systems(
                 FixedUpdate,
@@ -42,7 +43,10 @@ impl Plugin for CombatPlugin {
                     .after(SimulateBodies),
             )
             .configure_sets(FixedUpdate, SimulateBodies.in_set(TickSet::Simulate))
-            .add_systems(Update, (swing_effects, impact, fade_flash).chain());
+            .add_systems(
+                Update,
+                (swing_effects, impact, fade_flash, slow_motion).chain(),
+            );
     }
 }
 
@@ -176,7 +180,24 @@ impl HasBody for crate::enemies::Guest {
 
 /// What combat did on the ticks since the last frame, for the impact system to show.
 #[derive(Resource, Default)]
-pub struct CombatLog(pub Vec<CombatEvent>);
+pub struct CombatLog(pub Vec<CombatEvent>, pub Vec<Finisher>);
+
+/// The player's blow landing on a staggered guest: a kill, framed by slow motion.
+#[derive(Clone, Copy, Debug)]
+pub struct Finisher {
+    pub target: u64,
+    pub direction: i32,
+}
+
+/// Real seconds of slow motion left, and how slow.
+#[derive(Resource, Default)]
+pub struct SlowMotion {
+    pub left: f32,
+    pub speed: f32,
+}
+
+/// How long a finisher's slow motion lasts in real seconds, and the game speed during it.
+const FINISHER_SLOW: (f32, f32) = (0.3, 0.25);
 
 /// An entity's id in combat: stable, unique, and the way back to the entity.
 pub fn combat_id(e: Entity) -> u64 {
@@ -210,9 +231,45 @@ fn resolve_contacts(
             hurtboxes: hurt,
         })
         .collect();
-    log.0.extend(resolve(&mut views, mood.scale));
+    // A finisher is the player's blow on a body that was already staggered before it landed.
+    let staggered: Vec<u64> = views
+        .iter()
+        .filter(|v| v.combat.reaction() == world::combat::Reaction::Stagger)
+        .map(|v| v.id)
+        .collect();
+    let events = resolve(&mut views, mood.scale);
+    for e in &events {
+        if let CombatEvent::Hit(h) = e
+            && staggered.contains(&h.target)
+            && views
+                .iter()
+                .any(|v| v.id == h.attacker && v.team == PLAYER_TEAM)
+            && let Some(v) = views.iter_mut().find(|v| v.id == h.target)
+        {
+            v.combat.health = 0.0;
+            log.1.push(Finisher {
+                target: h.target,
+                direction: h.direction,
+            });
+        }
+    }
+    log.0.extend(events);
     log.0
         .extend(resolve_body_collisions(&mut views, mood.scale));
+}
+
+/// Eases the game into and out of a finisher's slow motion, in real time.
+fn slow_motion(
+    real: Res<Time<Real>>,
+    mut slow: ResMut<SlowMotion>,
+    mut time: ResMut<Time<Virtual>>,
+) {
+    if slow.left <= 0.0 {
+        return;
+    }
+    slow.left -= real.delta_secs();
+    let speed = if slow.left > 0.0 { slow.speed } else { 1.0 };
+    time.set_relative_speed(speed);
 }
 
 /// How far the view jolts for a blow of each weight, in pixels, before the mood.
@@ -294,6 +351,7 @@ fn impact(
     mut shake: ResMut<Shake>,
     gamepads: Query<Entity, With<Gamepad>>,
     mut rumble: MessageWriter<GamepadRumbleRequest>,
+    mut slow: ResMut<SlowMotion>,
 ) {
     let mut pulse = |strong: f32, weak: f32, ms: u64| {
         let k = tuning.juice.rumble;
@@ -398,6 +456,28 @@ fn impact(
                 flashes.push((target, 0.07));
             }
         }
+    }
+    for f in std::mem::take(&mut log.1) {
+        if let Some((body, _)) = body_of(f.target) {
+            let feet = Vec2::new(
+                body.x as f32 + body.w as f32 / 2.0,
+                -((body.y + body.h) as f32),
+            );
+            fx.write(SpawnFx::new(EffectId::HammerSmash, feet).facing(f.direction));
+            // Nectar: the sweet, pink payout of a kill.
+            let mut nectar = SpawnFx::new(EffectId::Poof, centre(&body));
+            nectar.options.palette = [0x5a1838, 0x9a2a5a, 0xd04a86, 0xf27ab0, 0xffb8d8, 0xfff0f8]
+                .iter()
+                .map(|&c| pixelfx::color::hex(c))
+                .collect();
+            nectar.options.light = 1.6;
+            fx.write(nectar);
+        }
+        shake.kick(Vec2::new(f.direction as f32, -0.6), 6.0);
+        pulse(1.0, 0.6, 260);
+        flashes.push((f.target, 0.15));
+        slow.left = FINISHER_SLOW.0;
+        slow.speed = FINISHER_SLOW.1;
     }
     for (id, secs) in flashes {
         if let Ok((_, mut f, _, _)) = fighters.get_mut(Entity::from_bits(id)) {
