@@ -59,7 +59,10 @@ its head can turn out of view; it reads best at rest and in wide arcs.
 And sound: sixteen effects rendered by `cargo xtask sfx` and played through `kira`,
 with heavy hits ducking the music bus and the mood colouring every impact.
 
-Next: backgrounds, then a first music sketch.
+And backgrounds: a generated ballroom in parallax layers behind the combat lab,
+with a dark foreground passing in front, lifted by the room's lights (`cargo xtask backgrounds`).
+
+Next: a first music sketch, for the director to react to.
 
 ## For the director
 
