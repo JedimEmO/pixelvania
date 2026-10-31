@@ -311,6 +311,13 @@ fn tick(
             }
             None => p.ctrl.tick(room, &tuning.movement, controls.0, dt),
         };
+        crate::combat::fall_dead(&f, &mut p.ctrl, room, &tuning.movement);
+        // A body taking a blow turns to face where it came from.
+        if let Some(d) = f.hit_from.take()
+            && f.combat.helpless()
+        {
+            p.ctrl.facing = -d;
+        }
         if ev.swooned {
             p.swooning = true;
         } else if p.ctrl.grounded || p.ctrl.wall != 0 {
@@ -331,18 +338,25 @@ pub(crate) fn place(fixed: Res<Time<Fixed>>, mut players: Query<(&Player, &mut T
 }
 
 /// Poses the rig from how the player is moving and draws it.
-fn animate(
+pub(crate) fn animate(
     time: Res<Time>,
     tuning: Res<Tuning>,
     weapons: Res<Assets<WeaponAsset>>,
-    mut players: Query<(&Player, &mut Look, &Fighting)>,
+    mut players: Query<(&Player, &mut Look, &mut Fighting)>,
     mut images: ResMut<Assets<Image>>,
     mut frame_no: Local<u32>,
 ) {
     *frame_no = frame_no.wrapping_add(1);
-    for (p, mut look, f) in &mut players {
+    for (p, mut look, mut f) in &mut players {
         let look = &mut *look;
         let c = &p.ctrl;
+        f.leave_wall(&c.body);
+        // Hit-stop freezes the whole body, legs included.
+        let dt = if f.combat.is_frozen() {
+            0.0
+        } else {
+            time.delta_secs_f64()
+        };
         look.animator.update(
             Motion {
                 grounded: c.grounded,
@@ -354,18 +368,21 @@ fn animate(
                 swooning: p.swooning,
                 run_speed: tuning.movement.run_speed,
             },
-            time.delta_secs_f64(),
+            dt,
         );
         let charge = weapons.get(&f.weapon).map_or(48, |w| w.0.charge_ticks);
-        let pose = combat_pose(f, charge).unwrap_or_else(|| carry(look.animator.pose()));
-        let pose = anim::Pose {
-            face: f
-                .combat
+        let standing = c.grounded && c.vx.abs() < 10.0;
+        let pose = combat_pose(&f, charge, standing).unwrap_or_else(|| carry(look.animator.pose()));
+        // Reeling bodies face the way the controller says, which a blow has turned.
+        let face = if f.combat.helpless() {
+            c.facing
+        } else {
+            f.combat
                 .attacker
                 .facing()
-                .unwrap_or(look.animator.pose().face),
-            ..pose
+                .unwrap_or(look.animator.pose().face)
         };
+        let pose = anim::Pose { face, ..pose };
         // The Jeroboam is a champagne bottle, swung with both hands.
         let pose = if p.jeroboam && pose.weapon.is_some() {
             anim::Pose {

@@ -38,14 +38,19 @@ impl Plugin for CombatPlugin {
             .add_systems(Startup, load_weapons)
             .add_systems(
                 FixedUpdate,
-                resolve_contacts
+                (resolve_contacts, count_reactions)
+                    .chain()
                     .in_set(TickSet::Simulate)
                     .after(SimulateBodies),
             )
             .configure_sets(FixedUpdate, SimulateBodies.in_set(TickSet::Simulate))
             .add_systems(
                 Update,
-                (swing_effects, impact, fade_flash, slow_motion).chain(),
+                (swing_effects, impact, fade_flash, slow_motion)
+                    .chain()
+                    .after(crate::player::place)
+                    .before(crate::player::animate)
+                    .before(crate::enemies::animate),
             );
     }
 }
@@ -132,15 +137,30 @@ pub struct Fighting {
     pub splat: f32,
     /// The attack phase last frame, to start a slash trail on the first active frame.
     last_phase: Phase,
-    /// The reaction last frame, and seconds since it began, for reaction poses.
+    /// The reaction last tick, and seconds since it began, for reaction poses.
+    /// Counted in gameplay ticks that are not frozen, so a pose holds through hit-stop.
     last_reaction: world::combat::Reaction,
     reaction_time: f32,
+    /// The direction of the last blow taken, so the body can turn to face it.
+    pub hit_from: Option<i32>,
+    /// The x of the wall a splat happened against, in pixels; the splat pose ends once the body leaves it.
+    splat_x: Option<i32>,
 }
 
 impl Fighting {
     /// Seconds since the current reaction began.
     pub fn reaction_time(&self) -> f32 {
         self.reaction_time
+    }
+
+    /// Ends the splat pose once the body has come away from the wall it hit.
+    pub fn leave_wall(&mut self, body: &Body) {
+        if let Some(x) = self.splat_x
+            && (body.x - x).abs() > 4
+        {
+            self.splat = 0.0;
+            self.splat_x = None;
+        }
     }
 
     pub fn new(combat: Combatant, team: u32, weapon: Handle<WeaponAsset>) -> Self {
@@ -154,6 +174,8 @@ impl Fighting {
             last_phase: Phase::Idle,
             last_reaction: world::combat::Reaction::Ready,
             reaction_time: 0.0,
+            hit_from: None,
+            splat_x: None,
         }
     }
 }
@@ -253,9 +275,59 @@ fn resolve_contacts(
             });
         }
     }
+    let mut events = events;
+    events.extend(resolve_body_collisions(&mut views, mood.scale));
+    drop(views);
+    // A fresh blow restarts the reaction pose, and turns the body to face where it came from.
+    for e in &events {
+        let (target, dir) = match e {
+            CombatEvent::Hit(h) => (h.target, h.direction),
+            CombatEvent::BodyHit {
+                target, velocity, ..
+            } => (*target, velocity.0.signum() as i32),
+            _ => continue,
+        };
+        if let Some(row) = rows.iter_mut().find(|r| r.0 == target) {
+            row.2.reaction_time = 0.0;
+            row.2.hit_from = Some(dir);
+        }
+    }
     log.0.extend(events);
-    log.0
-        .extend(resolve_body_collisions(&mut views, mood.scale));
+}
+
+/// Advances each body's reaction clock by one tick, except while it is frozen in hit-stop.
+fn count_reactions(mut fighters: Query<&mut Fighting>) {
+    for mut f in &mut fighters {
+        let r = f.combat.reaction();
+        if r != f.last_reaction {
+            f.last_reaction = r;
+            f.reaction_time = 0.0;
+        } else if !f.combat.is_frozen() {
+            f.reaction_time += world::combat::DT;
+        }
+    }
+}
+
+/// Lets a dead body fall and slide to a stop: combat stops moving it, but it should land.
+pub fn fall_dead(
+    f: &Fighting,
+    ctrl: &mut world::Controller,
+    room: &world::Room,
+    t: &world::MoveTuning,
+) {
+    if f.combat.reaction() != world::combat::Reaction::Dead {
+        return;
+    }
+    let dt = world::combat::DT;
+    ctrl.vy = (ctrl.vy + t.gravity * dt).min(t.max_fall);
+    ctrl.vx -= ctrl.vx.signum() * ctrl.vx.abs().min(600.0 * dt);
+    if ctrl.body.move_x(room, ctrl.vx * dt) {
+        ctrl.vx = 0.0;
+    }
+    if ctrl.body.move_y(room, ctrl.vy * dt) {
+        ctrl.vy = 0.0;
+    }
+    ctrl.grounded = ctrl.body.on_ground(room);
 }
 
 /// Eases the game into and out of a finisher's slow motion, in real time.
@@ -485,8 +557,10 @@ fn impact(
         }
     }
     for id in splats {
-        if let Ok((_, mut f, _, _)) = fighters.get_mut(Entity::from_bits(id)) {
+        if let Ok((_, mut f, p, g)) = fighters.get_mut(Entity::from_bits(id)) {
+            let x = p.map(|p| p.ctrl.body.x).or(g.map(|g| g.ctrl.body.x));
             f.splat = 0.3;
+            f.splat_x = x;
         }
     }
 }
@@ -499,13 +573,6 @@ fn fade_flash(time: Res<Time>, mut fighters: Query<&mut Fighting>) {
         }
         if f.splat > 0.0 {
             f.splat = (f.splat - dt).max(0.0);
-        }
-        let r = f.combat.reaction();
-        if r != f.last_reaction {
-            f.last_reaction = r;
-            f.reaction_time = 0.0;
-        } else {
-            f.reaction_time += dt;
         }
     }
 }
@@ -527,7 +594,8 @@ pub fn swing_of(id: AttackId) -> anim::swing::Swing {
 
 /// The pose a fighter's combat state asks for, if any: a swing, a reaction or a charge.
 /// `None` leaves the pose to movement.
-pub fn combat_pose(f: &Fighting, charge_ticks: u32) -> Option<anim::Pose> {
+/// `standing` is whether the body is on the ground and still: the charge only coils then.
+pub fn combat_pose(f: &Fighting, charge_ticks: u32, standing: bool) -> Option<anim::Pose> {
     use anim::guest::{Reaction as R, reaction_pose};
     use anim::swing::{Phase as P, swing_pose};
     use world::combat::Reaction;
@@ -557,7 +625,7 @@ pub fn combat_pose(f: &Fighting, charge_ticks: u32) -> Option<anim::Pose> {
         return Some(swing_pose(swing_of(id), phase, u));
     }
     // Holding attack after a swing coils for the charged attack.
-    if a.held_ticks() > charge_ticks / 4 {
+    if standing && a.held_ticks() > charge_ticks / 4 {
         let u = (a.held_ticks() as f64 / charge_ticks.max(1) as f64).min(1.0);
         return Some(swing_pose(anim::swing::Swing::Charged, P::Windup, u));
     }

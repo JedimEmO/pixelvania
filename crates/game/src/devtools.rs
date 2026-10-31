@@ -173,10 +173,11 @@ fn spawn_guests(
     keys: Res<ButtonInput<KeyCode>>,
     players: Query<&Player>,
     weapons: Option<Res<crate::combat::Weapons>>,
+    active: Res<crate::rooms::ActiveRoom>,
     mut images: ResMut<Assets<Image>>,
 ) {
     use anim::guest::Class;
-    let (Ok(p), Some(weapons)) = (players.single(), weapons) else {
+    let (Ok(p), Some(weapons), Some(room)) = (players.single(), weapons, &active.room) else {
         return;
     };
     for (key, class) in [
@@ -188,6 +189,13 @@ fn spawn_guests(
             let b = &p.ctrl.body;
             let x = b.x as f32 + b.w as f32 / 2.0 + p.ctrl.facing as f32 * 64.0;
             let feet = (x, (b.y + b.h) as f32);
+            // A guest spawned inside a wall could never get out.
+            let (w, h) = class.size();
+            let body = world::Body::new(x.round() as i32 - w / 2, feet.1 as i32 - h, w, h);
+            if body.collides_at(room, 0, 0) {
+                info!("no room for a {} guest there", class.name());
+                continue;
+            }
             crate::enemies::spawn_guest(&mut commands, class, feet, &weapons, &mut images);
         }
     }

@@ -55,6 +55,17 @@ pub struct Guest {
     was_swinging: bool,
     /// Varies each guest's timing, so a group does not swing in unison.
     rng: u32,
+    /// Feet at the start of the last tick, pixels with y down, for drawing between ticks.
+    prev: Vec2,
+}
+
+impl Guest {
+    /// Feet position in pixels with y down.
+    fn feet(&self) -> Vec2 {
+        let b = &self.ctrl.body;
+        let (x, y) = b.exact_pos();
+        Vec2::new(x + b.w as f32 / 2.0, y + b.h as f32)
+    }
 }
 
 /// How a class fights: reach in pixels, rest between swings in seconds, walking speed,
@@ -180,6 +191,7 @@ pub fn spawn_guest(
             face: -1,
             was_swinging: false,
             rng: (x as u32).wrapping_mul(2_654_435_761) ^ (y as u32).wrapping_mul(40_503),
+            prev: Vec2::new(x, y),
         },
         Fighting::new(
             Combatant::new(t.health, t.poise, weight(class)),
@@ -264,6 +276,7 @@ fn think(g: &mut Guest, f: &Fighting, player: Option<(f32, f32)>, dt: f32) -> Co
 
 fn tick(
     active: Res<ActiveRoom>,
+    tuning: Res<crate::tuning::Tuning>,
     weapons: Res<Assets<WeaponAsset>>,
     mut log: ResMut<crate::combat::CombatLog>,
     players: Query<(&Player, &Fighting), Without<Guest>>,
@@ -282,11 +295,24 @@ fn tick(
             continue;
         };
         let g = &mut *g;
+        g.prev = g.feet();
+        // Guests share the live movement tuning, gravity included, at their own walking speed.
+        g.tuning = MoveTuning {
+            run_speed: temper(g.class).speed,
+            ..tuning.movement.clone()
+        };
         let input = think(g, &f, player, world::combat::DT);
         let (_, events) =
             f.combat
                 .tick_controller(combat_id(e), &mut g.ctrl, room, &g.tuning, &w.0, input);
         log.0.extend(events);
+        crate::combat::fall_dead(&f, &mut g.ctrl, room, &g.tuning);
+        // A body taking a blow turns to face where it came from.
+        if let Some(d) = f.hit_from.take()
+            && f.combat.helpless()
+        {
+            g.ctrl.facing = -d;
+        }
         // Walking backwards turns the controller round; a guest backing off still faces the player.
         if input.x != 0.0 && f.combat.attacker.attack().is_none() && !f.combat.helpless() {
             g.ctrl.facing = g.face;
@@ -348,24 +374,33 @@ fn separate(
     }
 }
 
-fn place(mut guests: Query<(&Guest, &mut Transform)>) {
+/// Draws each guest between its last two ticks, on whole pixels, as the player is drawn.
+fn place(fixed: Res<Time<Fixed>>, mut guests: Query<(&Guest, &mut Transform)>) {
+    let k = fixed.overstep_fraction();
     for (g, mut t) in &mut guests {
-        let b = &g.ctrl.body;
-        t.translation.x = (b.x as f32 + b.w as f32 / 2.0).round();
-        t.translation.y = -((b.y + b.h) as f32);
+        let feet = g.prev.lerp(g.feet(), k).round();
+        t.translation.x = feet.x;
+        t.translation.y = -feet.y;
     }
 }
 
-fn animate(
+pub(crate) fn animate(
     time: Res<Time>,
-    mut guests: Query<(&Guest, &mut Look, &Fighting)>,
+    mut guests: Query<(&Guest, &mut Look, &mut Fighting)>,
     mut images: ResMut<Assets<Image>>,
     mut frame_no: Local<u32>,
 ) {
     *frame_no = frame_no.wrapping_add(1);
-    for (g, mut look, f) in &mut guests {
+    for (g, mut look, mut f) in &mut guests {
         let look = &mut *look;
         let c = &g.ctrl;
+        f.leave_wall(&c.body);
+        // Hit-stop freezes the whole body, legs included.
+        let dt = if f.combat.is_frozen() {
+            0.0
+        } else {
+            time.delta_secs_f64()
+        };
         look.animator.update(
             anim::Motion {
                 grounded: c.grounded,
@@ -377,11 +412,16 @@ fn animate(
                 swooning: false,
                 run_speed: g.tuning.run_speed,
             },
-            time.delta_secs_f64(),
+            dt,
         );
-        let pose = combat_pose(f, u32::MAX).unwrap_or_else(|| look.animator.pose());
+        let pose = combat_pose(&f, u32::MAX, false).unwrap_or_else(|| look.animator.pose());
+        let face = if f.combat.helpless() {
+            c.facing
+        } else {
+            f.combat.attacker.facing().unwrap_or(c.facing)
+        };
         let pose = anim::Pose {
-            face: f.combat.attacker.facing().unwrap_or(c.facing),
+            face,
             ..arm(scale(&pose, g.class.scale()), g.class)
         };
         look.draw(
