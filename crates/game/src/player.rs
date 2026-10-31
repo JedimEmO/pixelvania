@@ -12,6 +12,10 @@ use bevy::prelude::*;
 use bevy::sprite::Anchor;
 use world::{Abilities, Controller, Events};
 
+use pixelfx::EffectId;
+use pixelfx::effects::DustVariant;
+
+use crate::effects::SpawnFx;
 use crate::input::{TickControls, TickInput, TickSet};
 use crate::render::{GLOW_LAYER, Light2d};
 use crate::rooms::ActiveRoom;
@@ -74,7 +78,7 @@ impl Player {
 
 /// The drawn body, a child of the player, scaled for squash and stretch about the feet.
 #[derive(Component)]
-struct Shape {
+pub(crate) struct Shape {
     scale: Vec2,
 }
 
@@ -184,18 +188,21 @@ pub(crate) fn place(
     }
 }
 
-/// Turns the ticks' events into squash, stretch and rumble.
-fn react(
+/// Turns the ticks' events into squash, stretch, rumble and dust.
+pub(crate) fn react(
     tuning: Res<Tuning>,
-    mut players: Query<(&mut Player, &Children)>,
+    mut players: Query<(&mut Player, &Children, &Transform)>,
+    mut fx: MessageWriter<SpawnFx>,
     mut shapes: Query<&mut Shape>,
     gamepads: Query<Entity, With<Gamepad>>,
     mut rumble: MessageWriter<GamepadRumbleRequest>,
 ) {
     let j = &tuning.juice;
     let m = &tuning.movement;
-    for (mut p, children) in &mut players {
+    for (mut p, children, transform) in &mut players {
         let ev = std::mem::take(&mut p.events);
+        let feet = transform.translation.truncate();
+        let facing = p.ctrl.facing;
         let mut set_shape = |s: (f32, f32)| {
             for &c in children {
                 if let Ok(mut shape) = shapes.get_mut(c) {
@@ -230,6 +237,23 @@ fn react(
             if speed >= m.hard_landing_speed {
                 pulse(0.45, 0.2, 110);
             }
+            // A slam from a fast fall cracks the floor; an ordinary landing puffs dust.
+            if speed > m.max_fall + 20.0 {
+                fx.write(SpawnFx::new(EffectId::HeavyLanding, feet));
+            } else if speed >= 150.0 {
+                fx.write(SpawnFx::dust(feet, DustVariant::Land));
+            }
+        }
+        if ev.jumped {
+            fx.write(SpawnFx::dust(feet, DustVariant::Jump).facing(facing));
+        }
+        if let Some(away) = ev.wall_jumped {
+            // Kicked off the wall behind the player, at mid height.
+            let wall = feet + Vec2::new(-away as f32 * SIZE.x as f32 / 2.0, 10.0);
+            fx.write(SpawnFx::dust(wall, DustVariant::Jump).facing(away));
+        }
+        if ev.lunged && p.ctrl.grounded {
+            fx.write(SpawnFx::dust(feet, DustVariant::Run).facing(facing));
         }
         if ev.jumped || ev.wall_jumped.is_some() {
             set_shape(j.jump_stretch);

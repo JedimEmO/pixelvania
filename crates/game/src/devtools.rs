@@ -4,6 +4,8 @@
 //! `PIXELVANIA_HOLD=right,jump` holds those inputs from the start, for screenshots of motion.
 //! `PIXELVANIA_RECORD=path` writes every tick's input to a file;
 //! `PIXELVANIA_REPLAY=path` plays such a file back instead of reading the controller.
+//! `PIXELVANIA_FX=sword-slash` spawns that effect in front of the player once it has landed;
+//! the number keys 1 to 6 spawn each pixelfx effect there at any time.
 //! A replay is exact as long as the room and the tuning are the same as when it was recorded.
 //!
 //! With the `dev` feature, F1 opens a panel that edits the tuning live and saves it to the file.
@@ -66,6 +68,11 @@ impl Plugin for DevToolsPlugin {
                 Err(e) => error!("cannot record to {path}: {e}"),
             }
         }
+        let planned = std::env::var("PIXELVANIA_FX")
+            .ok()
+            .and_then(|v| pixelfx::EffectId::parse(v.trim()));
+        app.insert_resource(PlannedFx(planned))
+            .add_systems(Update, spawn_test_fx.before(crate::player::react));
         app.add_systems(
             FixedUpdate,
             record_or_replay_point
@@ -128,6 +135,46 @@ fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut frame: L
             "lunge" => input.lunge_pressed |= *frame == 90,
             _ => {}
         }
+    }
+}
+
+#[derive(Resource)]
+struct PlannedFx(Option<pixelfx::EffectId>);
+
+/// Frame at which `PIXELVANIA_FX` fires: after the player has spawned and settled.
+const PLANNED_FX_FRAME: u32 = 80;
+
+/// Spawns effects in front of the player, for looking at them in the room.
+fn spawn_test_fx(
+    keys: Res<ButtonInput<KeyCode>>,
+    planned: Res<PlannedFx>,
+    players: Query<(&Player, &Transform)>,
+    mut fx: MessageWriter<crate::effects::SpawnFx>,
+    mut frame: Local<u32>,
+) {
+    *frame += 1;
+    let Ok((p, t)) = players.single() else { return };
+    const KEYS: [KeyCode; 6] = [
+        KeyCode::Digit1,
+        KeyCode::Digit2,
+        KeyCode::Digit3,
+        KeyCode::Digit4,
+        KeyCode::Digit5,
+        KeyCode::Digit6,
+    ];
+    let mut ids: Vec<pixelfx::EffectId> = KEYS
+        .iter()
+        .zip(pixelfx::EffectId::ALL)
+        .filter(|(k, _)| keys.just_pressed(**k))
+        .map(|(_, id)| id)
+        .collect();
+    if *frame == PLANNED_FX_FRAME {
+        ids.extend(planned.0);
+    }
+    let facing = p.ctrl.facing;
+    for id in ids {
+        let pos = t.translation.truncate() + Vec2::new(facing as f32 * 14.0, 0.0);
+        fx.write(crate::effects::SpawnFx::new(id, pos).facing(facing));
     }
 }
 

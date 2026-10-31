@@ -16,6 +16,7 @@ bevy_enhanced_input = "0.27.2"
 serde = { version = "1", features = ["derive"] }
 ron = "0.12"
 world = { path = "crates/world" }
+pixelfx = { path = "crates/pixelfx" }
 bevy_egui = { version = "0.43.1", default-features = false, features = ["render", "default_fonts"] }
 
 [workspace.lints.rust]

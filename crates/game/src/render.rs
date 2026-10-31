@@ -10,7 +10,8 @@
 //!
 //! What draws where is decided by render layers: the colour buffer sees layer 0, which is
 //! where everything goes by default; lights belong on [`LIGHT_LAYER`] and glows on [`GLOW_LAYER`].
-//! [`Light2d`] spawns both for you.
+//! [`Light2d`] spawns both for you, and follows changes to it.
+//! [`AdditiveImage`] adds a texture into the light or glow buffer, for light painted on the CPU.
 
 use bevy::camera::RenderTarget;
 use bevy::camera::visibility::RenderLayers;
@@ -49,11 +50,17 @@ impl Plugin for PixelRenderPlugin {
         app.add_plugins((
             Material2dPlugin::<CompositeMaterial>::default(),
             Material2dPlugin::<LightMaterial>::default(),
+            Material2dPlugin::<AdditiveImage>::default(),
         ))
         .init_resource::<CameraFocus>()
         .init_resource::<Lighting>()
         .add_systems(Startup, setup)
-        .add_systems(Update, spawn_light_visuals)
+        .add_systems(
+            PostUpdate,
+            (spawn_light_visuals, update_light_visuals)
+                .chain()
+                .before(TransformSystems::Propagate),
+        )
         .add_systems(PostUpdate, (place_cameras, update_composite));
     }
 }
@@ -282,21 +289,70 @@ impl Material2d for LightMaterial {
         _layout: &MeshVertexBufferLayoutRef,
         _key: Material2dKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
-        let add = BlendComponent {
-            src_factor: BlendFactor::One,
-            dst_factor: BlendFactor::One,
-            operation: BlendOperation::Add,
-        };
-        if let Some(fragment) = descriptor.fragment.as_mut() {
-            for target in fragment.targets.iter_mut().flatten() {
-                target.blend = Some(BlendState {
-                    color: add,
-                    alpha: add,
-                });
-            }
-        }
+        blend_additive(descriptor);
         Ok(())
     }
+}
+
+/// Adds the fragment's colour to the buffer instead of blending over it.
+fn blend_additive(descriptor: &mut RenderPipelineDescriptor) {
+    let add = BlendComponent {
+        src_factor: BlendFactor::One,
+        dst_factor: BlendFactor::One,
+        operation: BlendOperation::Add,
+    };
+    if let Some(fragment) = descriptor.fragment.as_mut() {
+        for target in fragment.targets.iter_mut().flatten() {
+            target.blend = Some(BlendState {
+                color: add,
+                alpha: add,
+            });
+        }
+    }
+}
+
+/// A texture added into the buffer its render layer draws to; its alpha is ignored.
+/// Put it on [`GLOW_LAYER`] for light that glows, or on [`LIGHT_LAYER`] for light that lights.
+#[derive(Asset, TypePath, AsBindGroup, Clone)]
+pub struct AdditiveImage {
+    #[texture(0)]
+    #[sampler(1)]
+    pub image: Handle<Image>,
+}
+
+impl Material2d for AdditiveImage {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/additive_image.wesl".into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode2d {
+        AlphaMode2d::Blend
+    }
+
+    fn specialize(
+        _pipeline: &Material2dPipeline,
+        descriptor: &mut RenderPipelineDescriptor,
+        _layout: &MeshVertexBufferLayoutRef,
+        _key: Material2dKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+        blend_additive(descriptor);
+        Ok(())
+    }
+}
+
+/// The quads drawing a [`Light2d`], kept so changes to the light reach them.
+#[derive(Component)]
+struct LightVisuals {
+    pool: (Entity, Handle<LightMaterial>),
+    glow: Option<(Entity, Handle<LightMaterial>)>,
+}
+
+fn pool_color(light: &Light2d) -> Vec4 {
+    (light.color * (light.strength / LIGHT_RANGE)).to_vec4()
+}
+
+fn glow_radius(light: &Light2d) -> f32 {
+    (light.radius * 0.15).max(6.0)
 }
 
 fn spawn_light_visuals(
@@ -309,29 +365,65 @@ fn spawn_light_visuals(
         let quad = meshes.add(Rectangle::new(2.0, 2.0));
         let pool = materials.add(LightMaterial {
             params: LightParams {
-                color: (light.color * (light.strength / LIGHT_RANGE)).to_vec4(),
+                color: pool_color(light),
                 falloff: 1.6,
             },
         });
-        commands.entity(entity).with_child((
-            Mesh2d(quad.clone()),
-            MeshMaterial2d(pool),
-            Transform::from_scale(Vec3::splat(light.radius)),
-            RenderLayers::layer(LIGHT_LAYER),
-        ));
-        if light.glow > 0.0 {
+        let pool_quad = commands
+            .spawn((
+                Mesh2d(quad.clone()),
+                MeshMaterial2d(pool.clone()),
+                Transform::from_scale(Vec3::splat(light.radius)),
+                RenderLayers::layer(LIGHT_LAYER),
+                ChildOf(entity),
+            ))
+            .id();
+        let glow = (light.glow > 0.0).then(|| {
             let glow = materials.add(LightMaterial {
                 params: LightParams {
                     color: (light.color * light.glow).to_vec4(),
                     falloff: 2.5,
                 },
             });
-            commands.entity(entity).with_child((
-                Mesh2d(quad),
-                MeshMaterial2d(glow),
-                Transform::from_scale(Vec3::splat((light.radius * 0.15).max(6.0))),
-                RenderLayers::layer(GLOW_LAYER),
-            ));
+            let quad = commands
+                .spawn((
+                    Mesh2d(quad),
+                    MeshMaterial2d(glow.clone()),
+                    Transform::from_scale(Vec3::splat(glow_radius(light))),
+                    RenderLayers::layer(GLOW_LAYER),
+                    ChildOf(entity),
+                ))
+                .id();
+            (quad, glow)
+        });
+        commands.entity(entity).insert(LightVisuals {
+            pool: (pool_quad, pool),
+            glow,
+        });
+    }
+}
+
+/// Carries changes to a light's colour, strength and radius over to its quads.
+fn update_light_visuals(
+    lights: Query<(&Light2d, &LightVisuals), Changed<Light2d>>,
+    mut materials: ResMut<Assets<LightMaterial>>,
+    mut transforms: Query<&mut Transform>,
+) {
+    for (light, visuals) in &lights {
+        let (quad, pool) = &visuals.pool;
+        if let Some(mut m) = materials.get_mut(pool) {
+            m.params.color = pool_color(light);
+        }
+        if let Ok(mut t) = transforms.get_mut(*quad) {
+            t.scale = Vec3::splat(light.radius);
+        }
+        if let Some((quad, glow)) = &visuals.glow {
+            if let Some(mut m) = materials.get_mut(glow) {
+                m.params.color = (light.color * light.glow).to_vec4();
+            }
+            if let Ok(mut t) = transforms.get_mut(*quad) {
+                t.scale = Vec3::splat(glow_radius(light));
+            }
         }
     }
 }

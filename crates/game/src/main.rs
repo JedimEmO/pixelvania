@@ -2,6 +2,7 @@
 
 mod camera;
 mod devtools;
+mod effects;
 mod input;
 mod player;
 mod render;
@@ -37,6 +38,7 @@ fn main() -> AppExit {
             rooms::RoomsPlugin,
             player::PlayerPlugin,
             camera::CameraPlugin,
+            effects::EffectsPlugin,
             devtools::DevToolsPlugin,
         ))
         .run()

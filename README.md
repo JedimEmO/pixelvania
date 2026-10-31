@@ -25,6 +25,7 @@ Press F1 for a panel that edits the tuning live and saves it back to the file.
 | Back to the spawn point | Select | R |
 
 Hold down while falling to fall faster, and press into a wall while falling to slide down it.
+The number keys 1 to 6 set off each pixelfx effect in front of the player.
 
 For the web build, install [trunk](https://trunkrs.dev) and run `trunk serve --release` in `web/`.
 
@@ -35,6 +36,7 @@ For the web build, install [trunk](https://trunkrs.dev) and run `trunk serve --r
 jump is pressed at frame 60 and the Lunge at frame 90.
 `PIXELVANIA_RECORD=path` writes every tick's input to a file, and `PIXELVANIA_REPLAY=path` plays it back.
 `PIXELVANIA_PANEL=1` opens the tuning panel at start, with the `dev` feature.
+`PIXELVANIA_FX=sword-slash` sets off that effect in front of the player at frame 80.
 
 ## Effects and the rig
 
@@ -43,3 +45,4 @@ jump is pressed at frame 60 and the Lunge at frame 90.
 and `cargo xtask rig` renders the character rig's animations to `target/rig/`.
 `cargo xtask golden` renders reference frames from the JavaScript original, which needs Node and git;
 the golden tests themselves run without either.
+In the game, effects land on the room's floors, hide behind its walls, and light what is around them.
