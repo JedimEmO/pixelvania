@@ -43,7 +43,6 @@ the costume silhouette the art direction asks for, a coat or hair, needs new rig
 Dust from running and jumping is faint in dark rooms.
 Guests do not jump, retreat, block or circle; they approach and swing.
 There is no sound yet, so the sub-bass thump and the music dip on heavy hits are missing.
-The rig is lit from a fixed direction, not from the nearest light.
 
 ## Further, if there is time
 

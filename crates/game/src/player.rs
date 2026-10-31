@@ -42,6 +42,7 @@ impl Plugin for PlayerPlugin {
                 spawn,
                 switch_weapon,
                 place,
+                light_rigs,
                 animate,
                 react,
                 recover_shape,
@@ -380,6 +381,48 @@ fn animate(
     }
 }
 
+/// How quickly a rig's shading turns towards a new light, per second.
+const LIGHT_TURN: f32 = 6.0;
+
+/// Shades every rig from the light that reaches it most strongly, effects' lights included,
+/// so a guest beside a candle is lit from the candle's side. With no light in reach,
+/// the shading drifts back to the default, from the upper left.
+pub(crate) fn light_rigs(
+    time: Res<Time>,
+    lights: Query<(&GlobalTransform, &Light2d)>,
+    mut looks: Query<(&Transform, &mut Look)>,
+) {
+    let fallback = Vec3::new(-0.55, 0.72, 0.5);
+    let k = 1.0 - (-LIGHT_TURN * time.delta_secs()).exp();
+    for (t, mut look) in &mut looks {
+        let chest = t.translation.truncate() + Vec2::Y * 22.0;
+        let mut best: Option<(f32, Vec2)> = None;
+        for (lt, l) in &lights {
+            let to = lt.translation().truncate() - chest;
+            let d = to.length();
+            // A body's own light sits on it and says nothing about direction.
+            if d < 8.0 || d >= l.radius {
+                continue;
+            }
+            let reach = l.strength * (1.0 - d / l.radius);
+            if best.is_none_or(|(b, _)| reach > b) {
+                best = Some((reach, to / d));
+            }
+        }
+        let want = match best {
+            Some((_, dir)) => Vec3::new(dir.x, dir.y, 0.6).normalize(),
+            None => fallback,
+        };
+        let now = Vec3::new(
+            look.rig.light[0] as f32,
+            look.rig.light[1] as f32,
+            look.rig.light[2] as f32,
+        );
+        let next = now.lerp(want, k).normalize_or(fallback);
+        look.rig.light = [next.x as f64, next.y as f64, next.z as f64];
+    }
+}
+
 /// Switches between the sabre and the Jeroboam, between swings.
 fn switch_weapon(
     input: Res<TickInput>,
@@ -406,11 +449,11 @@ fn switch_weapon(
     }
 }
 
-/// Puts the weapon in the hand of a movement pose, held low and forward.
+/// Puts the weapon in the hand of a movement pose, trailing down and behind.
 fn carry(pose: anim::Pose) -> anim::Pose {
     anim::Pose {
         weapon: Some(pixelfx::rig::Weapon::Sword),
-        sa: 0.55,
+        sa: 2.75,
         ..pose
     }
 }
