@@ -136,17 +136,24 @@ pub struct Controls {
     /// Jump was pressed since the previous tick.
     pub jump_pressed: bool,
     pub lunge_pressed: bool,
+    pub attack_pressed: bool,
+    pub attack_held: bool,
+    pub parry_pressed: bool,
 }
 
 impl Controls {
     /// One line of an input recording: `x y flags`, where flags are `h` (jump held),
-    /// `j` (jump pressed) and `l` (Lunge pressed), or `-` for none.
+    /// `j` (jump pressed), `l` (Lunge pressed), `a` (attack pressed),
+    /// `b` (attack held) and `p` (parry pressed), or `-` for none.
     pub fn encode(&self) -> String {
         let mut flags = String::new();
         for (on, c) in [
             (self.jump_held, 'h'),
             (self.jump_pressed, 'j'),
             (self.lunge_pressed, 'l'),
+            (self.attack_pressed, 'a'),
+            (self.attack_held, 'b'),
+            (self.parry_pressed, 'p'),
         ] {
             if on {
                 flags.push(c);
@@ -170,6 +177,9 @@ impl Controls {
             jump_held: flags.contains('h'),
             jump_pressed: flags.contains('j'),
             lunge_pressed: flags.contains('l'),
+            attack_pressed: flags.contains('a'),
+            attack_held: flags.contains('b'),
+            parry_pressed: flags.contains('p'),
         })
     }
 }
@@ -198,6 +208,14 @@ impl Events {
             (a, b) => a.or(b),
         };
     }
+}
+
+/// Movement imposed by a committed attack. The Lunge is the only optional escape.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct MovementLock {
+    pub vx: f32,
+    pub air_hang: bool,
+    pub allow_lunge: bool,
 }
 
 /// The player's movement state.
@@ -262,7 +280,27 @@ impl Controller {
 
     /// Advances one tick of `dt` seconds.
     pub fn tick(&mut self, room: &Room, t: &MoveTuning, input: Controls, dt: f32) -> Events {
+        self.tick_with_lock(room, t, input, dt, None)
+    }
+
+    /// Advances movement with an optional combat lock. Ordinary movement uses [`Self::tick`].
+    pub fn tick_with_lock(
+        &mut self,
+        room: &Room,
+        t: &MoveTuning,
+        mut input: Controls,
+        dt: f32,
+        mut lock: Option<MovementLock>,
+    ) -> Events {
         let mut ev = Events::default();
+        if let Some(lock) = lock {
+            input.x = 0.0;
+            input.y = 0.0;
+            input.jump_pressed = false;
+            input.jump_held = true;
+            input.lunge_pressed &= lock.allow_lunge;
+            self.stop_actions();
+        }
 
         self.grounded = self.body.on_ground(room);
         if self.grounded {
@@ -330,6 +368,7 @@ impl Controller {
             self.vx = lunge_dir as f32 * t.lunge_speed;
             self.vy = 0.0;
             ev.lunged = true;
+            lock = None;
         }
 
         // Jumps, in order of priority: from the ground (or just after leaving it),
@@ -370,8 +409,17 @@ impl Controller {
                 self.vx = self.facing as f32 * self.vx.abs().min(t.run_speed);
             }
         } else {
-            self.run(t, dir, dt);
-            self.fall(t, input, down, dt);
+            if let Some(lock) = lock {
+                self.vx = lock.vx;
+                if lock.air_hang {
+                    self.vy = 0.0;
+                } else {
+                    self.fall(t, input, down, dt);
+                }
+            } else {
+                self.run(t, dir, dt);
+                self.fall(t, input, down, dt);
+            }
         }
 
         let airborne = !self.grounded;
@@ -388,6 +436,16 @@ impl Controller {
             self.vy = 0.0;
         }
         ev
+    }
+
+    /// Ends movement actions when a hit takes control of the body.
+    pub fn stop_actions(&mut self) {
+        self.lunging = 0.0;
+        self.jump_buffer = 0.0;
+        self.coyote = 0.0;
+        self.wall_coyote = 0.0;
+        self.wall_lock = 0.0;
+        self.jump_cut_done = true;
     }
 
     /// Whether the body, falling as it is now, touches the ground before the jump buffer runs out.
@@ -531,6 +589,9 @@ mod tests {
             jump_held: true,
             jump_pressed: false,
             lunge_pressed: true,
+            attack_pressed: true,
+            attack_held: true,
+            parry_pressed: true,
         };
         assert_eq!(Controls::decode(&c.encode()), Some(c));
         let none = Controls::default();
