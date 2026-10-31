@@ -3,6 +3,7 @@
 The plan for a pixel art metroidvania about nihilistic hedonism, built in Rust on Bevy, played on a gamepad,
 and made by a team of AI agents with one human director.
 This page is the entry point: what to read, what we build in which order, and what is still undecided.
+The [roadmap](roadmap.md) breaks the current milestones into steps.
 
 ## The design pages
 
