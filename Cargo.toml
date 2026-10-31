@@ -1,0 +1,40 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+# 2D and UI only: no 3D renderer, and no Bevy audio because the game uses kira.
+bevy = { version = "0.20.1", default-features = false, features = ["2d", "ui"] }
+bevy_enhanced_input = "0.27.2"
+serde = { version = "1", features = ["derive"] }
+ron = "0.12"
+world = { path = "crates/world" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+type_complexity = "allow"
+too_many_arguments = "allow"
+
+# Our code builds quickly with a little optimisation; dependencies get full optimisation once.
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+
+[profile.web-release]
+inherits = "release"
+opt-level = "s"
+strip = "debuginfo"

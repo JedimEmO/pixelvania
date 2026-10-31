@@ -1,0 +1,24 @@
+[package]
+name = "game"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "pixelvania"
+path = "src/main.rs"
+
+[features]
+# Development conveniences: hot reloading and faster incremental builds. Never shipped.
+dev = ["bevy/file_watcher", "bevy/dynamic_linking"]
+
+[dependencies]
+bevy.workspace = true
+bevy_enhanced_input.workspace = true
+serde.workspace = true
+ron.workspace = true
+world.workspace = true
+
+[lints]
+workspace = true

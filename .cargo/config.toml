@@ -1,0 +1,9 @@
+[env]
+# Bevy looks for `assets/` here, at the workspace root, whichever crate is running.
+BEVY_ASSET_ROOT = { value = "", relative = true }
+
+[target.wasm32-unknown-unknown]
+runner = "wasm-server-runner"
+
+[alias]
+dev = "run -p game --features dev"
