@@ -83,6 +83,9 @@ pub enum Weapon {
     /// A champagne bottle as long as its wielder is tall, held by the neck: Pixelvania's Jeroboam.
     /// Not in the JavaScript original.
     Bottle,
+    /// A tall candelabrum swung as a polearm, three lit candles at its head: Pixelvania's third weapon.
+    /// Not in the JavaScript original.
+    Candelabrum,
 }
 impl Weapon {
     fn two(self) -> f64 {
@@ -94,6 +97,7 @@ impl Weapon {
             Self::Scythe => -11.0,
             Self::Launcher => -9.0,
             Self::Bottle => -5.0,
+            Self::Candelabrum => -10.0,
             _ => 0.0,
         }
     }
@@ -976,6 +980,47 @@ impl Handle<'_> {
                 self.haft(-2.4, 1.8, GRIP, GRIP_D, 0.8);
                 self.crossbar(2.2, 2.6, GOLD_D);
                 self.blade(2.6, 10.0, 1.3);
+            }
+            Weapon::Candelabrum => {
+                // A gilt pole, a cross-arm at the head, and three candles burning on it.
+                const WAX: Color = hex(0xf0e6cc);
+                const WAX_D: Color = hex(0xb8ac90);
+                const FLAME: Color = hex(0xffd36a);
+                const FLAME_HOT: Color = hex(0xfff6d0);
+                const FLAME_EDGE: Color = hex(0xff8a2a);
+                self.haft(-14.0, 30.0, GOLD_D, hex(0x7a5418), 0.5);
+                // The cross-arm, and a drip-cup at its middle.
+                self.crossbar(30.0, 5.6, GOLD);
+                self.crossbar(30.4, 5.6, GOLD_D);
+                self.crossbar(29.2, 2.0, GOLD);
+                for k in [-5.0_f64, 0.0, 5.0] {
+                    // A short candle, then a tall flame on its tip.
+                    let mut i = 30.8;
+                    while i <= 33.2 {
+                        self.put(i, k, WAX, 0.0);
+                        self.put(i, k + 0.4, WAX_D, 0.0);
+                        i += 0.4;
+                    }
+                    let mut i: f64 = 33.6;
+                    while i <= 40.0 {
+                        let u = (i - 33.6) / 6.4;
+                        // Widest a little above the wick, then tapering to a point.
+                        let w: f64 = 1.6 * (1.0 - (u - 0.3).abs() / 0.7).max(0.15);
+                        let mut d = -w;
+                        while d <= w + 0.01 {
+                            let c = if d.abs() > w - 0.5 {
+                                FLAME_EDGE
+                            } else if u < 0.45 {
+                                FLAME_HOT
+                            } else {
+                                FLAME
+                            };
+                            self.put(i, k + d, c, 0.0);
+                            d += 0.4;
+                        }
+                        i += 0.4;
+                    }
+                }
             }
             Weapon::Spear => {
                 self.haft(-18.0, 36.0, WOOD, WOOD_D, 0.5);

@@ -107,6 +107,7 @@ pub struct WeaponAsset(pub Weapon);
 pub struct Weapons {
     pub sabre: Handle<WeaponAsset>,
     pub jeroboam: Handle<WeaponAsset>,
+    pub candelabrum: Handle<WeaponAsset>,
     pub guest_light: Handle<WeaponAsset>,
     pub guest_medium: Handle<WeaponAsset>,
     pub guest_heavy: Handle<WeaponAsset>,
@@ -116,6 +117,7 @@ fn load_weapons(mut commands: Commands, assets: Res<AssetServer>) {
     commands.insert_resource(Weapons {
         sabre: assets.load("combat/sabre.ron"),
         jeroboam: assets.load("combat/jeroboam.ron"),
+        candelabrum: assets.load("combat/candelabrum.ron"),
         guest_light: assets.load("combat/guest-light.ron"),
         guest_medium: assets.load("combat/guest-medium.ron"),
         guest_heavy: assets.load("combat/guest-heavy.ron"),
@@ -363,6 +365,7 @@ fn centre(body: &Body) -> Vec2 {
 
 /// Starts a slash trail on the first active frame of a swing.
 fn swing_effects(
+    mut commands: Commands,
     mut fighters: Query<(
         &mut Fighting,
         &Transform,
@@ -370,6 +373,8 @@ fn swing_effects(
         Option<&crate::enemies::Guest>,
     )>,
     mut fx: MessageWriter<SpawnFx>,
+    active: Res<crate::rooms::ActiveRoom>,
+    mut images: ResMut<Assets<Image>>,
 ) {
     for (mut f, t, player, guest) in &mut fighters {
         let phase = f.combat.attacker.phase();
@@ -402,6 +407,26 @@ fn swing_effects(
             .map(|h| pixelfx::color::hex(u32::from_str_radix(h, 16).unwrap_or(0)))
             .collect();
             req.options.radius *= g.class.scale();
+        }
+        // The candelabrum's grounded swings sweep fire onto the floor in front, and trail flame.
+        if let Some(p) = player
+            && p.carried == crate::player::Carried::Candelabrum
+        {
+            req.options.palette = [
+                0x4a1712, 0xc9281f, 0xf2561d, 0xff8a2a, 0xffd36a, 0xfff3a6, 0xffffff,
+            ]
+            .iter()
+            .map(|&c| pixelfx::color::hex(c))
+            .collect();
+            req.options.radius *= 1.3;
+            let grounded = matches!(
+                id,
+                AttackId::Combo1 | AttackId::Combo2 | AttackId::Combo3 | AttackId::Charged
+            );
+            if grounded && let Some(room) = &active.room {
+                let x = feet.x + facing as f32 * 44.0;
+                crate::fire::ignite(&mut commands, &mut images, room, x, -feet.y);
+            }
         }
         if player.is_some() || guest.is_some() {
             fx.write(req);

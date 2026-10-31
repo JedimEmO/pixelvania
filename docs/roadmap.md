@@ -51,7 +51,11 @@ Done since: a first finisher (a blow on a staggered guest kills it, with Nectar 
 a health and poise bar for the player,
 and the tile generator, so rooms are painted in stone, wood, velvet and gilt (`cargo xtask tiles`).
 
-Next: sound effects and the audio layer, then the candelabrum, backgrounds, and a first music sketch.
+Also the candelabrum, the third weapon: a polearm of three burning candles whose grounded swings
+leave fire on the floor that burns guests standing in it. Mid-swing, seen edge-on,
+its head can turn out of view; it reads best at rest and in wide arcs.
+
+Next: sound effects and the audio layer, then backgrounds and a first music sketch.
 
 ## For the director
 

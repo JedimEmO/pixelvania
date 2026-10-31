@@ -186,6 +186,18 @@ impl Combatant {
         (moved, events)
     }
 
+    /// Takes damage that hurts but does not stagger or interrupt: fire on the floor, the room.
+    /// Poise is untouched, and a body already down stays down.
+    pub fn burn(&mut self, amount: f32) {
+        if self.reaction == Dead || !(amount.is_finite() && amount > 0.0) {
+            return;
+        }
+        self.health = (self.health - amount).max(0.0);
+        if self.health == 0.0 {
+            self.die();
+        }
+    }
+
     /// Takes the pogo impulse after hit-stop ends. Apply it before normal vertical movement.
     pub fn take_bounce(&mut self) -> Option<f32> {
         if self.is_frozen() {

@@ -1135,3 +1135,23 @@ fn ordinary_movement_ignores_combat_controls_and_interrupts_clear_coyote_time() 
     );
     assert!(!events.jumped && !events.swooned);
 }
+
+#[test]
+fn burning_hurts_without_interrupting() {
+    let w = sabre();
+    let mut c = guest(WeightClass::Light);
+    let health = c.health;
+    let poise = c.poise;
+    c.tick(&w, press(), true, 1);
+    assert!(c.attacker.attack().is_some());
+    c.burn(5.0);
+    assert_eq!(c.health, health - 5.0);
+    assert_eq!(c.poise, poise, "burning does not touch poise");
+    assert!(
+        c.attacker.attack().is_some(),
+        "burning does not interrupt a swing"
+    );
+    assert_eq!(c.reaction(), Reaction::Ready);
+    c.burn(1000.0);
+    assert_eq!(c.reaction(), Reaction::Dead);
+}

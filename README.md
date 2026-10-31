@@ -29,7 +29,7 @@ Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev
 | Lunge | East (B, Circle) | Left Shift |
 | Attack; hold to charge, with up to rise, with down in the air to pogo | West (X, Square) | J |
 | Toast, the parry | Left bumper (LB, L1) | K |
-| Switch between the sabre and the Jeroboam | North (Y, Triangle) | L |
+| Next weapon: the sabre, the Jeroboam, the candelabrum | North (Y, Triangle) | L |
 | Next test room: the feel lab or the combat lab | Start | Tab |
 | Back to the spawn point, and the guests back to theirs | Select | R |
 

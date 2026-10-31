@@ -54,6 +54,41 @@ impl Plugin for PlayerPlugin {
     }
 }
 
+/// The player's three weapons, in the order North steps through them.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Carried {
+    Sabre,
+    Jeroboam,
+    Candelabrum,
+}
+
+impl Carried {
+    fn next(self) -> Self {
+        match self {
+            Self::Sabre => Self::Jeroboam,
+            Self::Jeroboam => Self::Candelabrum,
+            Self::Candelabrum => Self::Sabre,
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            Self::Sabre => "sabre",
+            Self::Jeroboam => "Jeroboam",
+            Self::Candelabrum => "candelabrum",
+        }
+    }
+
+    /// The rig's drawing of the weapon, and whether it is held with both hands.
+    fn rig_weapon(self) -> (pixelfx::rig::Weapon, bool) {
+        match self {
+            Self::Sabre => (pixelfx::rig::Weapon::Sword, false),
+            Self::Jeroboam => (pixelfx::rig::Weapon::Bottle, true),
+            Self::Candelabrum => (pixelfx::rig::Weapon::Candelabrum, true),
+        }
+    }
+}
+
 /// The player's tick, which guests run after so they react to where the player is now.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PlayerTick;
@@ -81,8 +116,8 @@ pub struct Player {
     events: Events,
     /// In a Swoon, from the second jump until the body next stands or clings.
     swooning: bool,
-    /// Carrying the Jeroboam rather than the sabre.
-    jeroboam: bool,
+    /// The weapon in hand.
+    pub carried: Carried,
 }
 
 impl Player {
@@ -225,7 +260,7 @@ fn spawn(
         prev: Vec2::ZERO,
         events: Events::default(),
         swooning: false,
-        jeroboam: false,
+        carried: Carried::Sabre,
     };
     let feet = player.feet();
     let size = SIZE.as_vec2();
@@ -383,11 +418,12 @@ pub(crate) fn animate(
                 .unwrap_or(look.animator.pose().face)
         };
         let pose = anim::Pose { face, ..pose };
-        // The Jeroboam is a champagne bottle, swung with both hands.
-        let pose = if p.jeroboam && pose.weapon.is_some() {
+        // Swings are posed for the sabre; the heavier weapons take both hands.
+        let (weapon, two) = p.carried.rig_weapon();
+        let pose = if pose.weapon.is_some() {
             anim::Pose {
-                weapon: Some(pixelfx::rig::Weapon::Bottle),
-                two: true,
+                weapon: Some(weapon),
+                two: pose.two || two,
                 ..pose
             }
         } else {
@@ -440,7 +476,7 @@ pub(crate) fn light_rigs(
     }
 }
 
-/// Switches between the sabre and the Jeroboam, between swings.
+/// Steps to the next weapon, between swings.
 fn switch_weapon(
     input: Res<TickInput>,
     weapons: Res<Weapons>,
@@ -453,16 +489,13 @@ fn switch_weapon(
         if f.combat.attacker.attack().is_some() || f.combat.helpless() {
             continue;
         }
-        p.jeroboam = !p.jeroboam;
-        f.weapon = if p.jeroboam {
-            weapons.jeroboam.clone()
-        } else {
-            weapons.sabre.clone()
+        p.carried = p.carried.next();
+        f.weapon = match p.carried {
+            Carried::Sabre => weapons.sabre.clone(),
+            Carried::Jeroboam => weapons.jeroboam.clone(),
+            Carried::Candelabrum => weapons.candelabrum.clone(),
         };
-        info!(
-            "now carrying the {}",
-            if p.jeroboam { "Jeroboam" } else { "sabre" }
-        );
+        info!("now carrying the {}", p.carried.name());
     }
 }
 

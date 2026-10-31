@@ -1,0 +1,75 @@
+// A tall candelabrum swung as a polearm: long sweeping arcs that hit everything in front,
+// and fire that keeps burning on the floor where a grounded swing lands.
+// Phase durations and ranges are ticks at 120 Hz. Ranges exclude their end.
+(
+    name: "candelabrum",
+    charge_ticks: 60,
+    combo: (
+        (
+            windup: 14, active: 12, recovery: 23, cancel_window: 4,
+            hitboxes: [(rect: (x: -4.0, y: -48.0, w: 68.0, h: 48.0), ticks: None)],
+            damage: 10.2, poise_damage: 8.8, hit_stop: 0.04,
+            knockback: (110.0, -80.0), launches: false,
+            weight: Light, armour: false, step: Some(22.5),
+            chain: Some((next: Combo2, window: (start: 1, end: 23))), air_hang: 0,
+        ),
+        (
+            windup: 17, active: 12, recovery: 26, cancel_window: 4,
+            hitboxes: [(rect: (x: -4.0, y: -48.0, w: 68.0, h: 48.0), ticks: None)],
+            damage: 11.9, poise_damage: 11.0, hit_stop: 0.04,
+            knockback: (130.0, -100.0), launches: false,
+            weight: Light, armour: false, step: Some(27.5),
+            chain: Some((next: Combo3, window: (start: 3, end: 26))), air_hang: 0,
+        ),
+        (
+            windup: 31, active: 14, recovery: 39, cancel_window: 4,
+            hitboxes: [(rect: (x: -4.0, y: -48.0, w: 68.0, h: 48.0), ticks: None)],
+            damage: 20.4, poise_damage: 28.6, hit_stop: 0.09,
+            knockback: (300.0, -300.0), launches: true,
+            weight: Heavy, armour: false, step: Some(35.0),
+            chain: None, air_hang: 0,
+        ),
+    ),
+    charged: (
+        windup: 39, active: 16, recovery: 52, cancel_window: 4,
+        hitboxes: [(rect: (x: -4.0, y: -48.0, w: 68.0, h: 48.0), ticks: None)],
+        damage: 34.0, poise_damage: 60.5, hit_stop: 0.16,
+        knockback: (350.0, -340.0), launches: true,
+        weight: Charged, armour: true, step: Some(20.0),
+        chain: None, air_hang: 0,
+    ),
+    rising: (
+        windup: 22, active: 14, recovery: 34, cancel_window: 4,
+        hitboxes: [(rect: (x: -4.0, y: -48.0, w: 68.0, h: 48.0), ticks: None)],
+        damage: 15.3, poise_damage: 22.0, hit_stop: 0.09,
+        knockback: (160.0, -370.0), launches: true,
+        weight: Heavy, armour: false, step: Some(12.5),
+        chain: None, air_hang: 0,
+    ),
+    air: (
+        (
+            windup: 14, active: 12, recovery: 23, cancel_window: 4,
+            hitboxes: [(rect: (x: -4.0, y: -48.0, w: 68.0, h: 48.0), ticks: None)],
+            damage: 10.2, poise_damage: 8.8, hit_stop: 0.04,
+            knockback: (90.0, -80.0), launches: false,
+            weight: Light, armour: false, step: Some(15.0),
+            chain: Some((next: Air2, window: (start: 1, end: 23))), air_hang: 18,
+        ),
+        (
+            windup: 22, active: 14, recovery: 31, cancel_window: 4,
+            hitboxes: [(rect: (x: -4.0, y: -48.0, w: 68.0, h: 48.0), ticks: None)],
+            damage: 17.0, poise_damage: 22.0, hit_stop: 0.09,
+            knockback: (230.0, -260.0), launches: true,
+            weight: Heavy, armour: false, step: Some(20.0),
+            chain: None, air_hang: 24,
+        ),
+    ),
+    pogo: (
+        windup: 17, active: 14, recovery: 31, cancel_window: 4,
+        hitboxes: [(rect: (x: -4.0, y: -48.0, w: 68.0, h: 48.0), ticks: None)],
+        damage: 13.6, poise_damage: 17.6, hit_stop: 0.09,
+        knockback: (100.0, -160.0), launches: true,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+)

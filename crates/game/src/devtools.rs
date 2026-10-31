@@ -2,7 +2,7 @@
 //!
 //! `PIXELVANIA_SCREENSHOT=path.png` saves a screenshot after the game has settled, then exits.
 //! `PIXELVANIA_HOLD=right,jump` holds those inputs from the start, for screenshots of motion;
-//! `attack`, `charge` and `toast` press those at set frames, and `jeroboam` switches to it.
+//! `attack`, `charge` and `toast` press those at set frames, and `jeroboam` or `candelabrum` switch to that weapon.
 //! `PIXELVANIA_RECORD=path` writes every tick's input to a file;
 //! `PIXELVANIA_REPLAY=path` plays such a file back instead of reading the controller.
 //! `PIXELVANIA_FX=sword-slash` spawns that effect in front of the player once it has landed;
@@ -159,6 +159,7 @@ fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut frame: L
             }
             "toast" => input.toast_pressed |= *frame == 80,
             "jeroboam" => input.switch_weapon_pressed = *frame == 40,
+            "candelabrum" => input.switch_weapon_pressed = *frame == 40 || *frame == 50,
             _ => {}
         }
     }
