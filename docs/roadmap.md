@@ -30,7 +30,7 @@ and see the README for the controls and the debug keys.
    slash trails, sparks, a white flash on the body hit, and wall splats.
 6. **Three enemies.** Done in a first form.
    Light, medium and heavy guests with their own rigs, weapons and frame data,
-   who walk up and swing when in reach. Their behaviour is the simplest that makes a fight.
+   who walk up and swing when in reach, each with its own habit of spacing.
 7. **The Jeroboam.** Done: a champagne bottle as long as the player is tall, a new rig weapon.
 8. **Combat tools.** Done: F2 and F3 pause and step, F5 shows boxes and bars,
    7, 8 and 9 spawn guests, and frame data reloads with the `dev` feature.
@@ -41,7 +41,8 @@ and see the README for the controls and the debug keys.
 The player is the stock mannequin in a burgundy suit;
 the costume silhouette the art direction asks for, a coat or hair, needs new rig parts.
 Dust from running and jumping is faint in dark rooms.
-Guests do not jump, retreat, block or circle; they approach and swing.
+Guests do not jump, block or circle. They approach and swing; the light guest then skips back,
+and the medium guest keeps its spear's distance.
 There is no sound yet, so the sub-bass thump and the music dip on heavy hits are missing.
 
 ## Further, if there is time

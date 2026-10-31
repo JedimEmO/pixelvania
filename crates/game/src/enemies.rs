@@ -48,6 +48,13 @@ pub struct Guest {
     tuning: MoveTuning,
     /// Seconds until it may swing again.
     rest: f32,
+    /// Seconds left backing away after a swing.
+    retreat: f32,
+    /// The way it wants to face, kept while it steps backwards.
+    face: i32,
+    was_swinging: bool,
+    /// Varies each guest's timing, so a group does not swing in unison.
+    rng: u32,
 }
 
 /// How a class fights: reach in pixels, rest between swings in seconds, walking speed,
@@ -169,6 +176,10 @@ pub fn spawn_guest(
             ctrl,
             tuning,
             rest: 1.0,
+            retreat: 0.0,
+            face: -1,
+            was_swinging: false,
+            rng: (x as u32).wrapping_mul(2_654_435_761) ^ (y as u32).wrapping_mul(40_503),
         },
         Fighting::new(
             Combatant::new(t.health, t.poise, weight(class)),
@@ -202,11 +213,20 @@ fn respawn_on_reset(
 }
 
 /// Decides what a guest presses this tick.
+///
+/// Every class walks up and swings when in reach and rested. The light guest then skips back
+/// out of reach; the medium guest keeps its spear's distance and backs off when crowded;
+/// the heavy guest only ever comes forward.
 fn think(g: &mut Guest, f: &Fighting, player: Option<(f32, f32)>, dt: f32) -> Controls {
     g.rest = (g.rest - dt).max(0.0);
+    let swinging = f.combat.attacker.attack().is_some();
+    if g.was_swinging && !swinging && g.class == Class::Light {
+        g.retreat = 0.35;
+    }
+    g.was_swinging = swinging;
     let mut c = Controls::default();
     let Some((px, py)) = player else { return c };
-    if f.combat.helpless() || f.combat.attacker.attack().is_some() {
+    if f.combat.helpless() || swinging {
         return c;
     }
     let t = temper(g.class);
@@ -218,12 +238,24 @@ fn think(g: &mut Guest, f: &Fighting, player: Option<(f32, f32)>, dt: f32) -> Co
         return c;
     }
     let dir = dx.signum();
-    // Face the player before deciding anything, even when standing still.
-    g.ctrl.facing = dir as i32;
+    // Face the player before deciding anything, even when standing still or stepping back.
+    g.face = dir as i32;
+    g.ctrl.facing = g.face;
     let gap = dx.abs() - 6.0;
-    if gap <= t.reach && g.rest <= 0.0 && (py - y).abs() < 24.0 {
+    if g.retreat > 0.0 {
+        g.retreat -= dt;
+        c.x = -dir;
+        return c;
+    }
+    let crowded = g.class == Class::Medium && gap < t.reach * 0.45;
+    if crowded {
+        c.x = -dir;
+    } else if gap <= t.reach && g.rest <= 0.0 && (py - y).abs() < 24.0 {
         c.attack_pressed = true;
-        g.rest = t.rest;
+        // The next rest is the class's own, give or take a fifth.
+        g.rng = g.rng.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+        let jitter = (g.rng >> 8) as f32 / (1u32 << 24) as f32;
+        g.rest = t.rest * (0.8 + 0.4 * jitter);
     } else if gap > t.reach * 0.7 {
         c.x = dir;
     }
@@ -255,6 +287,10 @@ fn tick(
             f.combat
                 .tick_controller(combat_id(e), &mut g.ctrl, room, &g.tuning, &w.0, input);
         log.0.extend(events);
+        // Walking backwards turns the controller round; a guest backing off still faces the player.
+        if input.x != 0.0 && f.combat.attacker.attack().is_none() && !f.combat.helpless() {
+            g.ctrl.facing = g.face;
+        }
     }
 }
 
