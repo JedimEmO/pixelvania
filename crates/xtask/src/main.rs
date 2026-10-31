@@ -365,6 +365,7 @@ fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("golden") if args.len() == 1 => golden(),
+        Some("sfx") if args.len() == 1 => assetgen::sfx::render_all(&root().join("assets/sfx"), &root().join("target/sfx")),
         Some("tiles") if args.len() == 1 => tiles::render(),
         Some("rig") if args.len() <= 2 => rig(args.get(1).map_or("stock", String::as_str)),
         Some("fx") => {
@@ -384,7 +385,7 @@ fn main() -> Result<()> {
             fx(id, seed, &out)
         }
         _ => Err(
-            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player] | tiles | golden"
+            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player] | tiles | sfx | golden"
                 .into(),
         ),
     }

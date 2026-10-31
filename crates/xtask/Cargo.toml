@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 world.workspace = true
-assetgen.workspace = true
+assetgen = { workspace = true, features = ["sfx"] }
 pixelfx = { path = "../pixelfx" }
 anim = { path = "../anim" }
 image = { workspace = true, features = ["gif"] }

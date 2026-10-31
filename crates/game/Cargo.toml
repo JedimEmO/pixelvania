@@ -14,6 +14,7 @@ path = "src/main.rs"
 dev = ["bevy/file_watcher", "bevy/dynamic_linking", "dep:bevy_egui"]
 
 [dependencies]
+kira.workspace = true
 assetgen.workspace = true
 bevy.workspace = true
 bevy_enhanced_input.workspace = true
