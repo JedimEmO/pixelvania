@@ -382,6 +382,11 @@ fn main() -> Result<()> {
         Some("golden") if args.len() == 1 => golden(),
         Some("sfx") if args.len() == 1 => assetgen::sfx::render_all(&root().join("assets/sfx"), &root().join("target/sfx")),
         Some("tiles") if args.len() == 1 => tiles::render(),
+        Some("backgrounds") if args.len() == 1 => {
+            #[path = "backgrounds.rs"]
+            mod backgrounds;
+            backgrounds::render()
+        }
         Some("rig") if args.len() <= 2 => rig(args.get(1).map_or("stock", String::as_str)),
         Some("fx") => {
             let id=args.get(1).and_then(|s|EffectId::parse(s)).ok_or("fx requires an id: impacts/hit-spark, impacts/heavy-landing, melee/sword-slash, melee/hammer-smash, spawn/poof, dust")?;

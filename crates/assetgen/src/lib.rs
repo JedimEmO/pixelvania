@@ -3,6 +3,7 @@
 //! [`rasterize`] returns unlit sRGB pixels. Empty cells are transparent; every pixel
 //! of a solid cell is opaque, so mortar and grain never produce false rim lights.
 
+pub mod backgrounds;
 #[cfg(feature = "sfx")]
 pub mod sfx;
 

@@ -1,7 +1,8 @@
 //! The low-resolution renderer.
 //!
-//! The world renders at 640 x 360 into three buffers. The colour buffer holds what things look
+//! The world renders at 640 x 360. The colour buffer holds what things look
 //! like, the light buffer how lit each pixel is, and the glow buffer additive light on top.
+//! Separate background and foreground buffers hold scenery with its own distant lighting.
 //! A composite pass combines them and scales the result to the window by a whole number.
 //!
 //! Each buffer is one pixel larger than the screen on every side. The cameras sit on whole
@@ -39,6 +40,8 @@ const BUFFER_H: u32 = HEIGHT + 2 * MARGIN;
 pub const LIGHT_LAYER: usize = 1;
 pub const GLOW_LAYER: usize = 2;
 const SCREEN_LAYER: usize = 3;
+pub const BACKGROUND_LAYER: usize = 4;
+pub const FOREGROUND_LAYER: usize = 5;
 
 /// The light buffer stores light divided by this, so a pixel can be lit to twice full brightness.
 const LIGHT_RANGE: f32 = 2.0;
@@ -61,7 +64,10 @@ impl Plugin for PixelRenderPlugin {
                 .chain()
                 .before(TransformSystems::Propagate),
         )
-        .add_systems(PostUpdate, (place_cameras, update_composite));
+        .add_systems(
+            PostUpdate,
+            (place_cameras, update_composite).before(TransformSystems::Propagate),
+        );
     }
 }
 
@@ -116,7 +122,7 @@ pub struct ScreenCamera;
 #[derive(Resource)]
 struct Composite(Handle<CompositeMaterial>);
 
-/// All three buffers are sRGB. Bevy gives a plain `Rgba8Unorm` camera target an sRGB view as
+/// All buffers are sRGB. Bevy gives a plain `Rgba8Unorm` camera target an sRGB view as
 /// well, which WebGL2 cannot do; and sRGB storage keeps more precision in dark light values.
 fn target_image() -> Image {
     Image::new_target_texture(BUFFER_W, BUFFER_H, TextureFormat::Rgba8UnormSrgb, None)
@@ -132,9 +138,13 @@ fn setup(
     let color = images.add(target_image());
     let light = images.add(target_image());
     let glow = images.add(target_image());
+    let background = images.add(target_image());
+    let foreground = images.add(target_image());
 
     let ambient = lighting.ambient * (1.0 / LIGHT_RANGE);
     let buffers = [
+        (background.clone(), BACKGROUND_LAYER, Color::NONE, -5),
+        (foreground.clone(), FOREGROUND_LAYER, Color::NONE, -4),
         (color.clone(), 0, Color::NONE, -3),
         (
             light.clone(),
@@ -167,6 +177,8 @@ fn setup(
         color,
         light,
         glow,
+        background,
+        foreground,
     });
     commands.insert_resource(Composite(material.clone()));
     commands.spawn((
@@ -252,6 +264,10 @@ struct CompositeMaterial {
     light: Handle<Image>,
     #[texture(3)]
     glow: Handle<Image>,
+    #[texture(4)]
+    background: Handle<Image>,
+    #[texture(5)]
+    foreground: Handle<Image>,
 }
 
 impl Material2d for CompositeMaterial {

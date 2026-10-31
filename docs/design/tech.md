@@ -46,12 +46,12 @@ crates/
   pixelfx/    the pixelfx port: frames, painter, simulation, rig, effects; no Bevy dependency
   world/      the room format and gameplay simulation; no Bevy dependency
   anim/       character animation: from how a body moves to the rig pose it holds; no Bevy dependency
-  assetgen/   seeded tile generators and room auto-tiling; no Bevy dependency
+  assetgen/   seeded tiles, parallax silhouettes and room auto-tiling; no Bevy dependency
   xtask/      the command line for everything that is not the game
 ```
 
 Game code lives in `game` as Bevy plugins, one per concern:
-render, input, player, camera, rooms, combat, enemies, mood, audio, effects, save and ui.
+render, backdrop, input, player, camera, rooms, combat, enemies, mood, audio, effects, save and ui.
 We split a plugin into its own crate only when compile times or reuse ask for it.
 
 `pixelfx`, `world`, `anim` and `assetgen` have no Bevy dependency on purpose.
@@ -66,7 +66,7 @@ and a Bevy upgrade does not touch them.
 | `cargo xtask rig <character>` | Renders every animation of a character to contact sheets |
 | `cargo xtask map` | Draws the whole world, and runs the reachability checker |
 | `cargo xtask tiles` | Renders material sheets and all rooms to `target/tiles/`, at 1x and 2x |
-| `cargo xtask backgrounds` | Planned: rebuilds generated backgrounds |
+| `cargo xtask backgrounds` | Renders ballroom strips and three parallax offsets to `target/backgrounds/`, at 1x and 2x |
 | `cargo xtask music <track>`, `sfx` | Renders audio, with loudness and spectrum reports |
 | `cargo xtask golden` | Renders reference frames from the JavaScript pixelfx |
 
@@ -99,13 +99,32 @@ or whether we buffer its action events ourselves, is the first thing to check in
 ## Rendering
 
 The world renders at 640 x 360, plus one pixel on each side for the sub-pixel camera,
-into three render targets: colour, light and glow.
+into colour, light and glow targets, plus separate background and foreground targets.
 [Art direction](art-direction.md) describes what each one holds.
 
 A composite pass combines them:
 colour multiplied by banded light, rim lighting on solid edges, glow added on top,
 the mood's colour grade from a 3D lookup table, and a fine dither.
 An upscale pass then scales the result to the window by a whole number and applies the sub-pixel offset.
+
+Rooms opt into the ballroom with `background = ballroom` under `[room]`.
+The backdrop plugin generates four 960 x 400 RGBA strips on load and reload,
+using a fixed seed and a configurable dominant light in `assetgen::backgrounds::ballroom`.
+This shares the tile painter's runtime exception to the offline asset plan;
+room edits need no bake step, and the preview uses the same generator.
+
+Windows, the gallery and nearer pillars move at 0.12, 0.32 and 0.62 times camera travel.
+A sparse foreground curtain and palm move at 1.18 times camera travel.
+Three copies of each strip repeat horizontally, with whole-pixel placement
+and bounded vertical movement inside the extra rows.
+
+The scenery's small sRGB palettes include their dim distant lighting.
+The composite reads the background only where the colour buffer is empty,
+then blends the foreground over the lit world and glow.
+Neither scenery target contributes to the colour buffer's alpha solid mask,
+so silhouettes receive neither room lighting nor automatic rims.
+Rooms without scenery retain the original lit background colour.
+The cost is two extra 642 x 362 render targets and camera passes.
 
 Both passes are plain fragment shaders with no compute,
 because the web build runs on WebGL2.

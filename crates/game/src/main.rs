@@ -1,6 +1,7 @@
 //! The game binary: app setup and plugin wiring.
 
 pub mod audio;
+mod backdrop;
 mod camera;
 mod combat;
 mod devtools;
@@ -39,6 +40,7 @@ fn main() -> AppExit {
         .add_plugins((
             render::PixelRenderPlugin,
             audio::AudioPlugin,
+            backdrop::BackdropPlugin,
             tuning::TuningPlugin,
             input::InputPlugin,
             rooms::RoomsPlugin,
