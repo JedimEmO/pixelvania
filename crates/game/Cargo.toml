@@ -11,7 +11,7 @@ path = "src/main.rs"
 
 [features]
 # Development conveniences: hot reloading and faster incremental builds. Never shipped.
-dev = ["bevy/file_watcher", "bevy/dynamic_linking"]
+dev = ["bevy/file_watcher", "bevy/dynamic_linking", "dep:bevy_egui"]
 
 [dependencies]
 bevy.workspace = true
@@ -19,6 +19,7 @@ bevy_enhanced_input.workspace = true
 serde.workspace = true
 ron.workspace = true
 world.workspace = true
+bevy_egui = { workspace = true, optional = true }
 
 [lints]
 workspace = true

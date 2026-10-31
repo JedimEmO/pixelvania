@@ -3,9 +3,13 @@
 //! Input is read once per rendered frame, but gameplay runs at a fixed 120 ticks per second,
 //! so a frame may run zero, one or several ticks. A press is recorded in [`TickInput`] when it
 //! happens and stays there until a tick consumes it, so a tap is never lost between ticks.
+//!
+//! At the start of each tick, [`TickInput`] becomes the tick's [`TickControls`].
+//! Recording and replay hook in between, in [`TickSet::Input`].
 
 use bevy::prelude::*;
 use bevy_enhanced_input::prelude::*;
+use world::Controls;
 
 pub struct InputPlugin;
 
@@ -14,9 +18,21 @@ impl Plugin for InputPlugin {
         app.add_plugins(EnhancedInputPlugin)
             .add_input_context::<Gameplay>()
             .init_resource::<TickInput>()
+            .init_resource::<TickControls>()
+            .configure_sets(FixedUpdate, (TickSet::Input, TickSet::Simulate).chain())
             .add_systems(Startup, spawn_controls)
-            .add_systems(PreUpdate, collect.after(EnhancedInputSystems::Update));
+            .add_systems(PreUpdate, collect.after(EnhancedInputSystems::Update))
+            .add_systems(FixedUpdate, take_controls.in_set(TickSet::Input));
     }
+}
+
+/// The order of work inside a fixed tick.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TickSet {
+    /// [`TickControls`] is filled in, recorded or replaced by a replay.
+    Input,
+    /// Gameplay reads [`TickControls`].
+    Simulate,
 }
 
 /// The input context for moving and fighting.
@@ -31,7 +47,16 @@ pub struct Move;
 #[action_output(bool)]
 pub struct Jump;
 
-/// Input as the gameplay tick sees it.
+#[derive(InputAction)]
+#[action_output(bool)]
+pub struct Lunge;
+
+/// Puts the player back at the room's spawn point. For the feel lab.
+#[derive(InputAction)]
+#[action_output(bool)]
+pub struct Reset;
+
+/// Input gathered since the last tick.
 #[derive(Resource, Default, Debug)]
 pub struct TickInput {
     /// Stick or d-pad, x right, y up, each -1..1.
@@ -39,7 +64,14 @@ pub struct TickInput {
     pub jump_held: bool,
     /// Jump was pressed since the last tick consumed it.
     pub jump_pressed: bool,
+    pub lunge_pressed: bool,
+    /// Reset was pressed this frame. Read in `Update`, not by the tick.
+    pub reset_pressed: bool,
 }
+
+/// The input of the tick being simulated.
+#[derive(Resource, Default, Debug, Clone, Copy)]
+pub struct TickControls(pub Controls);
 
 fn spawn_controls(mut commands: Commands) {
     commands.spawn_scene(bsn! {
@@ -63,6 +95,20 @@ fn spawn_controls(mut commands: Commands) {
                 --
                 Binding(KeyCode::Space)
             ]
+            --
+            Action::<Lunge>::new()
+            Bindings [
+                Binding(GamepadButton::East)
+                --
+                Binding(KeyCode::ShiftLeft)
+            ]
+            --
+            Action::<Reset>::new()
+            Bindings [
+                Binding(GamepadButton::Select)
+                --
+                Binding(KeyCode::KeyR)
+            ]
         ]
     });
 }
@@ -71,11 +117,24 @@ pub fn collect(
     mut input: ResMut<TickInput>,
     movement: Single<&Action<Move>>,
     jump: Single<(&Action<Jump>, &ActionEvents)>,
+    lunge: Single<&ActionEvents, With<Action<Lunge>>>,
+    reset: Single<&ActionEvents, With<Action<Reset>>>,
 ) {
     input.move_axis = ***movement;
     let (held, events) = *jump;
     input.jump_held = **held;
-    if events.contains(ActionEvents::START) {
-        input.jump_pressed = true;
-    }
+    input.jump_pressed |= events.contains(ActionEvents::START);
+    input.lunge_pressed |= lunge.contains(ActionEvents::START);
+    input.reset_pressed = reset.contains(ActionEvents::START);
+}
+
+/// Hands the buffered input to this tick, consuming the presses.
+pub fn take_controls(mut input: ResMut<TickInput>, mut controls: ResMut<TickControls>) {
+    controls.0 = Controls {
+        x: input.move_axis.x,
+        y: input.move_axis.y,
+        jump_held: input.jump_held,
+        jump_pressed: std::mem::take(&mut input.jump_pressed),
+        lunge_pressed: std::mem::take(&mut input.lunge_pressed),
+    };
 }

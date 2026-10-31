@@ -24,7 +24,7 @@ Keyboard is supported and remappable, but every decision is made on a controller
 | Left trigger | Indulge: tap to heal, hold to start a High |
 | Right bumper | Plunge |
 | Left bumper | Next weapon |
-| Select | Map |
+| Select | Map; in the feel lab, back to the spawn point |
 
 The stick reads as digital for walking, with a dead zone and a separate, larger threshold for crouch and look-down,
 so a slightly tilted stick never makes you crouch by accident.
@@ -58,6 +58,14 @@ The techniques we start with:
 | Corner correction | Nudge round a ledge corner instead of bonking | Up to 4 px |
 | Ledge forgiveness | A dash that clips a ledge top pops you onto it | Up to 3 px |
 | Landing recovery | A hard landing squashes the pose and kicks dust, without slowing control | 2 frames of pose |
+
+The first three abilities are movement too, and the feel lab tunes them alongside the rest.
+
+| Ability | What it does | Starting value |
+|---|---|---|
+| Lunge | A horizontal dash on the ground or in the air, once per jump; a jump out of it keeps its speed | 400 px/s for 0.14 s |
+| Swoon | A second jump in the air, with a slower, floatier apex than the first | 260 px/s, apex gravity 0.3 x |
+| Cling | Pressing into a wall while falling slides down it; jumping pushes off | Slide at 70 px/s |
 
 Collision is our own kinematic controller against a grid of tiles.
 We do not use a physics engine for the player or the enemies.
@@ -112,6 +120,21 @@ A feel lab room holds the standard tests: a long run, gaps of known width, a wal
 a ceiling corner, a staircase of ledges.
 Input recordings from playtests can be replayed against new tuning to compare.
 
-Headless tests pin down the numbers we rely on for level design,
-such as "a full jump clears 3 tiles up and 6 across",
+Press F1 in a `cargo dev` build for the panel.
+`PIXELVANIA_RECORD=path` records every tick's input to a file, and `PIXELVANIA_REPLAY=path` plays it back.
+A replay is exact as long as the room and the tuning match the recording.
+
+Headless tests in `crates/world/tests/movement.rs` pin down the numbers we rely on for level design,
 so a tuning change that breaks the level metrics fails the build.
+With the starting values:
+
+| Metric | Value | Pinned to |
+|---|---|---|
+| Full jump height | 3.3 tiles | 3 to 4 tiles |
+| Tapped jump height | 0.75 tiles | 0.5 to 1.25 tiles |
+| Widest gap, running jump | 7 tiles | 6 or 7 |
+| Widest gap, running jump and Lunge | 10 tiles | 9 to 11 |
+| Ground Lunge | 3.7 tiles | 3 to 4 tiles |
+
+The tests also cover coyote time, the jump buffer, corner correction, the ledge pop,
+fast fall, the single Swoon and climbing a shaft with wall jumps.

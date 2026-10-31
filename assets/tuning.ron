@@ -1,5 +1,7 @@
-// Tuning values. Saved changes apply while the game runs, with the `dev` feature.
-// Speeds are pixels per second; accelerations pixels per second squared.
+// Tuning values. Saved changes apply while the game runs, with the `dev` feature,
+// and F1 opens a panel that edits them live. The meaning of each value is documented in the code:
+// `world::MoveTuning`, and `CameraTuning` and `Juice` in crates/game/src/tuning.rs.
+// Speeds are pixels per second, accelerations pixels per second squared, times seconds.
 (
     movement: (
         run_speed: 150.0,
@@ -8,14 +10,49 @@
         turn_accel: 3200.0,
         air_accel: 1400.0,
         air_decel: 900.0,
+        air_overspeed_decel: 300.0,
         gravity: 950.0,
         max_fall: 340.0,
         jump_speed: 320.0,
         jump_cut: 0.4,
+        apex_threshold: 40.0,
+        apex_gravity: 0.5,
+        fast_fall_gravity: 1.6,
+        fast_fall_max: 480.0,
+        coyote_time: 0.1,
+        jump_buffer: 0.12,
+        corner_correction: 4,
+        ledge_pop: 3,
         walk_threshold: 0.3,
+        down_threshold: 0.6,
+        lunge_speed: 400.0,
+        lunge_time: 0.14,
+        lunge_cooldown: 0.25,
+        swoon_speed: 260.0,
+        swoon_apex_gravity: 0.3,
+        swoon_apex_threshold: 60.0,
+        wall_slide_max: 70.0,
+        wall_jump_x: 190.0,
+        wall_jump_y: 300.0,
+        wall_jump_lock: 0.12,
+        wall_coyote: 0.08,
+        hard_landing_speed: 300.0,
     ),
     camera: (
-        follow_rate: 6.0,
+        follow_rate_x: 6.0,
+        follow_rate_y: 4.0,
         lead: 40.0,
+        lead_speed: 90.0,
+        fall_release: 40.0,
+        rise_release: 100.0,
+        look_up: 24.0,
+    ),
+    juice: (
+        squash_recovery: 14.0,
+        jump_stretch: (0.75, 1.3),
+        land_squash: (1.4, 0.65),
+        lunge_stretch: (1.45, 0.75),
+        afterimage_life: 0.2,
+        rumble: 1.0,
     ),
 )

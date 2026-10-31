@@ -1,13 +1,19 @@
-//! The player: a body that runs and jumps on the fixed tick.
+//! The player: the movement controller on the fixed tick, and how it looks and feels.
 //!
-//! This is the minimum the foundations need. Coyote time, jump buffering, apex hang and the
-//! rest of the movement techniques in `docs/design/game-feel.md` arrive with the feel lab.
+//! The movement itself is [`world::Controller`]. This plugin feeds it each tick's input,
+//! draws the body between ticks, and turns what happened into squash and stretch,
+//! afterimages and rumble. Everything here is placeholder art until the rig arrives.
 
+use std::time::Duration;
+
+use bevy::camera::visibility::RenderLayers;
+use bevy::input::gamepad::{GamepadRumbleIntensity, GamepadRumbleRequest};
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
-use world::Body;
+use world::{Abilities, Controller, Events};
 
-use crate::input::TickInput;
+use crate::input::{TickControls, TickInput, TickSet};
+use crate::render::{GLOW_LAYER, Light2d};
 use crate::rooms::ActiveRoom;
 use crate::tuning::Tuning;
 
@@ -15,33 +21,70 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, tick)
-            .add_systems(Update, (spawn, place_sprite).chain());
+        app.add_systems(FixedUpdate, tick.in_set(TickSet::Simulate))
+            .add_systems(
+                Update,
+                (
+                    reset,
+                    spawn,
+                    place,
+                    react,
+                    recover_shape,
+                    leave_afterimages,
+                    fade_afterimages,
+                )
+                    .chain(),
+            );
     }
 }
 
-const SIZE: IVec2 = IVec2::new(12, 34);
+/// Width and height of the body, in pixels.
+pub const SIZE: IVec2 = IVec2::new(12, 34);
+
+const BODY_COLOR: Color = Color::srgb(0.55, 0.53, 0.60);
+const FRONT_COLOR: Color = Color::srgb(0.80, 0.78, 0.84);
 
 #[derive(Component)]
 pub struct Player {
-    pub body: Body,
-    pub vel: Vec2,
-    /// Exact position at the start of the last tick, for interpolation.
+    pub ctrl: Controller,
+    /// Exact feet position at the start of the last tick, for interpolation. Pixels, y down.
     prev: Vec2,
-    jump_cut_done: bool,
+    /// What happened in the ticks since the last frame.
+    events: Events,
 }
 
 impl Player {
-    pub fn exact_pos(&self) -> Vec2 {
-        let (x, y) = self.body.exact_pos();
-        Vec2::new(x, y)
+    /// Feet position, exact, in pixels with y down.
+    fn feet(&self) -> Vec2 {
+        let (x, y) = self.ctrl.body.exact_pos();
+        Vec2::new(x + SIZE.x as f32 / 2.0, y + SIZE.y as f32)
+    }
+
+    /// Feet position in world space (y up), interpolated between ticks.
+    pub fn render_feet(&self, overstep: f32) -> Vec2 {
+        let p = self.prev.lerp(self.feet(), overstep);
+        Vec2::new(p.x, -p.y)
     }
 
     /// Centre of the body in world space (y up), interpolated between ticks.
     pub fn render_centre(&self, overstep: f32) -> Vec2 {
-        let p = self.prev.lerp(self.exact_pos(), overstep) + SIZE.as_vec2() / 2.0;
-        Vec2::new(p.x, -p.y)
+        self.render_feet(overstep) + Vec2::new(0.0, SIZE.y as f32 / 2.0)
     }
+}
+
+/// The drawn body, a child of the player, scaled for squash and stretch about the feet.
+#[derive(Component)]
+struct Shape {
+    scale: Vec2,
+}
+
+/// The lighter strip on the side the player faces.
+#[derive(Component)]
+pub(crate) struct Front;
+
+#[derive(Component)]
+struct Afterimage {
+    age: f32,
 }
 
 /// Spawns the player at the room's `spawn` entity once a room has loaded.
@@ -55,90 +98,207 @@ fn spawn(mut commands: Commands, active: Res<ActiveRoom>, existing: Query<(), Wi
         .next()
         .map(|s| s.pixel_pos())
         .unwrap_or((32.0, 32.0));
-    // The spawn point is where the feet go.
-    let body = Body::new(x as i32 - SIZE.x / 2, y as i32 - SIZE.y, SIZE.x, SIZE.y);
-    let pos = Vec2::new(body.x as f32, body.y as f32);
+    let ctrl = Controller::standing_at(x, y, SIZE.x, SIZE.y, Abilities::ALL);
+    let player = Player {
+        ctrl,
+        prev: Vec2::ZERO,
+        events: Events::default(),
+    };
+    let feet = player.feet();
+    let size = SIZE.as_vec2();
     commands.spawn((
         Name::new("player"),
         Player {
-            body,
-            vel: Vec2::ZERO,
-            prev: pos,
-            jump_cut_done: false,
+            prev: feet,
+            ..player
         },
-        Sprite::from_color(Color::srgb_u8(0x8c, 0x88, 0x9a), SIZE.as_vec2()),
-        Anchor::TOP_LEFT,
-        Transform::from_xyz(pos.x, -pos.y, 1.0),
+        Transform::from_xyz(feet.x, -feet.y, 1.0),
+        Visibility::default(),
+        children![
+            (
+                Shape { scale: Vec2::ONE },
+                Sprite::from_color(BODY_COLOR, size),
+                Anchor::BOTTOM_CENTER,
+                Transform::default(),
+                children![(
+                    Front,
+                    Sprite::from_color(FRONT_COLOR, Vec2::new(3.0, size.y - 8.0)),
+                    Anchor::BOTTOM_LEFT,
+                    Transform::from_xyz(size.x / 2.0 - 3.0, 4.0, 0.1),
+                )],
+            ),
+            (
+                // A faint light of the player's own, so they never vanish in the dark.
+                Light2d {
+                    color: LinearRgba::rgb(1.0, 0.85, 0.75),
+                    radius: 48.0,
+                    strength: 0.35,
+                    glow: 0.0,
+                },
+                Transform::from_xyz(0.0, size.y * 0.6, 0.0),
+            ),
+        ],
     ));
+}
+
+fn reset(mut commands: Commands, input: Res<TickInput>, players: Query<Entity, With<Player>>) {
+    if input.reset_pressed {
+        for p in &players {
+            commands.entity(p).despawn();
+        }
+    }
 }
 
 fn tick(
     time: Res<Time>,
-    mut input: ResMut<TickInput>,
+    controls: Res<TickControls>,
     tuning: Res<Tuning>,
     active: Res<ActiveRoom>,
     mut players: Query<&mut Player>,
 ) {
     let Some(room) = &active.room else { return };
     let dt = time.delta_secs();
-    let m = &tuning.movement;
-    let jump_pressed = std::mem::take(&mut input.jump_pressed);
-
     for mut p in &mut players {
-        p.prev = p.exact_pos();
-        let grounded = p.body.on_ground(room);
-
-        // Walking reads the stick as digital: past the threshold is full speed.
-        let dir = if input.move_axis.x.abs() > m.walk_threshold {
-            input.move_axis.x.signum()
-        } else {
-            0.0
-        };
-        let target = dir * m.run_speed;
-        let accel = match (grounded, dir != 0.0) {
-            (true, true) if p.vel.x * dir < 0.0 => m.turn_accel,
-            (true, true) => m.run_accel,
-            (true, false) => m.run_decel,
-            (false, true) => m.air_accel,
-            (false, false) => m.air_decel,
-        };
-        p.vel.x = move_towards(p.vel.x, target, accel * dt);
-
-        if grounded && jump_pressed {
-            p.vel.y = -m.jump_speed;
-            p.jump_cut_done = false;
-        }
-        if p.vel.y < 0.0 && !input.jump_held && !p.jump_cut_done {
-            p.vel.y *= m.jump_cut;
-            p.jump_cut_done = true;
-        }
-        p.vel.y = (p.vel.y + m.gravity * dt).min(m.max_fall);
-
-        let vx = p.vel.x * dt;
-        let vy = p.vel.y * dt;
-        if p.body.move_x(room, vx) {
-            p.vel.x = 0.0;
-        }
-        if p.body.move_y(room, vy) {
-            p.vel.y = 0.0;
-        }
+        p.prev = p.feet();
+        let ev = p.ctrl.tick(room, &tuning.movement, controls.0, dt);
+        p.events.merge(ev);
     }
 }
 
-fn move_towards(from: f32, to: f32, step: f32) -> f32 {
-    if (to - from).abs() <= step {
-        to
-    } else {
-        from + (to - from).signum() * step
-    }
-}
-
-/// Puts the sprite at the interpolated position, on whole pixels.
-fn place_sprite(fixed: Res<Time<Fixed>>, mut players: Query<(&Player, &mut Transform)>) {
+/// Puts the player at the interpolated position, on whole pixels, and faces the body.
+pub(crate) fn place(
+    fixed: Res<Time<Fixed>>,
+    mut players: Query<(&Player, &mut Transform)>,
+    mut fronts: Query<&mut Transform, (With<Front>, Without<Player>)>,
+) {
     let t = fixed.overstep_fraction();
+    // There is one player; the front strip follows whichever way it faces.
     for (p, mut transform) in &mut players {
-        let pos = p.prev.lerp(p.exact_pos(), t).round();
+        let pos = p.render_feet(t).round();
         transform.translation.x = pos.x;
-        transform.translation.y = -pos.y;
+        transform.translation.y = pos.y;
+        let half = SIZE.x as f32 / 2.0;
+        for mut front in &mut fronts {
+            front.translation.x = if p.ctrl.facing > 0 { half - 3.0 } else { -half };
+        }
+    }
+}
+
+/// Turns the ticks' events into squash, stretch and rumble.
+fn react(
+    tuning: Res<Tuning>,
+    mut players: Query<(&mut Player, &Children)>,
+    mut shapes: Query<&mut Shape>,
+    gamepads: Query<Entity, With<Gamepad>>,
+    mut rumble: MessageWriter<GamepadRumbleRequest>,
+) {
+    let j = &tuning.juice;
+    let m = &tuning.movement;
+    for (mut p, children) in &mut players {
+        let ev = std::mem::take(&mut p.events);
+        let mut set_shape = |s: (f32, f32)| {
+            for &c in children {
+                if let Ok(mut shape) = shapes.get_mut(c) {
+                    shape.scale = Vec2::new(s.0, s.1);
+                }
+            }
+        };
+        let mut pulse = |strong: f32, weak: f32, ms: u64| {
+            if j.rumble <= 0.0 {
+                return;
+            }
+            for gamepad in &gamepads {
+                rumble.write(GamepadRumbleRequest::Add {
+                    gamepad,
+                    duration: Duration::from_millis(ms),
+                    intensity: GamepadRumbleIntensity {
+                        strong_motor: (strong * j.rumble).min(1.0),
+                        weak_motor: (weak * j.rumble).min(1.0),
+                    },
+                });
+            }
+        };
+        if let Some(speed) = ev.landed {
+            // Scale the squash by how hard the landing was.
+            let k = ((speed - 80.0) / (m.hard_landing_speed - 80.0)).clamp(0.0, 1.0);
+            if k > 0.0 {
+                set_shape((
+                    1.0 + (j.land_squash.0 - 1.0) * k,
+                    1.0 + (j.land_squash.1 - 1.0) * k,
+                ));
+            }
+            if speed >= m.hard_landing_speed {
+                pulse(0.45, 0.2, 110);
+            }
+        }
+        if ev.jumped || ev.wall_jumped.is_some() {
+            set_shape(j.jump_stretch);
+        }
+        if ev.swooned {
+            // The Swoon floats: a softer stretch.
+            set_shape((0.85, 1.15));
+        }
+        if ev.wall_jumped.is_some() {
+            pulse(0.0, 0.25, 50);
+        }
+        if ev.lunged {
+            set_shape(j.lunge_stretch);
+            pulse(0.15, 0.35, 70);
+        }
+    }
+}
+
+fn recover_shape(
+    time: Res<Time>,
+    tuning: Res<Tuning>,
+    mut shapes: Query<(&mut Shape, &mut Transform)>,
+) {
+    let k = (-tuning.juice.squash_recovery * time.delta_secs()).exp();
+    for (mut shape, mut t) in &mut shapes {
+        shape.scale = Vec2::ONE + (shape.scale - Vec2::ONE) * k;
+        t.scale = shape.scale.extend(1.0);
+    }
+}
+
+/// While lunging, leaves fading copies of the body in the glow buffer.
+fn leave_afterimages(
+    mut commands: Commands,
+    time: Res<Time>,
+    players: Query<(&Player, &Transform)>,
+    mut since: Local<f32>,
+) {
+    *since += time.delta_secs();
+    for (p, t) in &players {
+        if p.ctrl.lunging <= 0.0 || *since < 1.0 / 60.0 {
+            continue;
+        }
+        *since = 0.0;
+        commands.spawn((
+            Afterimage { age: 0.0 },
+            Sprite::from_color(
+                Color::LinearRgba(LinearRgba::new(0.9, 0.35, 0.55, 0.5)),
+                SIZE.as_vec2(),
+            ),
+            Anchor::BOTTOM_CENTER,
+            Transform::from_translation(t.translation.with_z(0.5)),
+            RenderLayers::layer(GLOW_LAYER),
+        ));
+    }
+}
+
+fn fade_afterimages(
+    mut commands: Commands,
+    time: Res<Time>,
+    tuning: Res<Tuning>,
+    mut images: Query<(Entity, &mut Afterimage, &mut Sprite)>,
+) {
+    let life = tuning.juice.afterimage_life.max(0.01);
+    for (e, mut a, mut sprite) in &mut images {
+        a.age += time.delta_secs();
+        if a.age >= life {
+            commands.entity(e).despawn();
+        } else {
+            sprite.color.set_alpha(0.5 * (1.0 - a.age / life));
+        }
     }
 }

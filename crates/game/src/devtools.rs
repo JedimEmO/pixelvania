@@ -1,13 +1,23 @@
-//! Tools for checking the game without a person at the controls.
+//! Tools for checking and tuning the game.
 //!
 //! `PIXELVANIA_SCREENSHOT=path.png` saves a screenshot after the game has settled, then exits.
 //! `PIXELVANIA_HOLD=right,jump` holds those inputs from the start, for screenshots of motion.
-//! The agents use these to look at what they built.
+//! `PIXELVANIA_RECORD=path` writes every tick's input to a file;
+//! `PIXELVANIA_REPLAY=path` plays such a file back instead of reading the controller.
+//! A replay is exact as long as the room and the tuning are the same as when it was recorded.
+//!
+//! With the `dev` feature, F1 opens a panel that edits the tuning live and saves it to the file.
+
+use std::collections::VecDeque;
+use std::fs::File;
+use std::io::{BufWriter, Write};
 
 use bevy::prelude::*;
 use bevy::render::view::screenshot::{Screenshot, save_to_disk};
+use world::Controls;
 
-use crate::input::TickInput;
+use crate::input::{TickControls, TickInput, TickSet};
+use crate::player::Player;
 
 pub struct DevToolsPlugin;
 
@@ -29,8 +39,46 @@ impl Plugin for DevToolsPlugin {
             app.insert_resource(HeldInputs(held))
                 .add_systems(PreUpdate, hold_inputs.after(crate::input::collect));
         }
+        if let Ok(path) = std::env::var("PIXELVANIA_REPLAY") {
+            match std::fs::read_to_string(&path) {
+                Ok(text) => {
+                    let ticks: VecDeque<Controls> =
+                        text.lines().filter_map(Controls::decode).collect();
+                    info!("replaying {} ticks from {path}", ticks.len());
+                    app.insert_resource(Replay(ticks)).add_systems(
+                        FixedUpdate,
+                        replay.in_set(TickSet::Input).after(record_or_replay_point),
+                    );
+                }
+                Err(e) => error!("cannot read replay {path}: {e}"),
+            }
+        }
+        if let Ok(path) = std::env::var("PIXELVANIA_RECORD") {
+            match File::create(&path) {
+                Ok(file) => {
+                    info!("recording input to {path}");
+                    app.insert_resource(Recorder(BufWriter::new(file)))
+                        .add_systems(
+                            FixedUpdate,
+                            record.in_set(TickSet::Input).after(record_or_replay_point),
+                        );
+                }
+                Err(e) => error!("cannot record to {path}: {e}"),
+            }
+        }
+        app.add_systems(
+            FixedUpdate,
+            record_or_replay_point
+                .in_set(TickSet::Input)
+                .after(crate::input::take_controls),
+        );
+        #[cfg(feature = "dev")]
+        panel::build(app);
     }
 }
+
+/// Marks the point in the tick after the live input is taken, where replay and recording run.
+fn record_or_replay_point() {}
 
 #[derive(Resource)]
 struct ScreenshotPlan {
@@ -40,6 +88,12 @@ struct ScreenshotPlan {
 
 #[derive(Resource)]
 struct HeldInputs(Vec<String>);
+
+#[derive(Resource)]
+struct Replay(VecDeque<Controls>);
+
+#[derive(Resource)]
+struct Recorder(BufWriter<File>);
 
 fn screenshot_and_exit(
     mut commands: Commands,
@@ -59,19 +113,237 @@ fn screenshot_and_exit(
     }
 }
 
-fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut jumped: Local<bool>) {
+fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut frame: Local<u32>) {
+    *frame += 1;
     for h in &held.0 {
         match h.as_str() {
             "left" => input.move_axis.x = -1.0,
             "right" => input.move_axis.x = 1.0,
+            "down" => input.move_axis.y = -1.0,
             "jump" => {
                 input.jump_held = true;
-                if !*jumped {
-                    input.jump_pressed = true;
-                    *jumped = true;
-                }
+                // Press once the player has had time to spawn and land.
+                input.jump_pressed |= *frame == 60;
             }
+            "lunge" => input.lunge_pressed |= *frame == 90,
             _ => {}
         }
     }
+}
+
+/// Replays recorded input once the player exists, so the recording starts where it started.
+fn replay(
+    mut replay: ResMut<Replay>,
+    mut controls: ResMut<TickControls>,
+    players: Query<(), With<Player>>,
+    mut done: Local<bool>,
+) {
+    if players.is_empty() || *done {
+        return;
+    }
+    match replay.0.pop_front() {
+        Some(c) => controls.0 = c,
+        None => {
+            *done = true;
+            info!("replay finished");
+        }
+    }
+}
+
+fn record(
+    mut recorder: ResMut<Recorder>,
+    controls: Res<TickControls>,
+    players: Query<(), With<Player>>,
+    mut ticks: Local<u32>,
+) {
+    if players.is_empty() {
+        return;
+    }
+    let line = controls.0.encode();
+    if let Err(e) = writeln!(recorder.0, "{line}") {
+        error!("recording failed: {e}");
+    }
+    *ticks += 1;
+    if (*ticks).is_multiple_of(120) {
+        let _ = recorder.0.flush();
+    }
+}
+
+#[cfg(feature = "dev")]
+mod panel {
+    //! The tuning panel. F1 shows and hides it; `PIXELVANIA_PANEL=1` starts with it open.
+
+    use bevy::prelude::*;
+    use bevy_egui::{
+        EguiContexts, EguiGlobalSettings, EguiPlugin, EguiPrimaryContextPass, PrimaryEguiContext,
+        egui,
+    };
+
+    use crate::render::ScreenCamera;
+    use crate::tuning::Tuning;
+
+    pub fn build(app: &mut App) {
+        app.add_plugins(EguiPlugin::default())
+            .insert_resource(EguiGlobalSettings {
+                auto_create_primary_context: false,
+                ..default()
+            })
+            .insert_resource(Open(std::env::var("PIXELVANIA_PANEL").is_ok()))
+            .add_systems(Update, (attach, toggle))
+            .add_systems(EguiPrimaryContextPass, draw);
+    }
+
+    #[derive(Resource)]
+    struct Open(bool);
+
+    /// The panel draws on the screen camera, not on one of the low-resolution world cameras.
+    fn attach(mut commands: Commands, cameras: Query<Entity, Added<ScreenCamera>>) {
+        for camera in &cameras {
+            commands.entity(camera).insert(PrimaryEguiContext);
+        }
+    }
+
+    fn toggle(keys: Res<ButtonInput<KeyCode>>, mut open: ResMut<Open>) {
+        if keys.just_pressed(KeyCode::F1) {
+            open.0 = !open.0;
+        }
+    }
+
+    macro_rules! sliders {
+        ($ui:expr, $s:expr, { $($field:ident : $lo:expr => $hi:expr),* $(,)? }) => {
+            $( $ui.add(egui::Slider::new(&mut $s.$field, $lo..=$hi).text(stringify!($field))); )*
+        };
+    }
+
+    fn pair(ui: &mut egui::Ui, label: &str, v: &mut (f32, f32)) {
+        ui.horizontal(|ui| {
+            ui.add(egui::DragValue::new(&mut v.0).speed(0.01).range(0.2..=2.0));
+            ui.add(egui::DragValue::new(&mut v.1).speed(0.01).range(0.2..=2.0));
+            ui.label(label);
+        });
+    }
+
+    fn draw(mut contexts: EguiContexts, open: Res<Open>, mut tuning: ResMut<Tuning>) -> Result {
+        if !open.0 {
+            return Ok(());
+        }
+        let mut edited = tuning.clone();
+        egui::Window::new("Tuning")
+            .default_width(360.0)
+            .vscroll(true)
+            .show(contexts.ctx_mut()?, |ui| {
+                ui.horizontal(|ui| {
+                    if ui.button("Save to tuning.ron").clicked() {
+                        match super::save_tuning(&edited) {
+                            Ok(path) => info!("saved tuning to {path}"),
+                            Err(e) => error!("saving tuning failed: {e}"),
+                        }
+                    }
+                    if ui.button("Defaults").clicked() {
+                        edited = Tuning::default();
+                    }
+                });
+                let m = &mut edited.movement;
+                ui.collapsing("Running", |ui| {
+                    sliders!(ui, m, {
+                        run_speed: 50.0 => 300.0,
+                        run_accel: 200.0 => 6000.0,
+                        run_decel: 200.0 => 6000.0,
+                        turn_accel: 200.0 => 8000.0,
+                        walk_threshold: 0.05 => 0.9,
+                        down_threshold: 0.2 => 0.95,
+                    });
+                });
+                ui.collapsing("Jumping and falling", |ui| {
+                    sliders!(ui, m, {
+                        jump_speed: 100.0 => 600.0,
+                        jump_cut: 0.0 => 1.0,
+                        gravity: 200.0 => 3000.0,
+                        max_fall: 100.0 => 800.0,
+                        apex_threshold: 0.0 => 150.0,
+                        apex_gravity: 0.1 => 1.0,
+                        fast_fall_gravity: 1.0 => 3.0,
+                        fast_fall_max: 100.0 => 1000.0,
+                        air_accel: 100.0 => 6000.0,
+                        air_decel: 0.0 => 6000.0,
+                        air_overspeed_decel: 0.0 => 3000.0,
+                    });
+                });
+                ui.collapsing("Forgiveness", |ui| {
+                    sliders!(ui, m, {
+                        coyote_time: 0.0 => 0.3,
+                        jump_buffer: 0.0 => 0.3,
+                        corner_correction: 0 => 8,
+                        ledge_pop: 0 => 8,
+                    });
+                });
+                ui.collapsing("Lunge", |ui| {
+                    sliders!(ui, m, {
+                        lunge_speed: 100.0 => 900.0,
+                        lunge_time: 0.02 => 0.5,
+                        lunge_cooldown: 0.0 => 1.0,
+                    });
+                });
+                ui.collapsing("Swoon", |ui| {
+                    sliders!(ui, m, {
+                        swoon_speed: 50.0 => 600.0,
+                        swoon_apex_gravity: 0.05 => 1.0,
+                        swoon_apex_threshold: 0.0 => 200.0,
+                    });
+                });
+                ui.collapsing("Cling", |ui| {
+                    sliders!(ui, m, {
+                        wall_slide_max: 0.0 => 400.0,
+                        wall_jump_x: 0.0 => 500.0,
+                        wall_jump_y: 0.0 => 600.0,
+                        wall_jump_lock: 0.0 => 0.5,
+                        wall_coyote: 0.0 => 0.3,
+                    });
+                });
+                let c = &mut edited.camera;
+                ui.collapsing("Camera", |ui| {
+                    sliders!(ui, c, {
+                        follow_rate_x: 0.5 => 30.0,
+                        follow_rate_y: 0.5 => 30.0,
+                        lead: 0.0 => 160.0,
+                        lead_speed: 10.0 => 600.0,
+                        fall_release: 0.0 => 200.0,
+                        rise_release: 0.0 => 300.0,
+                        look_up: -100.0 => 100.0,
+                    });
+                });
+                ui.collapsing("Juice", |ui| {
+                    let j = &mut edited.juice;
+                    sliders!(ui, j, {
+                        squash_recovery: 1.0 => 60.0,
+                        afterimage_life: 0.0 => 1.0,
+                        rumble: 0.0 => 2.0,
+                    });
+                    pair(ui, "jump stretch", &mut j.jump_stretch);
+                    pair(ui, "land squash", &mut j.land_squash);
+                    pair(ui, "lunge stretch", &mut j.lunge_stretch);
+                    sliders!(ui, edited.movement, { hard_landing_speed: 50.0 => 800.0 });
+                });
+            });
+        if edited != *tuning {
+            *tuning = edited;
+        }
+        Ok(())
+    }
+}
+
+/// Writes the tuning back to `assets/tuning.ron`. Returns the path written.
+#[cfg(feature = "dev")]
+fn save_tuning(tuning: &crate::tuning::Tuning) -> Result<String, Box<dyn std::error::Error>> {
+    let root = std::env::var("BEVY_ASSET_ROOT").unwrap_or_else(|_| ".".into());
+    let path = std::path::Path::new(&root).join("assets/tuning.ron");
+    let body = ron::ser::to_string_pretty(tuning, ron::ser::PrettyConfig::default())?;
+    let text = format!(
+        "// Tuning values, saved from the tuning panel. Saved changes apply while the game runs,\n\
+         // with the `dev` feature. The meaning of each value is documented in the code:\n\
+         // `world::MoveTuning`, and `CameraTuning` and `Juice` in crates/game/src/tuning.rs.\n\
+         {body}\n"
+    );
+    std::fs::write(&path, text)?;
+    Ok(path.display().to_string())
 }
