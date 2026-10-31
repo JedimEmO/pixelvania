@@ -9,6 +9,8 @@
 //! the number keys 1 to 6 spawn each pixelfx effect there at any time.
 //! F2 pauses the game and F3, while paused, steps it one gameplay tick.
 //! F4 cycles the mood of combat: neutral, the High and the Comedown.
+//! The keys 7, 8 and 9 spawn a light, medium or heavy guest in front of the player.
+//! F5 shows hurtboxes, active hitboxes, and health and poise bars; `PIXELVANIA_BOXES=1` starts with them on.
 //! `PIXELVANIA_MOOD=high` or `comedown` starts in that mood.
 //! A replay is exact as long as the room and the tuning are the same as when it was recorded.
 //!
@@ -75,7 +77,12 @@ impl Plugin for DevToolsPlugin {
         let planned = std::env::var("PIXELVANIA_FX")
             .ok()
             .and_then(|v| pixelfx::EffectId::parse(v.trim()));
-        app.add_systems(Update, (pause_and_step, cycle_mood));
+        app.add_systems(
+            Update,
+            (pause_and_step, cycle_mood, draw_boxes, spawn_guests),
+        )
+        .insert_resource(ShowBoxes(std::env::var("PIXELVANIA_BOXES").is_ok()))
+        .add_systems(Startup, boxes_in_glow);
         match std::env::var("PIXELVANIA_MOOD").as_deref() {
             Ok("high") => app.insert_resource(crate::combat::Mood::ALL[1]),
             Ok("comedown") => app.insert_resource(crate::combat::Mood::ALL[2]),
@@ -153,6 +160,119 @@ fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut frame: L
             "toast" => input.toast_pressed |= *frame == 80,
             _ => {}
         }
+    }
+}
+
+#[derive(Resource)]
+struct ShowBoxes(bool);
+
+/// 7, 8 and 9 spawn a light, medium and heavy guest four tiles in front of the player.
+fn spawn_guests(
+    mut commands: Commands,
+    keys: Res<ButtonInput<KeyCode>>,
+    players: Query<&Player>,
+    weapons: Option<Res<crate::combat::Weapons>>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    use anim::guest::Class;
+    let (Ok(p), Some(weapons)) = (players.single(), weapons) else {
+        return;
+    };
+    for (key, class) in [
+        (KeyCode::Digit7, Class::Light),
+        (KeyCode::Digit8, Class::Medium),
+        (KeyCode::Digit9, Class::Heavy),
+    ] {
+        if keys.just_pressed(key) {
+            let b = &p.ctrl.body;
+            let x = b.x as f32 + b.w as f32 / 2.0 + p.ctrl.facing as f32 * 64.0;
+            let feet = (x, (b.y + b.h) as f32);
+            crate::enemies::spawn_guest(&mut commands, class, feet, &weapons, &mut images);
+        }
+    }
+}
+
+/// Overlays draw into the glow buffer, so the scene's lighting does not dim them.
+fn boxes_in_glow(mut store: ResMut<GizmoConfigStore>) {
+    let (config, _) = store.config_mut::<DefaultGizmoConfigGroup>();
+    config.render_layers = bevy::camera::visibility::RenderLayers::layer(crate::render::GLOW_LAYER);
+    config.line.width = 1.0;
+}
+
+/// Draws each fighter's hurtbox, its active hitboxes, and bars for health and poise.
+fn draw_boxes(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut show: ResMut<ShowBoxes>,
+    mut gizmos: Gizmos,
+    fighters: Query<(
+        &crate::combat::Fighting,
+        Option<&Player>,
+        Option<&crate::enemies::Guest>,
+    )>,
+) {
+    use crate::combat::HasBody;
+    if keys.just_pressed(KeyCode::F5) {
+        show.0 = !show.0;
+    }
+    if !show.0 {
+        return;
+    }
+    let rect = |gizmos: &mut Gizmos, r: world::combat::Rect, color: Color| {
+        let centre = Vec2::new(r.x + r.w / 2.0, -(r.y + r.h / 2.0));
+        gizmos.rect_2d(
+            Isometry2d::from_translation(centre),
+            Vec2::new(r.w, r.h),
+            color,
+        );
+    };
+    for (f, p, g) in &fighters {
+        let Some(body) = p.map(HasBody::body).or(g.map(HasBody::body)) else {
+            continue;
+        };
+        let hurt = world::combat::Rect::from_body(body);
+        let shown = if f.combat.helpless() {
+            Color::srgb(0.9, 0.8, 0.2)
+        } else {
+            Color::srgb(0.2, 0.8, 0.4)
+        };
+        rect(&mut gizmos, hurt, shown);
+        let feet = (
+            body.x as f32 + body.w as f32 / 2.0,
+            (body.y + body.h) as f32,
+        );
+        for hit in f.combat.attacker.active_hitboxes(feet) {
+            rect(&mut gizmos, hit, Color::srgb(1.0, 0.2, 0.2));
+        }
+        // Health above poise, each 24 px wide, over the head.
+        let top = -(body.y as f32) + 6.0;
+        let left = feet.0 - 12.0;
+        let bar = |gizmos: &mut Gizmos, y: f32, k: f32, color: Color| {
+            gizmos.line_2d(
+                Vec2::new(left, y),
+                Vec2::new(left + 24.0, y),
+                Color::srgb(0.2, 0.2, 0.25),
+            );
+            if k > 0.0 {
+                gizmos.line_2d(
+                    Vec2::new(left, y),
+                    Vec2::new(left + 24.0 * k.min(1.0), y),
+                    color,
+                );
+            }
+        };
+        let c = &f.combat;
+        bar(
+            &mut gizmos,
+            top + 3.0,
+            c.health / f.max_health,
+            Color::srgb(0.9, 0.3, 0.35),
+        );
+        bar(
+            &mut gizmos,
+            top,
+            c.poise / c.max_poise,
+            Color::srgb(0.95, 0.85, 0.4),
+        );
     }
 }
 

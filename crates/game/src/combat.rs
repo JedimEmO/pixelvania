@@ -120,6 +120,8 @@ pub struct Fighting {
     /// Bodies on the same team cannot hit each other with weapons.
     pub team: u32,
     pub weapon: Handle<WeaponAsset>,
+    /// Health when whole, for bars.
+    pub max_health: f32,
     /// Seconds of white flash left after being hit.
     pub flash: f32,
     /// Seconds left flat against a wall after a wall splat.
@@ -139,6 +141,7 @@ impl Fighting {
 
     pub fn new(combat: Combatant, team: u32, weapon: Handle<WeaponAsset>) -> Self {
         Self {
+            max_health: combat.health,
             combat,
             team,
             weapon,

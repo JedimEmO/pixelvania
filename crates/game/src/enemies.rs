@@ -122,56 +122,68 @@ fn spawn(
             Some("heavy") => Class::Heavy,
             _ => Class::Medium,
         };
-        let t = temper(class);
-        let (w, h) = class.size();
         let (x, y) = def.pixel_pos();
-        let mut ctrl = Controller::standing_at(
-            x,
-            y,
-            w,
-            h,
-            Abilities {
-                lunge: false,
-                swoon: false,
-                cling: false,
-            },
-        );
-        ctrl.facing = -1;
-        let tuning = MoveTuning {
-            run_speed: t.speed,
-            ..MoveTuning::default()
-        };
-        let weapon = match class {
-            Class::Light => weapons.guest_light.clone(),
-            Class::Medium => weapons.guest_medium.clone(),
-            Class::Heavy => weapons.guest_heavy.clone(),
-        };
-        let look = Look::new(rig(class), &mut images);
-        let image = look.image.clone();
-        commands.spawn((
-            Name::new(format!("{} guest", class.name())),
-            RoomPart,
-            Guest {
-                class,
-                ctrl,
-                tuning,
-                rest: 1.0,
-            },
-            Fighting::new(
-                Combatant::new(t.health, t.poise, weight(class)),
-                GUEST_TEAM,
-                weapon,
-            ),
-            look,
-            Transform::from_xyz(x, -y, 0.9),
-            Visibility::default(),
-            children![(
-                Sprite::from_image(image),
-                look_anchor(),
-                Transform::default()
-            )],
-        ));
+        spawn_guest(&mut commands, class, (x, y), &weapons, &mut images);
     }
+}
+
+/// Spawns a guest of a class with its feet at `feet`, in pixels with y down.
+pub fn spawn_guest(
+    commands: &mut Commands,
+    class: Class,
+    feet: (f32, f32),
+    weapons: &Weapons,
+    images: &mut Assets<Image>,
+) {
+    let (x, y) = feet;
+    let t = temper(class);
+    let (w, h) = class.size();
+    let mut ctrl = Controller::standing_at(
+        x,
+        y,
+        w,
+        h,
+        Abilities {
+            lunge: false,
+            swoon: false,
+            cling: false,
+        },
+    );
+    ctrl.facing = -1;
+    let tuning = MoveTuning {
+        run_speed: t.speed,
+        ..MoveTuning::default()
+    };
+    let weapon = match class {
+        Class::Light => weapons.guest_light.clone(),
+        Class::Medium => weapons.guest_medium.clone(),
+        Class::Heavy => weapons.guest_heavy.clone(),
+    };
+    let look = Look::new(rig(class), images);
+    let image = look.image.clone();
+    commands.spawn((
+        Name::new(format!("{} guest", class.name())),
+        RoomPart,
+        Guest {
+            class,
+            ctrl,
+            tuning,
+            rest: 1.0,
+        },
+        Fighting::new(
+            Combatant::new(t.health, t.poise, weight(class)),
+            GUEST_TEAM,
+            weapon,
+        ),
+        look,
+        Transform::from_xyz(x, -y, 0.9),
+        Visibility::default(),
+        children![(
+            Sprite::from_image(image),
+            look_anchor(),
+            Transform::default()
+        )],
+    ));
 }
 
 /// Reset brings every guest back, as well as the player.

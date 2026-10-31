@@ -18,6 +18,9 @@ tuning in `assets/tuning.ron` and rooms in `assets/rooms/` reload when you save 
 Press F1 for a panel that edits the tuning live and saves it back to the file.
 F2 pauses the game, and F3 steps it one gameplay tick at a time while paused.
 F4 cycles the mood of combat: neutral, the High and the Comedown.
+F5 shows hurtboxes, active hitboxes, and health and poise bars,
+and the keys 7, 8 and 9 spawn a light, medium or heavy guest in front of the player.
+Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev` feature.
 
 | Action | Gamepad | Keyboard |
 |---|---|---|
