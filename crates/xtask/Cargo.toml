@@ -9,6 +9,8 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+world.workspace = true
+assetgen.workspace = true
 pixelfx = { path = "../pixelfx" }
 anim = { path = "../anim" }
 image = { workspace = true, features = ["gif"] }

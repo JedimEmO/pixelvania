@@ -1,0 +1,13 @@
+[package]
+name = "assetgen"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+image.workspace = true
+world.workspace = true
+
+[lints]
+workspace = true

@@ -10,7 +10,7 @@ use bevy::asset::{AssetLoader, AsyncReadExt, LoadContext, RenderAssetUsages};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy::sprite::Anchor;
-use world::{ParseError, Room, TILE, Tile};
+use world::{ParseError, Room};
 
 use crate::render::Light2d;
 
@@ -134,58 +134,20 @@ fn build(commands: &mut Commands, images: &mut Assets<Image>, room: &Room) {
     }
 }
 
-/// Flat colours per material, as sRGB: a base tone and a slightly darker one.
-fn material_tones(name: &str) -> ([u8; 3], [u8; 3]) {
-    match name {
-        "stone" => ([0x3a, 0x35, 0x46], [0x33, 0x2f, 0x3e]),
-        "wood" => ([0x4a, 0x34, 0x28], [0x41, 0x2d, 0x23]),
-        _ => ([0xff, 0x00, 0xff], [0xc0, 0x00, 0xc0]),
-    }
-}
-
-/// Draws the room's tiles into one image, one texel per game pixel.
-/// Empty space is transparent, which is how the renderer tells solid from empty.
+/// Uploads the generated room albedo; alpha is the renderer's solid mask.
 fn rasterize(room: &Room) -> Image {
-    let (w, h) = room.pixel_size();
-    let (w, h) = (w as usize, h as usize);
-    let tones: Vec<_> = room.materials.iter().map(|m| material_tones(m)).collect();
-    let mut data = vec![0u8; w * h * 4];
-    for py in 0..h {
-        for px in 0..w {
-            let (tx, ty) = (px as i32 / TILE, py as i32 / TILE);
-            let Tile::Solid(m) = room.tile(tx, ty) else {
-                continue;
-            };
-            let (base, dark) = tones[m as usize];
-            // A quiet two-tone texture, so large walls are not perfectly flat.
-            let rgb = if hash(px as u32 / 2, py as u32 / 2).is_multiple_of(5) {
-                dark
-            } else {
-                base
-            };
-            let i = (py * w + px) * 4;
-            data[i..i + 3].copy_from_slice(&rgb);
-            data[i + 3] = 255;
-        }
-    }
+    let pixels = assetgen::rasterize(room);
     Image::new(
         Extent3d {
-            width: w as u32,
-            height: h as u32,
+            width: pixels.width(),
+            height: pixels.height(),
             depth_or_array_layers: 1,
         },
         TextureDimension::D2,
-        data,
+        pixels.into_raw(),
         TextureFormat::Rgba8UnormSrgb,
         RenderAssetUsages::RENDER_WORLD,
     )
-}
-
-fn hash(x: u32, y: u32) -> u32 {
-    let mut h = x.wrapping_mul(0x9e37_79b9) ^ y.wrapping_mul(0x85eb_ca6b);
-    h ^= h >> 15;
-    h = h.wrapping_mul(0x2c1b_3c6d);
-    h ^ (h >> 12)
 }
 
 #[derive(TypePath, Default)]

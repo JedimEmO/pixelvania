@@ -58,3 +58,10 @@ and `cargo xtask rig` renders the character rig's animations to `target/rig/`;
 `cargo xtask golden` renders reference frames from the JavaScript original, which needs Node and git;
 the golden tests themselves run without either.
 In the game, effects land on the room's floors, hide behind its walls, and light what is around them.
+
+## Tiles
+
+`cargo xtask tiles` renders material variants and all neighbour masks to `target/tiles/`,
+and whole rooms to `target/tiles/rooms/`, with native and nearest-neighbour 2x previews.
+`crates/assetgen` paints stone, wood, velvet and gilt from seeded five-colour ramps.
+The game uses the same painter when a room loads or reloads.

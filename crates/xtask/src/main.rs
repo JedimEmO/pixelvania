@@ -1,4 +1,6 @@
 //! Offline PNG and GIF previews and pinned JavaScript reference generation.
+mod tiles;
+
 use image::{
     Delay, Frame as GifFrame, RgbaImage,
     codecs::gif::{GifEncoder, Repeat},
@@ -363,6 +365,7 @@ fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("golden") if args.len() == 1 => golden(),
+        Some("tiles") if args.len() == 1 => tiles::render(),
         Some("rig") if args.len() <= 2 => rig(args.get(1).map_or("stock", String::as_str)),
         Some("fx") => {
             let id=args.get(1).and_then(|s|EffectId::parse(s)).ok_or("fx requires an id: impacts/hit-spark, impacts/heavy-landing, melee/sword-slash, melee/hammer-smash, spawn/poof, dust")?;
@@ -381,7 +384,7 @@ fn main() -> Result<()> {
             fx(id, seed, &out)
         }
         _ => Err(
-            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player] | golden"
+            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player] | tiles | golden"
                 .into(),
         ),
     }
