@@ -45,10 +45,13 @@ Guests do not jump, block or circle. They approach and swing; the light guest th
 and the medium guest keeps its spear's distance.
 There is no sound yet, so the sub-bass thump and the music dip on heavy hits are missing.
 
-## Further, if there is time
+## Further
 
-The finisher, the candelabrum,
-and the tile generator that starts the *One finished room* milestone.
+Done since: a first finisher (a blow on a staggered guest kills it, with Nectar and slow motion),
+a health and poise bar for the player,
+and the tile generator, so rooms are painted in stone, wood, velvet and gilt (`cargo xtask tiles`).
+
+Next: sound effects and the audio layer, then the candelabrum, backgrounds, and a first music sketch.
 
 ## For the director
 
