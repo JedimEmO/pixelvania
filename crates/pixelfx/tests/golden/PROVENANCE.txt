@@ -1,0 +1,6 @@
+Source: https://github.com/patch-gg/pixelfx
+Commit: a84159688af3ca37a4be05a0d422b94451b2e24e
+Generator: cargo xtask golden (Node v24.4.0)
+Effects: stock options and stock seeds; createFx.update(1/30), subdivided at 120 Hz.
+Raw RGBA buffers: no actor, background, composite, or tool edge fade.
+Rig: stand, ready, sword cut, hammer top, ready yaw 1.2; origin (64,100).

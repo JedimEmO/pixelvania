@@ -9,6 +9,7 @@ license = "MIT"
 publish = false
 
 [workspace.dependencies]
+image = { version = "0.25", default-features = false, features = ["png"] }
 # 2D and UI only: no 3D renderer, and no Bevy audio because the game uses kira.
 bevy = { version = "0.20.1", default-features = false, features = ["2d", "ui"] }
 bevy_enhanced_input = "0.27.2"

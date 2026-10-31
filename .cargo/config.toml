@@ -6,4 +6,5 @@ BEVY_ASSET_ROOT = { value = "", relative = true }
 runner = "wasm-server-runner"
 
 [alias]
+xtask = "run -p xtask --"
 dev = "run -p game --features dev"
