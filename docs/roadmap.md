@@ -65,7 +65,12 @@ with a dark foreground passing in front, lifted by the room's lights (`cargo xta
 And the mood in the picture: the Comedown drains the frame to under half its colour, the High deepens it.
 The Toast has a pose, the blade raised like a glass, and a guest's wind-up opens with a glint and a cue.
 
-Next: a first music sketch, for the director to react to.
+And a first music sketch: the ballroom as 64 seconds of Italo disco at 120 BPM in D minor,
+five stems that the mood mixes: everything up in the High, drums and lead gone in the Comedown.
+Its stems are rendered, not committed: run `cargo xtask music` once after cloning.
+
+Next, once the director has played and listened: the *One finished room* milestone,
+a room of the ballroom at final quality, built from these pieces.
 
 ## For the director
 
@@ -76,6 +81,8 @@ once in neutral or the High and once in the Comedown (F4).
 Things only you can judge, because nobody has seen or heard them in play:
 
 - **The sounds.** Every effect was made and checked by its waveform and levels; none has been listened to.
+- **The music.** The ballroom sketch decides the musical direction, which is yours to sign off.
+  Listen in the combat lab, and press F4 to hear the High and the Comedown mixes.
 - **The finisher.** Stagger a guest (break its poise with light hits, or a charged Jeroboam slam
   when it is not mid-swing), then hit it: it should die in a burst of pink, with slow motion.
   It works in code, but no scripted run could time it, so it has not been seen.
