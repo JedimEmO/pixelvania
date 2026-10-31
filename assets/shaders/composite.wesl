@@ -11,6 +11,7 @@ struct CompositeParams {
     rim: f32,
     light_range: f32,
     background: vec4<f32>,
+    saturation: f32,
 }
 
 @group(2) @binding(0) var<uniform> params: CompositeParams;
@@ -84,5 +85,8 @@ fn fragment(in: FragmentIn) -> @location(0) vec4<f32> {
     out += textureLoad(glow_tex, clamp_texel(p), 0).rgb;
     let foreground = textureLoad(foreground_tex, clamp_texel(p), 0);
     out = foreground.rgb + out * (1.0 - foreground.a);
+    // The mood's grade: towards grey in the Comedown, richer in the High.
+    let luma = dot(out, vec3(0.2126, 0.7152, 0.0722));
+    out = max(mix(vec3(luma), out, params.saturation), vec3(0.0));
     return vec4(out, 1.0);
 }

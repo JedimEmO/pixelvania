@@ -38,6 +38,7 @@ impl Plugin for CombatPlugin {
             .init_resource::<CombatLog>()
             .init_resource::<SlowMotion>()
             .add_systems(Startup, load_weapons)
+            .add_systems(Update, grade_by_mood)
             .add_systems(
                 FixedUpdate,
                 (resolve_contacts, count_reactions)
@@ -97,6 +98,31 @@ impl Mood {
 impl Default for Mood {
     fn default() -> Self {
         Self::ALL[0]
+    }
+}
+
+/// How saturated the frame is in each mood, and how fast it eases there, per second.
+const MOOD_SATURATION: [(&str, f32); 3] =
+    [("neutral", 1.0), ("the High", 1.2), ("the Comedown", 0.45)];
+const GRADE_RATE: f32 = 2.0;
+
+/// Eases the frame's colour towards the mood's: drained in the Comedown, deepened in the High.
+fn grade_by_mood(
+    time: Res<Time<Real>>,
+    mood: Res<Mood>,
+    mut lighting: ResMut<crate::render::Lighting>,
+) {
+    let want = MOOD_SATURATION
+        .iter()
+        .find(|(n, _)| *n == mood.name)
+        .map_or(1.0, |(_, s)| *s);
+    let k = 1.0 - (-GRADE_RATE * time.delta_secs()).exp();
+    let next = lighting.saturation + (want - lighting.saturation) * k;
+    // Only write when it moves, so the composite is not re-uploaded every frame.
+    if (next - lighting.saturation).abs() > 1e-4 {
+        lighting.saturation = next;
+    } else if lighting.saturation != want {
+        lighting.saturation = want;
     }
 }
 

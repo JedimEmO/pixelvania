@@ -86,6 +86,9 @@ pub struct Lighting {
     pub rim: f32,
     /// The colour of empty space, before lighting.
     pub background: LinearRgba,
+    /// Colour saturation of the final frame: 1 as drawn, less towards grey, more richer.
+    /// The mood sets it: the Comedown drains the world's colour, the High deepens it.
+    pub saturation: f32,
 }
 
 impl Default for Lighting {
@@ -95,6 +98,7 @@ impl Default for Lighting {
             bands: 5.0,
             rim: 0.55,
             background: Color::srgb_u8(0x1a, 0x16, 0x26).to_linear(),
+            saturation: 1.0,
         }
     }
 }
@@ -232,6 +236,7 @@ fn update_composite(
         rim: lighting.rim,
         light_range: LIGHT_RANGE,
         background: lighting.background.to_vec4(),
+        saturation: lighting.saturation,
     };
     // Only touch the asset when something changed, so it is not re-uploaded every frame.
     if materials
@@ -252,6 +257,7 @@ struct CompositeParams {
     rim: f32,
     light_range: f32,
     background: Vec4,
+    saturation: f32,
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Clone)]
