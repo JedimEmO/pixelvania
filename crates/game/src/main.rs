@@ -1,8 +1,10 @@
 //! The game binary: app setup and plugin wiring.
 
 mod camera;
+mod combat;
 mod devtools;
 mod effects;
+mod enemies;
 mod input;
 mod player;
 mod render;
@@ -37,6 +39,8 @@ fn main() -> AppExit {
             input::InputPlugin,
             rooms::RoomsPlugin,
             player::PlayerPlugin,
+            combat::CombatPlugin,
+            enemies::EnemiesPlugin,
             camera::CameraPlugin,
             effects::EffectsPlugin,
             devtools::DevToolsPlugin,

@@ -1,12 +1,15 @@
 //! Tools for checking and tuning the game.
 //!
 //! `PIXELVANIA_SCREENSHOT=path.png` saves a screenshot after the game has settled, then exits.
-//! `PIXELVANIA_HOLD=right,jump` holds those inputs from the start, for screenshots of motion.
+//! `PIXELVANIA_HOLD=right,jump` holds those inputs from the start, for screenshots of motion;
+//! `attack`, `charge` and `toast` press those at set frames.
 //! `PIXELVANIA_RECORD=path` writes every tick's input to a file;
 //! `PIXELVANIA_REPLAY=path` plays such a file back instead of reading the controller.
 //! `PIXELVANIA_FX=sword-slash` spawns that effect in front of the player once it has landed;
 //! the number keys 1 to 6 spawn each pixelfx effect there at any time.
 //! F2 pauses the game and F3, while paused, steps it one gameplay tick.
+//! F4 cycles the mood of combat: neutral, the High and the Comedown.
+//! `PIXELVANIA_MOOD=high` or `comedown` starts in that mood.
 //! A replay is exact as long as the room and the tuning are the same as when it was recorded.
 //!
 //! With the `dev` feature, F1 opens a panel that edits the tuning live and saves it to the file.
@@ -72,7 +75,12 @@ impl Plugin for DevToolsPlugin {
         let planned = std::env::var("PIXELVANIA_FX")
             .ok()
             .and_then(|v| pixelfx::EffectId::parse(v.trim()));
-        app.add_systems(Update, pause_and_step);
+        app.add_systems(Update, (pause_and_step, cycle_mood));
+        match std::env::var("PIXELVANIA_MOOD").as_deref() {
+            Ok("high") => app.insert_resource(crate::combat::Mood::ALL[1]),
+            Ok("comedown") => app.insert_resource(crate::combat::Mood::ALL[2]),
+            _ => app,
+        };
         app.insert_resource(PlannedFx(planned))
             .add_systems(Update, spawn_test_fx.before(crate::player::react));
         app.add_systems(
@@ -135,8 +143,24 @@ fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut frame: L
                 input.jump_pressed |= *frame == 60;
             }
             "lunge" => input.lunge_pressed |= *frame == 90,
+            // Three presses, timed to chain the combo.
+            "attack" => input.attack_pressed |= [70, 84, 100].contains(&*frame),
+            // Held for a second, then released into the charged attack.
+            "charge" => {
+                input.attack_pressed |= *frame == 70;
+                input.attack_held = (70..130).contains(&*frame);
+            }
+            "toast" => input.toast_pressed |= *frame == 80,
             _ => {}
         }
+    }
+}
+
+/// F4 moves combat to the next mood.
+fn cycle_mood(keys: Res<ButtonInput<KeyCode>>, mut mood: ResMut<crate::combat::Mood>) {
+    if keys.just_pressed(KeyCode::F4) {
+        *mood = mood.next();
+        info!("combat mood: {}", mood.name);
     }
 }
 

@@ -219,11 +219,43 @@ fn player_sheet() -> Result<()> {
             )
         })
         .collect();
-    draw_rows(&swings, &out.join("player-sabre.png"))
+    draw_rows(&swings, &out.join("player-sabre.png"))?;
+    guests_sheet(&out)
+}
+
+/// One row per guest class: standing, its swing, and every reaction.
+fn guests_sheet(out: &Path) -> Result<()> {
+    use anim::guest::{Class, Reaction, arm, reaction_pose, rig, scale};
+    use anim::swing::{Phase, Swing, swing_pose};
+    for class in Class::ALL {
+        let k = class.scale();
+        let swing = if class == Class::Heavy {
+            Swing::Combo3
+        } else {
+            Swing::Combo1
+        };
+        let mut poses = vec![
+            anim::pose_for(anim::State::Idle, 0.0, 0.0),
+            swing_pose(swing, Phase::Windup, 1.0),
+            swing_pose(swing, Phase::Active, 0.0),
+            swing_pose(swing, Phase::Active, 1.0),
+        ];
+        poses.extend(Reaction::ALL.iter().map(|r| reaction_pose(*r, 0.1)));
+        let poses: Vec<anim::Pose> = poses.iter().map(|p| arm(scale(p, k), class)).collect();
+        draw_rows_with(
+            &rig(class),
+            &[(class.name(), poses)],
+            &out.join(format!("guest-{}.png", class.name())),
+        )?;
+    }
+    Ok(())
 }
 
 fn draw_rows(rows: &[(&str, Vec<anim::Pose>)], path: &Path) -> Result<()> {
-    let rig = anim::player_rig();
+    draw_rows_with(&anim::player_rig(), rows, path)
+}
+
+fn draw_rows_with(rig: &anim::Rig, rows: &[(&str, Vec<anim::Pose>)], path: &Path) -> Result<()> {
     let (w, h, scale) = (80u32, 64u32, 2u32);
     let cols = rows.iter().map(|r| r.1.len()).max().unwrap_or(1) as u32;
     let bg = image::Rgba([24, 20, 34, 255]);
@@ -232,7 +264,7 @@ fn draw_rows(rows: &[(&str, Vec<anim::Pose>)], path: &Path) -> Result<()> {
     for (row, (name, poses)) in rows.iter().enumerate() {
         for (col, pose) in poses.iter().enumerate() {
             let mut f = Frame::new(w, h);
-            anim::draw(&rig, pose, &mut f, [36.0, 56.0]);
+            anim::draw(rig, pose, &mut f, [36.0, 56.0]);
             let img = rgba(&f);
             for (x, y, px) in img.enumerate_pixels() {
                 // The ground line shows through empty pixels, so feet can be checked against it.

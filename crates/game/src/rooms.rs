@@ -21,29 +21,57 @@ impl Plugin for RoomsPlugin {
         app.init_asset::<RoomAsset>()
             .register_asset_loader(RoomLoader)
             .add_systems(Startup, load_first_room)
-            .add_systems(PreUpdate, build_on_change);
+            .add_systems(PreUpdate, build_on_change)
+            .add_systems(Update, next_room);
     }
 }
 
 #[derive(Asset, TypePath)]
 pub struct RoomAsset(pub Arc<Room>);
 
+/// The test rooms, in the order Start or Tab steps through them.
+const ROOMS: [&str; 2] = ["lab", "arena"];
+
 /// The room the player is in. `room` is `None` until it has loaded.
 #[derive(Resource)]
 pub struct ActiveRoom {
     handle: Handle<RoomAsset>,
+    index: usize,
     pub room: Option<Arc<Room>>,
 }
 
 /// Marks everything built from the active room, so a rebuild can clear it.
 #[derive(Component)]
-struct RoomPart;
+pub struct RoomPart;
 
+/// Starts in the room `PIXELVANIA_ROOM` names, or the feel lab.
 fn load_first_room(mut commands: Commands, assets: Res<AssetServer>) {
+    let wanted = std::env::var("PIXELVANIA_ROOM").unwrap_or_default();
+    let index = ROOMS.iter().position(|r| *r == wanted).unwrap_or(0);
     commands.insert_resource(ActiveRoom {
-        handle: assets.load("rooms/lab.room"),
+        handle: assets.load(format!("rooms/{}.room", ROOMS[index])),
+        index,
         room: None,
     });
+}
+
+/// Moves to the next test room. The player is despawned and respawns at its spawn point.
+fn next_room(
+    mut commands: Commands,
+    input: Res<crate::input::TickInput>,
+    assets: Res<AssetServer>,
+    mut active: ResMut<ActiveRoom>,
+    players: Query<Entity, With<crate::player::Player>>,
+) {
+    if !input.next_room_pressed {
+        return;
+    }
+    active.index = (active.index + 1) % ROOMS.len();
+    active.handle = assets.load(format!("rooms/{}.room", ROOMS[active.index]));
+    active.room = None;
+    for p in &players {
+        commands.entity(p).despawn();
+    }
 }
 
 fn build_on_change(
@@ -54,15 +82,15 @@ fn build_on_change(
     mut images: ResMut<Assets<Image>>,
     parts: Query<Entity, With<RoomPart>>,
 ) {
-    for event in events.read() {
-        let id = match event {
-            AssetEvent::Added { id } | AssetEvent::Modified { id } => *id,
-            _ => continue,
-        };
-        if id != active.handle.id() {
-            continue;
-        }
-        let Some(asset) = rooms.get(id) else { continue };
+    // A room is built when it first loads, when its file changes,
+    // and when the game switches back to a room that loaded earlier.
+    let changed = events.read().any(|e| match e {
+        AssetEvent::Added { id } | AssetEvent::Modified { id } => *id == active.handle.id(),
+        _ => false,
+    });
+    if changed || active.room.is_none() {
+        let id = active.handle.id();
+        let Some(asset) = rooms.get(id) else { return };
         let room = asset.0.clone();
         for part in &parts {
             commands.entity(part).despawn();

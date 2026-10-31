@@ -53,6 +53,25 @@ pub struct Jump;
 #[action_output(bool)]
 pub struct Lunge;
 
+#[derive(InputAction)]
+#[action_output(bool)]
+pub struct Attack;
+
+/// The Toast: a parry timed against a blow.
+#[derive(InputAction)]
+#[action_output(bool)]
+pub struct Toast;
+
+/// Switches between the sabre and the Jeroboam.
+#[derive(InputAction)]
+#[action_output(bool)]
+pub struct SwitchWeapon;
+
+/// Goes to the next test room: the feel lab or the combat lab.
+#[derive(InputAction)]
+#[action_output(bool)]
+pub struct NextRoom;
+
 /// Puts the player back at the room's spawn point. For the feel lab.
 #[derive(InputAction)]
 #[action_output(bool)]
@@ -67,8 +86,13 @@ pub struct TickInput {
     /// Jump was pressed since the last tick consumed it.
     pub jump_pressed: bool,
     pub lunge_pressed: bool,
-    /// Reset was pressed this frame. Read in `Update`, not by the tick.
+    pub attack_held: bool,
+    pub attack_pressed: bool,
+    pub toast_pressed: bool,
+    /// These were pressed this frame. Read in `Update`, not by the tick.
     pub reset_pressed: bool,
+    pub switch_weapon_pressed: bool,
+    pub next_room_pressed: bool,
 }
 
 /// The input of the tick being simulated.
@@ -105,6 +129,34 @@ fn spawn_controls(mut commands: Commands) {
                 Binding(KeyCode::ShiftLeft)
             ]
             --
+            Action::<Attack>::new()
+            Bindings [
+                Binding(GamepadButton::West)
+                --
+                Binding(KeyCode::KeyJ)
+            ]
+            --
+            Action::<Toast>::new()
+            Bindings [
+                Binding(GamepadButton::LeftTrigger)
+                --
+                Binding(KeyCode::KeyK)
+            ]
+            --
+            Action::<SwitchWeapon>::new()
+            Bindings [
+                Binding(GamepadButton::North)
+                --
+                Binding(KeyCode::KeyL)
+            ]
+            --
+            Action::<NextRoom>::new()
+            Bindings [
+                Binding(GamepadButton::Start)
+                --
+                Binding(KeyCode::Tab)
+            ]
+            --
             Action::<Reset>::new()
             Bindings [
                 Binding(GamepadButton::Select)
@@ -121,6 +173,10 @@ pub fn collect(
     jump: Single<(&Action<Jump>, &ActionEvents)>,
     lunge: Single<&ActionEvents, With<Action<Lunge>>>,
     reset: Single<&ActionEvents, With<Action<Reset>>>,
+    attack: Single<(&Action<Attack>, &ActionEvents)>,
+    toast: Single<&ActionEvents, With<Action<Toast>>>,
+    switch: Single<&ActionEvents, With<Action<SwitchWeapon>>>,
+    next_room: Single<&ActionEvents, With<Action<NextRoom>>>,
 ) {
     input.move_axis = ***movement;
     let (held, events) = *jump;
@@ -128,6 +184,12 @@ pub fn collect(
     input.jump_pressed |= events.contains(ActionEvents::START);
     input.lunge_pressed |= lunge.contains(ActionEvents::START);
     input.reset_pressed = reset.contains(ActionEvents::START);
+    let (held, events) = *attack;
+    input.attack_held = **held;
+    input.attack_pressed |= events.contains(ActionEvents::START);
+    input.toast_pressed |= toast.contains(ActionEvents::START);
+    input.switch_weapon_pressed = switch.contains(ActionEvents::START);
+    input.next_room_pressed = next_room.contains(ActionEvents::START);
 }
 
 /// Hands the buffered input to this tick, consuming the presses.
@@ -138,7 +200,9 @@ pub fn take_controls(mut input: ResMut<TickInput>, mut controls: ResMut<TickCont
         jump_held: input.jump_held,
         jump_pressed: std::mem::take(&mut input.jump_pressed),
         lunge_pressed: std::mem::take(&mut input.lunge_pressed),
-        ..Controls::default()
+        attack_pressed: std::mem::take(&mut input.attack_pressed),
+        attack_held: input.attack_held,
+        parry_pressed: std::mem::take(&mut input.toast_pressed),
     };
 }
 

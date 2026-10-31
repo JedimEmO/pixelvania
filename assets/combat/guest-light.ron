@@ -1,0 +1,75 @@
+// A slight guest with a knife: quick, short reach, little weight.
+// Guests swing only their first combo move; the other slots repeat it so the file is a whole weapon.
+// Phase durations are ticks at 120 Hz.
+(
+    name: "guest-light",
+    charge_ticks: 120,
+    combo: (
+        (
+        windup: 30, active: 6, recovery: 34, cancel_window: 4,
+        hitboxes: [(rect: (x: 2.0, y: -24.0, w: 24.0, h: 16.0), ticks: None)],
+        damage: 8.0, poise_damage: 10.0, hit_stop: 0.04,
+        knockback: (120.0, -60.0), launches: false,
+        weight: Light, armour: false, step: Some(60.0),
+        chain: None, air_hang: 0,
+    ),
+        (
+        windup: 30, active: 6, recovery: 34, cancel_window: 4,
+        hitboxes: [(rect: (x: 2.0, y: -24.0, w: 24.0, h: 16.0), ticks: None)],
+        damage: 8.0, poise_damage: 10.0, hit_stop: 0.04,
+        knockback: (120.0, -60.0), launches: false,
+        weight: Light, armour: false, step: Some(60.0),
+        chain: None, air_hang: 0,
+    ),
+        (
+        windup: 30, active: 6, recovery: 34, cancel_window: 4,
+        hitboxes: [(rect: (x: 2.0, y: -24.0, w: 24.0, h: 16.0), ticks: None)],
+        damage: 8.0, poise_damage: 10.0, hit_stop: 0.04,
+        knockback: (120.0, -60.0), launches: false,
+        weight: Light, armour: false, step: Some(60.0),
+        chain: None, air_hang: 0,
+    ),
+    ),
+    charged: (
+        windup: 30, active: 6, recovery: 34, cancel_window: 4,
+        hitboxes: [(rect: (x: 2.0, y: -24.0, w: 24.0, h: 16.0), ticks: None)],
+        damage: 8.0, poise_damage: 10.0, hit_stop: 0.04,
+        knockback: (120.0, -60.0), launches: false,
+        weight: Light, armour: false, step: Some(60.0),
+        chain: None, air_hang: 0,
+    ),
+    rising: (
+        windup: 30, active: 6, recovery: 34, cancel_window: 4,
+        hitboxes: [(rect: (x: 2.0, y: -24.0, w: 24.0, h: 16.0), ticks: None)],
+        damage: 8.0, poise_damage: 10.0, hit_stop: 0.04,
+        knockback: (120.0, -60.0), launches: false,
+        weight: Light, armour: false, step: Some(60.0),
+        chain: None, air_hang: 0,
+    ),
+    air: (
+        (
+        windup: 30, active: 6, recovery: 34, cancel_window: 4,
+        hitboxes: [(rect: (x: 2.0, y: -24.0, w: 24.0, h: 16.0), ticks: None)],
+        damage: 8.0, poise_damage: 10.0, hit_stop: 0.04,
+        knockback: (120.0, -60.0), launches: false,
+        weight: Light, armour: false, step: Some(60.0),
+        chain: None, air_hang: 0,
+    ),
+        (
+        windup: 30, active: 6, recovery: 34, cancel_window: 4,
+        hitboxes: [(rect: (x: 2.0, y: -24.0, w: 24.0, h: 16.0), ticks: None)],
+        damage: 8.0, poise_damage: 10.0, hit_stop: 0.04,
+        knockback: (120.0, -60.0), launches: false,
+        weight: Light, armour: false, step: Some(60.0),
+        chain: None, air_hang: 0,
+    ),
+    ),
+    pogo: (
+        windup: 30, active: 6, recovery: 34, cancel_window: 4,
+        hitboxes: [(rect: (x: 2.0, y: -24.0, w: 24.0, h: 16.0), ticks: None)],
+        damage: 8.0, poise_damage: 10.0, hit_stop: 0.04,
+        knockback: (120.0, -60.0), launches: false,
+        weight: Light, armour: false, step: Some(60.0),
+        chain: None, air_hang: 0,
+    ),
+)
