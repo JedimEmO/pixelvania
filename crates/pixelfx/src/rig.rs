@@ -80,6 +80,9 @@ pub enum Weapon {
     Pistol,
     Launcher,
     Handle,
+    /// A champagne bottle as long as its wielder is tall, held by the neck: Pixelvania's Jeroboam.
+    /// Not in the JavaScript original.
+    Bottle,
 }
 impl Weapon {
     fn two(self) -> f64 {
@@ -90,6 +93,7 @@ impl Weapon {
             Self::Hammer => -7.0,
             Self::Scythe => -11.0,
             Self::Launcher => -9.0,
+            Self::Bottle => -5.0,
             _ => 0.0,
         }
     }
@@ -1024,6 +1028,51 @@ impl Handle<'_> {
                                 );
                                 l += 0.4;
                             }
+                        }
+                        k += 0.4;
+                    }
+                    i += 0.4;
+                }
+            }
+            Weapon::Bottle => {
+                // Glass from the foiled neck in the hand out to the base: a narrow neck,
+                // a sloping shoulder, then the full body with a label band, round in depth.
+                const GLASS: Color = hex(0x2c5a3c);
+                const GLASS_D: Color = hex(0x173222);
+                const GLASS_HI: Color = hex(0x8cc49a);
+                const LABEL: Color = hex(0xe8dcc0);
+                const LABEL_D: Color = hex(0xb8a888);
+                let mut i = -7.0;
+                while i <= 30.0 {
+                    let w: f64 = if i < 4.0 {
+                        1.4
+                    } else if i < 10.0 {
+                        1.4 + (i - 4.0) / 6.0 * 3.4
+                    } else {
+                        4.8
+                    };
+                    let mut k = -w;
+                    while k <= w + 0.01 {
+                        let edge = k.abs() > w - 0.6;
+                        let c = if i < 4.0 {
+                            if k > 0.3 { GOLD_D } else { GOLD }
+                        } else if (17.0..23.0).contains(&i) && !edge {
+                            if k > 1.5 { LABEL_D } else { LABEL }
+                        } else if i > 29.2 {
+                            GLASS_D
+                        } else if (-2.6..-1.4).contains(&k) {
+                            GLASS_HI
+                        } else if k > w * 0.35 || edge {
+                            GLASS_D
+                        } else {
+                            GLASS
+                        };
+                        // Round in depth: thicker through the middle of the bottle.
+                        let depth = (w * w - k * k).max(0.0).sqrt();
+                        let mut l = -depth;
+                        while l <= depth + 0.01 {
+                            self.put(i, k, c, l);
+                            l += 0.8;
                         }
                         k += 0.4;
                     }

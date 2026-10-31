@@ -365,10 +365,10 @@ fn animate(
                 .unwrap_or(look.animator.pose().face),
             ..pose
         };
-        // The Jeroboam stands in as the rig's mallet, swung with both hands, until it has art.
+        // The Jeroboam is a champagne bottle, swung with both hands.
         let pose = if p.jeroboam && pose.weapon.is_some() {
             anim::Pose {
-                weapon: Some(pixelfx::rig::Weapon::Hammer),
+                weapon: Some(pixelfx::rig::Weapon::Bottle),
                 two: true,
                 ..pose
             }

@@ -50,6 +50,7 @@ Draw them through a `Painter`, with the feet at its origin.
 `Rig::skeleton` exposes solved joints; `shortfall` reports unreachable hands.
 `Measurements`, body palettes and light direction can be changed per character.
 The stock body parts and eleven weapons use the original depth and shading rules.
+`Weapon::Bottle`, the game's Jeroboam, is our addition and has no counterpart in the original.
 The solver uses f64; depth and tone buffers use f32, as in the original typed arrays.
 There is no quantized pose cache, so rendering does not depend on earlier calls.
 

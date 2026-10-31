@@ -220,6 +220,21 @@ fn player_sheet() -> Result<()> {
         })
         .collect();
     draw_rows(&swings, &out.join("player-sabre.png"))?;
+    let bottle: Vec<(&str, Vec<anim::Pose>)> = swings
+        .iter()
+        .map(|(name, poses)| {
+            let poses = poses
+                .iter()
+                .map(|p| anim::Pose {
+                    weapon: Some(pixelfx::rig::Weapon::Bottle),
+                    two: true,
+                    ..p.clone()
+                })
+                .collect();
+            (*name, poses)
+        })
+        .collect();
+    draw_rows(&bottle, &out.join("player-jeroboam.png"))?;
     guests_sheet(&out)
 }
 

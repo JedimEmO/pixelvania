@@ -31,14 +31,13 @@ and see the README for the controls and the debug keys.
 6. **Three enemies.** Done in a first form.
    Light, medium and heavy guests with their own rigs, weapons and frame data,
    who walk up and swing when in reach. Their behaviour is the simplest that makes a fight.
-7. **The Jeroboam.** Done, with the rig's mallet standing in for the bottle.
+7. **The Jeroboam.** Done: a champagne bottle as long as the player is tall, a new rig weapon.
 8. **Combat tools.** Done: F2 and F3 pause and step, F5 shows boxes and bars,
    7, 8 and 9 spawn guests, and frame data reloads with the `dev` feature.
 9. **The mood switch.** Done: F4 or the panel switches neutral, the High and the Comedown.
 
 ## Rough edges we know about
 
-The Jeroboam is drawn as a mallet until the rig can draw a bottle.
 The player is the stock mannequin in a burgundy suit;
 the costume silhouette the art direction asks for, a coat or hair, needs new rig parts.
 Dust from running and jumping is faint in dark rooms.
