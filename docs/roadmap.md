@@ -62,6 +62,9 @@ with heavy hits ducking the music bus and the mood colouring every impact.
 And backgrounds: a generated ballroom in parallax layers behind the combat lab,
 with a dark foreground passing in front, lifted by the room's lights (`cargo xtask backgrounds`).
 
+And the mood in the picture: the Comedown drains the frame to under half its colour, the High deepens it.
+The Toast has a pose, the blade raised like a glass, and a guest's wind-up opens with a glint and a cue.
+
 Next: a first music sketch, for the director to react to.
 
 ## For the director
@@ -69,6 +72,14 @@ Next: a first music sketch, for the director to react to.
 Play the feel lab and the combat lab with a gamepad; both milestones are decided by how they feel.
 The combat lab's done test is a fight against the heavy guest with the Jeroboam,
 once in neutral or the High and once in the Comedown (F4).
+
+Things only you can judge, because nobody has seen or heard them in play:
+
+- **The sounds.** Every effect was made and checked by its waveform and levels; none has been listened to.
+- **The finisher.** Stagger a guest (break its poise with light hits, or a charged Jeroboam slam
+  when it is not mid-swing), then hit it: it should die in a burst of pink, with slow motion.
+  It works in code, but no scripted run could time it, so it has not been seen.
+- **Rumble.** Written for every hit by weight, never felt on a pad.
 
 Decisions taken with a default, to confirm or change:
 
@@ -80,3 +91,6 @@ Decisions taken with a default, to confirm or change:
 - **Impact by mood.** The High scales hit-stop by 1.2, knockback by 1.15, poise damage by 1.2 and shake by 1.25;
   the Comedown by 0.7, 0.75, 0.75 and 0.6. These are starting values.
 - **The player's palette.** Burgundy velvet with the rig's pink chest gem kept as a boutonnière.
+- **The weapons' looks.** The Jeroboam is a green champagne bottle held by the neck;
+  the candelabrum a gilt pole with three candles. Swings reuse the sabre's poses with both hands.
+- **The mood's grade.** The Comedown at 45% saturation, the High at 120%.
