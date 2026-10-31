@@ -2,11 +2,13 @@
 //!
 //! Systems read the [`Tuning`] resource. It holds the defaults below until the file has
 //! loaded, and is replaced whenever the file changes on disk (with the `dev` feature).
+//! The movement numbers live in the `world` crate, so headless tests use the same defaults.
 
 use bevy::asset::io::Reader;
 use bevy::asset::{AssetLoader, LoadContext};
 use bevy::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+pub use world::MoveTuning;
 
 pub struct TuningPlugin;
 
@@ -20,65 +22,75 @@ impl Plugin for TuningPlugin {
     }
 }
 
-#[derive(Asset, Resource, TypePath, Deserialize, Clone, Debug, Default)]
+#[derive(Asset, Resource, TypePath, Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 #[serde(default)]
 pub struct Tuning {
-    pub movement: Movement,
+    pub movement: MoveTuning,
     pub camera: CameraTuning,
+    pub juice: Juice,
 }
 
-/// Player movement. Speeds in pixels per second, accelerations in pixels per second squared.
-#[derive(Deserialize, Clone, Debug)]
-#[serde(default)]
-pub struct Movement {
-    pub run_speed: f32,
-    pub run_accel: f32,
-    pub run_decel: f32,
-    /// Acceleration while reversing direction on the ground.
-    pub turn_accel: f32,
-    pub air_accel: f32,
-    pub air_decel: f32,
-    pub gravity: f32,
-    pub max_fall: f32,
-    pub jump_speed: f32,
-    /// Upward speed is multiplied by this when jump is released early.
-    pub jump_cut: f32,
-    /// Stick deflection needed to start walking.
-    pub walk_threshold: f32,
-}
-
-impl Default for Movement {
-    fn default() -> Self {
-        Self {
-            run_speed: 150.0,
-            run_accel: 1900.0,
-            run_decel: 2400.0,
-            turn_accel: 3200.0,
-            air_accel: 1400.0,
-            air_decel: 900.0,
-            gravity: 950.0,
-            max_fall: 340.0,
-            jump_speed: 320.0,
-            jump_cut: 0.4,
-            walk_threshold: 0.3,
-        }
-    }
-}
-
-#[derive(Deserialize, Clone, Debug)]
+/// The camera. Rates are per second; distances are pixels.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct CameraTuning {
-    /// How quickly the camera closes the distance to its target, per second.
-    pub follow_rate: f32,
-    /// How far ahead of the player the camera looks, in pixels.
+    /// How quickly the camera closes the horizontal distance to its target.
+    pub follow_rate_x: f32,
+    /// How quickly it closes the vertical distance.
+    pub follow_rate_y: f32,
+    /// How far ahead of the player the camera looks, in the direction they face.
     pub lead: f32,
+    /// How fast the look-ahead swings round when the player turns, in pixels per second.
+    pub lead_speed: f32,
+    /// The camera ignores a jump's height until the player falls this far below
+    /// where they last stood, or rises this far above it.
+    pub fall_release: f32,
+    pub rise_release: f32,
+    /// How far above the player the camera centres, so more of the room above is visible.
+    pub look_up: f32,
 }
 
 impl Default for CameraTuning {
     fn default() -> Self {
         Self {
-            follow_rate: 6.0,
+            follow_rate_x: 6.0,
+            follow_rate_y: 4.0,
             lead: 40.0,
+            lead_speed: 90.0,
+            fall_release: 40.0,
+            rise_release: 100.0,
+            look_up: 24.0,
+        }
+    }
+}
+
+/// Squash, stretch, afterimages and rumble.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(default)]
+pub struct Juice {
+    /// How quickly a squashed or stretched sprite returns to its shape, per second.
+    pub squash_recovery: f32,
+    /// Stretch on a jump, as width and height scale.
+    pub jump_stretch: (f32, f32),
+    /// Squash on a hard landing.
+    pub land_squash: (f32, f32),
+    /// Stretch on a Lunge.
+    pub lunge_stretch: (f32, f32),
+    /// Seconds an afterimage of the Lunge lingers.
+    pub afterimage_life: f32,
+    /// Multiplies every rumble; 0 turns rumble off.
+    pub rumble: f32,
+}
+
+impl Default for Juice {
+    fn default() -> Self {
+        Self {
+            squash_recovery: 14.0,
+            jump_stretch: (0.75, 1.3),
+            land_squash: (1.4, 0.65),
+            lunge_stretch: (1.45, 0.75),
+            afterimage_life: 0.2,
+            rumble: 1.0,
         }
     }
 }
@@ -103,6 +115,7 @@ fn apply_changes(
         };
         if id == handle.0.id()
             && let Some(loaded) = assets.get(id)
+            && *tuning != *loaded
         {
             *tuning = loaded.clone();
             info!("tuning loaded");
@@ -160,5 +173,22 @@ impl From<std::io::Error> for TuningError {
 impl From<ron::error::SpannedError> for TuningError {
     fn from(e: ron::error::SpannedError) -> Self {
         TuningError::Ron(e)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The file and the code agree, so the game feels the same before and after the file loads.
+    #[test]
+    fn the_tuning_file_matches_the_defaults() {
+        let text = std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../assets/tuning.ron"
+        ))
+        .unwrap();
+        let file: Tuning = ron::from_str(&text).unwrap();
+        assert_eq!(file, Tuning::default());
     }
 }

@@ -102,6 +102,10 @@ pub struct Light2d {
 #[derive(Component)]
 struct WorldCamera;
 
+/// The camera that draws the composite to the window. Debug overlays attach here.
+#[derive(Component)]
+pub struct ScreenCamera;
+
 #[derive(Resource)]
 struct Composite(Handle<CompositeMaterial>);
 
@@ -160,6 +164,7 @@ fn setup(
     commands.insert_resource(Composite(material.clone()));
     commands.spawn((
         Name::new("screen camera"),
+        ScreenCamera,
         Camera2d,
         Camera {
             order: 0,
