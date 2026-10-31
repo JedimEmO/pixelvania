@@ -4,6 +4,7 @@
 // One guest of each weight class waits along the floor: light, medium and heavy.
 [room]
 name = arena
+background = ballroom
 
 [legend]
 # stone

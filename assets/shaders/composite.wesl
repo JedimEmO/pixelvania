@@ -17,6 +17,8 @@ struct CompositeParams {
 @group(2) @binding(1) var color_tex: texture_2d<f32>;
 @group(2) @binding(2) var light_tex: texture_2d<f32>;
 @group(2) @binding(3) var glow_tex: texture_2d<f32>;
+@group(2) @binding(4) var background_tex: texture_2d<f32>;
+@group(2) @binding(5) var foreground_tex: texture_2d<f32>;
 
 const SIZE: vec2<f32> = vec2(640.0, 360.0);
 
@@ -71,8 +73,16 @@ fn fragment(in: FragmentIn) -> @location(0) vec4<f32> {
         }
         out += rim * params.rim * albedo.rgb * 4.0;
     } else {
-        out = params.background.rgb * light;
+        // Scenery carries its own distant lighting, and the room's lights lift it a little more:
+        // half bright in the dark, full near a lamp, so detail shows where the light is.
+        // Its alpha never enters solid_at. Render-target RGB is premultiplied by coverage;
+        // empty rooms retain the old fill.
+        let background = textureLoad(background_tex, clamp_texel(p), 0);
+        let lift = clamp(vec3(0.45) + light * 0.6, vec3(0.45), vec3(1.2));
+        out = background.rgb * lift + params.background.rgb * light * (1.0 - background.a);
     }
     out += textureLoad(glow_tex, clamp_texel(p), 0).rgb;
+    let foreground = textureLoad(foreground_tex, clamp_texel(p), 0);
+    out = foreground.rgb + out * (1.0 - foreground.a);
     return vec4(out, 1.0);
 }

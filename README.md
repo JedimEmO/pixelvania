@@ -65,3 +65,10 @@ In the game, effects land on the room's floors, hide behind its walls, and light
 and whole rooms to `target/tiles/rooms/`, with native and nearest-neighbour 2x previews.
 `crates/assetgen` paints stone, wood, velvet and gilt from seeded five-colour ramps.
 The game uses the same painter when a room loads or reloads.
+
+## Ballroom backgrounds
+
+`background = ballroom` in a room's `[room]` section selects generated parallax scenery.
+`cargo xtask backgrounds` writes each strip and three camera offsets to `target/backgrounds/`,
+with native and nearest-neighbour 2x previews.
+The game generates the same seeded layers on room load, with dim wine-rose distant light.

@@ -36,6 +36,8 @@ pub const TILE: i32 = 16;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Room {
     pub name: String,
+    /// Optional backdrop generator name from `[room]`.
+    pub background: Option<String>,
     /// Width in tiles.
     pub width: usize,
     /// Height in tiles.
@@ -135,6 +137,7 @@ impl Room {
         let err = |line: usize, message: String| ParseError { line, message };
         let mut section = Section::None;
         let mut name = String::new();
+        let mut background = None;
         let mut legend: BTreeMap<char, u8> = BTreeMap::new();
         let mut materials: Vec<String> = Vec::new();
         let mut rows: Vec<(usize, &str)> = Vec::new();
@@ -172,6 +175,7 @@ impl Room {
                         .ok_or_else(|| err(line_no, "expected `key = value`".into()))?;
                     match key.trim() {
                         "name" => name = value.trim().to_owned(),
+                        "background" => background = Some(value.trim().to_owned()),
                         other => return Err(err(line_no, format!("unknown room key `{other}`"))),
                     }
                 }
@@ -248,6 +252,7 @@ impl Room {
 
         Ok(Room {
             name,
+            background,
             width,
             height,
             materials,
@@ -334,6 +339,15 @@ name = lab
 spawn 1 1
 light 2.5 1 radius=80 color=ff8000
 ";
+
+    #[test]
+    fn background_is_optional_room_metadata() {
+        assert_eq!(Room::parse(LAB).unwrap().background, None);
+        let room =
+            Room::parse(&LAB.replace("name = lab", "name = lab\nbackground = ballroom")).unwrap();
+        assert_eq!(room.background.as_deref(), Some("ballroom"));
+        assert!(Room::parse(&LAB.replace("name = lab", "unknown = ballroom")).is_err());
+    }
 
     #[test]
     fn parses_a_room() {
