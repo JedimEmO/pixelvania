@@ -10,60 +10,41 @@ and a commit on `master`.
 A step that needs a decision only the director can make
 goes on with a reasonable default, and the question goes under *For the director*.
 
-## Finishing pixelfx in Rust
+## Where the combat lab stands
 
-1. **Effects in the game.**
-   A Bevy plugin runs pixelfx effects on the fixed tick, at the effect's position in the room.
-   Colour goes to the colour buffer, light to the light buffer,
-   and particles collide with the room's tiles.
-   Landings raise dust, hard landings the heavy landing, and a dev key spawns any effect.
-   Done when a slash lights the walls around it and its sparks bounce off the real floor.
+Steps 1 to 9 below are built, and each one works in its basic form.
+None of them has been played with a gamepad yet, which is the test that decides them.
+Run `cargo run --bin pixelvania`, press Start or Tab for the combat lab,
+and see the README for the controls and the debug keys.
 
-## Combat lab
+1. **Effects in the game.** Done.
+   Effects land on the room's floors, hide behind its walls, and light what is around them.
+   Landings, jumps, wall jumps and ground Lunges raise dust; a fast-fall slam cracks the floor.
+2. **The player as a rig.** Done.
+   Ten movement states in the `anim` crate, drawn every frame; `cargo xtask rig player` shows them.
+3. **Combat core.** Done, by Codex, in `world::combat`, with 28 headless tests.
+4. **The sabre.** Done.
+   Combo, charged, rising, air combo and pogo, posed from the frame data.
+5. **Impact.** Done.
+   Per-body hit-stop, the victim's shiver, shake along the hit, rumble by weight,
+   slash trails, sparks, a white flash on the body hit, and wall splats.
+6. **Three enemies.** Done in a first form.
+   Light, medium and heavy guests with their own rigs, weapons and frame data,
+   who walk up and swing when in reach. Their behaviour is the simplest that makes a fight.
+7. **The Jeroboam.** Done, with the rig's mallet standing in for the bottle.
+8. **Combat tools.** Done: F2 and F3 pause and step, F5 shows boxes and bars,
+   7, 8 and 9 spawn guests, and frame data reloads with the `dev` feature.
+9. **The mood switch.** Done: F4 or the panel switches neutral, the High and the Comedown.
 
-2. **The player as a rig.**
-   The grey rectangle becomes the pixelfx rig, drawn every frame,
-   with poses for idle, run, turn, jump, Swoon, fall, land, Lunge and wall slide.
-   Squash, stretch and the afterimages keep working.
-   Done when a contact sheet of every pose and in-game screenshots read clearly at 1x.
+## Rough edges we know about
 
-3. **Combat core.**
-   In `world`, without Bevy: attacks as frame data in RON
-   (wind-up, active, recovery, cancel window, hitboxes, hit-stop, poise damage, knockback),
-   an attack state machine with an input buffer, hit detection,
-   and bodies with health, poise, stagger, launch and wall splat.
-   Done when headless tests pin commitment, the Lunge cancel, poise breaks and wall splats.
-
-4. **The sabre.**
-   The three-hit combo, charged attack, rising attack, air combo and pogo,
-   with the swing poses driven by pixelfx's act timing.
-   Done when a contact sheet shows every move's wind-up, release and recovery.
-
-5. **Impact.**
-   Hit-stop, shake along the line of the hit, rumble by weight,
-   hit sparks and slashes from pixelfx, and the victim's shiver.
-   Done when a recorded hit shows freeze, shake and sparks on the right ticks.
-
-6. **Three enemies.**
-   A light, a medium and a heavy guest on the shared rig,
-   each with readable attacks, poise and its weight class's reactions,
-   in a combat lab room. The Toast parries their blows.
-   Done when each enemy can be fought and killed, and the tests cover their reactions.
-
-7. **The Jeroboam.**
-   The second weapon, switched at any time: slow, huge poise damage, the heaviest hit-stop,
-   and the charged ground slam.
-   Done when the heavy enemy staggers from it and not from the sabre's light hits.
-
-8. **Combat tools.**
-   Hitbox, hurtbox and poise overlays, pause and single-tick stepping,
-   an enemy spawner and frame data reloading while the game runs.
-
-9. **The mood switch.**
-   High, neutral and Comedown as multipliers on hit-stop, knockback, poise damage and shake,
-   switched from the panel, so the combat lab's done test can be played.
-
-Steps 2 and 3 do not depend on each other, and step 3 may be handed to Codex.
+The Jeroboam is drawn as a mallet until the rig can draw a bottle.
+The player is the stock mannequin in a burgundy suit;
+the costume silhouette the art direction asks for, a coat or hair, needs new rig parts.
+Dust from running and jumping is faint in dark rooms.
+Guests do not jump, retreat, block or circle; they approach and swing.
+There is no sound yet, so the sub-bass thump and the music dip on heavy hits are missing.
+The rig is lit from a fixed direction, not from the nearest light.
 
 ## Further, if there is time
 
@@ -73,3 +54,16 @@ and the tile generator that starts the *One finished room* milestone.
 ## For the director
 
 Play the feel lab and the combat lab with a gamepad; both milestones are decided by how they feel.
+The combat lab's done test is a fight against the heavy guest with the Jeroboam,
+once in neutral or the High and once in the Comedown (F4).
+
+Decisions taken with a default, to confirm or change:
+
+- **Buttons.** Attack is West (X, Square), the Toast is the left bumper, and North (Y, Triangle) switches weapons.
+- **The charge.** Pressing attack swings at once; keeping it held then releases into the charged attack.
+  The other way, where holding delays the first swing, makes every attack wait for the release.
+- **Hit-stop is per body.** The attacker freezes and the victim shivers, and the rest of the world moves on.
+  A global freeze on heavy hits is easy to add if fights feel too busy to read.
+- **Impact by mood.** The High scales hit-stop by 1.2, knockback by 1.15, poise damage by 1.2 and shake by 1.25;
+  the Comedown by 0.7, 0.75, 0.75 and 0.6. These are starting values.
+- **The player's palette.** Burgundy velvet with the rig's pink chest gem kept as a boutonnière.
