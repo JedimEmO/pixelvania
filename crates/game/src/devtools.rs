@@ -2,7 +2,7 @@
 //!
 //! `PIXELVANIA_SCREENSHOT=path.png` saves a screenshot after the game has settled, then exits.
 //! `PIXELVANIA_HOLD=right,jump` holds those inputs from the start, for screenshots of motion;
-//! `attack`, `charge` and `toast` press those at set frames.
+//! `attack`, `charge` and `toast` press those at set frames, and `jeroboam` switches to it.
 //! `PIXELVANIA_RECORD=path` writes every tick's input to a file;
 //! `PIXELVANIA_REPLAY=path` plays such a file back instead of reading the controller.
 //! `PIXELVANIA_FX=sword-slash` spawns that effect in front of the player once it has landed;
@@ -158,6 +158,7 @@ fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut frame: L
                 input.attack_held = (70..130).contains(&*frame);
             }
             "toast" => input.toast_pressed |= *frame == 80,
+            "jeroboam" => input.switch_weapon_pressed = *frame == 40,
             _ => {}
         }
     }
@@ -444,7 +445,12 @@ mod panel {
         });
     }
 
-    fn draw(mut contexts: EguiContexts, open: Res<Open>, mut tuning: ResMut<Tuning>) -> Result {
+    fn draw(
+        mut contexts: EguiContexts,
+        open: Res<Open>,
+        mut tuning: ResMut<Tuning>,
+        mut mood: ResMut<crate::combat::Mood>,
+    ) -> Result {
         if !open.0 {
             return Ok(());
         }
@@ -462,6 +468,14 @@ mod panel {
                     }
                     if ui.button("Defaults").clicked() {
                         edited = Tuning::default();
+                    }
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Combat mood (F4)");
+                    for m in crate::combat::Mood::ALL {
+                        if ui.selectable_label(mood.name == m.name, m.name).clicked() {
+                            *mood = m;
+                        }
                     }
                 });
                 let m = &mut edited.movement;
