@@ -44,9 +44,9 @@ pixelfx brings its own particle and debris simulation for effects.
 crates/
   game/       the binary and the game's Bevy plugins
   pixelfx/    the pixelfx port: frames, painter, simulation, rig, effects; no Bevy dependency
-  world/      the room and world formats, auto-tiling, the reachability checker; no Bevy dependency
+  world/      the room format and gameplay simulation; no Bevy dependency
   anim/       character animation: from how a body moves to the rig pose it holds; no Bevy dependency
-  assetgen/   offline generators: tiles, backgrounds, music, sound effects
+  assetgen/   seeded tile generators and room auto-tiling; no Bevy dependency
   xtask/      the command line for everything that is not the game
 ```
 
@@ -54,7 +54,7 @@ Game code lives in `game` as Bevy plugins, one per concern:
 render, input, player, camera, rooms, combat, enemies, mood, audio, effects, save and ui.
 We split a plugin into its own crate only when compile times or reuse ask for it.
 
-`pixelfx`, `world` and `anim` have no Bevy dependency on purpose.
+`pixelfx`, `world`, `anim` and `assetgen` have no Bevy dependency on purpose.
 Their tests run in milliseconds, the tools use them without starting an engine,
 and a Bevy upgrade does not touch them.
 
@@ -65,7 +65,8 @@ and a Bevy upgrade does not touch them.
 | `cargo xtask fx <id>` | Renders an effect to a contact sheet and a GIF |
 | `cargo xtask rig <character>` | Renders every animation of a character to contact sheets |
 | `cargo xtask map` | Draws the whole world, and runs the reachability checker |
-| `cargo xtask tiles`, `backgrounds` | Rebuilds the generated art |
+| `cargo xtask tiles` | Renders material sheets and all rooms to `target/tiles/`, at 1x and 2x |
+| `cargo xtask backgrounds` | Planned: rebuilds generated backgrounds |
 | `cargo xtask music <track>`, `sfx` | Renders audio, with loudness and spectrum reports |
 | `cargo xtask golden` | Renders reference frames from the JavaScript pixelfx |
 
@@ -73,6 +74,16 @@ The `mood` plugin owns one resource that the others read:
 the current High, Comedown, tolerance and progression fade.
 The renderer reads it for the colour grade, the audio layer for the mix, the player for its speeds.
 One state driving every sense is how the game keeps them saying the same thing.
+
+Tile materials use five dark sRGB tones and eight seeded variants each.
+The painter checks all eight neighbours for edges and concave corners.
+Empty cells stay transparent, and solid cells stay opaque for the renderer's rim light.
+Unknown materials use a magenta checker.
+
+The game paints rooms on load and reload through `assetgen::rasterize`.
+This is an exception to the offline asset plan in [production](production.md),
+so text-room edits remain visible without a separate bake step.
+`cargo xtask tiles` uses the same painter and adds flat dim light for previews.
 
 ## Time
 
