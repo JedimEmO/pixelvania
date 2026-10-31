@@ -73,3 +73,15 @@ The game uses the same painter when a room loads or reloads.
 `cargo xtask backgrounds` writes each strip and three camera offsets to `target/backgrounds/`,
 with native and nearest-neighbour 2x previews.
 The game generates the same seeded layers on room load, with dim wine-rose distant light.
+
+## Ballroom music
+
+`cargo xtask music` renders five deterministic WAV stems to `assets/music/ballroom/`.
+The stems are not committed, being 54 MB of WAV; run it once after cloning, or the game plays without music.
+It also writes a full mix, waveforms, loop-seam views and spectrograms to `target/music/`.
+The sketch is 64 seconds at 120 BPM in D minor;
+[the audio notes](docs/design/audio.md#ballroom-sketch) describe its form and instruments.
+`music = ballroom` selects it in a room's `[room]` section, including the arena.
+On native builds, F4 changes the stem mix, filter and reverb over 1.5 seconds.
+Music fades out in other rooms and stays silent without an audio device;
+wasm skips music playback.

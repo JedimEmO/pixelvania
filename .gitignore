@@ -1,3 +1,5 @@
 /target
 /dist
 /.claude/worktrees/
+# Rendered from crates/assetgen by `cargo xtask music`; too large to commit.
+/assets/music/

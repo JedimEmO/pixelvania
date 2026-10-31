@@ -81,3 +81,23 @@ and a track that does not work goes back with notes in words: too busy, too brig
 
 The stem structure and the tempo and key plan are fixed before any area's music is written,
 because both shape how every track is composed.
+
+## Ballroom sketch
+
+`cargo xtask music` renders a 64-second stereo loop at 120 BPM in D minor, in 4/4.
+The 32-bar form is A / A′ / B / A″, eight bars each;
+the middle eight leave more space around the four-note toast, D–F–E–A.
+Each chord lasts two bars: Dm9, B♭maj7, Fmaj7, C6,
+Gm9, Dm9/A, B♭maj7, A7♭9. The progression repeats twice.
+
+Five stems share one normalization gain, with their sum peaking at −6 dBFS:
+soft four-on-the-floor drums and brushes, octave bass, detuned pads and FM keys,
+a bell-like FM lead, and room noise with distant vowel-like murmurs.
+Release tails and reverb wrap into the beginning of the loop.
+
+On native builds, `music = ballroom` selects the theme in a room's `[room]` section.
+Mood changes tween stem levels, low-pass cutoff and reverb over 1.5 seconds.
+The High opens the filter and brightens the room; the Comedown drops drums and lead.
+This sketch keeps a fixed playback rate, including during the Comedown.
+Silent stems keep their place when leaving the room, and returning fades them back in.
+Music is skipped on wasm. The sketch still needs a listening pass.

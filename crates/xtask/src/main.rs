@@ -380,6 +380,7 @@ fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("golden") if args.len() == 1 => golden(),
+        Some("music") if args.len() == 1 => { #[path = "music.rs"] mod music; music::render() },
         Some("sfx") if args.len() == 1 => assetgen::sfx::render_all(&root().join("assets/sfx"), &root().join("target/sfx")),
         Some("tiles") if args.len() == 1 => tiles::render(),
         Some("backgrounds") if args.len() == 1 => {

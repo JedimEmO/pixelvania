@@ -5,6 +5,7 @@
 [room]
 name = arena
 background = ballroom
+music = ballroom
 
 [legend]
 # stone
