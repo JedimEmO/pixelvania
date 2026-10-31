@@ -9,7 +9,8 @@
 //! the number keys 1 to 6 spawn each pixelfx effect there at any time.
 //! F2 pauses the game and F3, while paused, steps it one gameplay tick.
 //! F4 cycles the mood of combat: neutral, the High and the Comedown.
-//! The keys 7, 8 and 9 spawn a light, medium or heavy guest in front of the player.
+//! The keys 7, 8 and 9 spawn a light, medium or heavy guest in front of the player,
+//! and `PIXELVANIA_GUEST=light`, `medium` or `heavy` spawns one there once the player stands.
 //! F5 shows hurtboxes, active hitboxes, and health and poise bars; `PIXELVANIA_BOXES=1` starts with them on.
 //! `PIXELVANIA_MOOD=high` or `comedown` starts in that mood.
 //! A replay is exact as long as the room and the tuning are the same as when it was recorded.
@@ -158,6 +159,8 @@ fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut frame: L
                 input.attack_held = (70..130).contains(&*frame);
             }
             "toast" => input.toast_pressed |= *frame == 80,
+            // One more press after a charge, timed to land on a guest the charge staggered.
+            "finish" => input.attack_pressed |= *frame == 172,
             "jeroboam" => input.switch_weapon_pressed = *frame == 40,
             "candelabrum" => input.switch_weapon_pressed = *frame == 40 || *frame == 50,
             _ => {}
@@ -176,17 +179,26 @@ fn spawn_guests(
     weapons: Option<Res<crate::combat::Weapons>>,
     active: Res<crate::rooms::ActiveRoom>,
     mut images: ResMut<Assets<Image>>,
+    mut frame: Local<u32>,
 ) {
     use anim::guest::Class;
     let (Ok(p), Some(weapons), Some(room)) = (players.single(), weapons, &active.room) else {
         return;
     };
+    *frame += 1;
+    let planned = match std::env::var("PIXELVANIA_GUEST").as_deref() {
+        Ok("light") => Some(Class::Light),
+        Ok("medium") => Some(Class::Medium),
+        Ok("heavy") => Some(Class::Heavy),
+        _ => None,
+    }
+    .filter(|_| *frame == 30);
     for (key, class) in [
         (KeyCode::Digit7, Class::Light),
         (KeyCode::Digit8, Class::Medium),
         (KeyCode::Digit9, Class::Heavy),
     ] {
-        if keys.just_pressed(key) {
+        if keys.just_pressed(key) || planned == Some(class) {
             let b = &p.ctrl.body;
             let x = b.x as f32 + b.w as f32 / 2.0 + p.ctrl.facing as f32 * 64.0;
             let feet = (x, (b.y + b.h) as f32);

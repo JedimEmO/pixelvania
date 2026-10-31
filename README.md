@@ -47,7 +47,8 @@ jump is pressed at frame 60 and the Lunge at frame 90.
 `PIXELVANIA_PANEL=1` opens the tuning panel at start, with the `dev` feature.
 `PIXELVANIA_FX=sword-slash` sets off that effect in front of the player at frame 80.
 `PIXELVANIA_ROOM=arena` starts in the combat lab, and `PIXELVANIA_MOOD=high` or `comedown` in that mood.
-`PIXELVANIA_HOLD` also takes `attack` (a three-hit combo), `charge` and `toast`.
+`PIXELVANIA_HOLD` also takes `attack` (a three-hit combo), `charge`, `toast`, `finish`,
+`jeroboam` and `candelabrum`, and `PIXELVANIA_GUEST=heavy` spawns a guest in front of the player.
 
 ## Effects and the rig
 
