@@ -38,6 +38,8 @@ pub struct Room {
     pub name: String,
     /// Optional backdrop generator name from `[room]`.
     pub background: Option<String>,
+    /// Optional music theme from `[room]`.
+    pub music: Option<String>,
     /// Width in tiles.
     pub width: usize,
     /// Height in tiles.
@@ -138,6 +140,7 @@ impl Room {
         let mut section = Section::None;
         let mut name = String::new();
         let mut background = None;
+        let mut music = None;
         let mut legend: BTreeMap<char, u8> = BTreeMap::new();
         let mut materials: Vec<String> = Vec::new();
         let mut rows: Vec<(usize, &str)> = Vec::new();
@@ -176,6 +179,7 @@ impl Room {
                     match key.trim() {
                         "name" => name = value.trim().to_owned(),
                         "background" => background = Some(value.trim().to_owned()),
+                        "music" => music = Some(value.trim().to_owned()),
                         other => return Err(err(line_no, format!("unknown room key `{other}`"))),
                     }
                 }
@@ -253,6 +257,7 @@ impl Room {
         Ok(Room {
             name,
             background,
+            music,
             width,
             height,
             materials,
@@ -347,6 +352,14 @@ light 2.5 1 radius=80 color=ff8000
             Room::parse(&LAB.replace("name = lab", "name = lab\nbackground = ballroom")).unwrap();
         assert_eq!(room.background.as_deref(), Some("ballroom"));
         assert!(Room::parse(&LAB.replace("name = lab", "unknown = ballroom")).is_err());
+    }
+
+    #[test]
+    fn music_is_optional_room_metadata() {
+        assert_eq!(Room::parse(LAB).unwrap().music, None);
+        let room = Room::parse(&LAB.replace("name = lab", "name = lab\nmusic = ballroom")).unwrap();
+        assert_eq!(room.music.as_deref(), Some("ballroom"));
+        assert_eq!(room.background, None);
     }
 
     #[test]

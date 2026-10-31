@@ -10,6 +10,7 @@ mod enemies;
 mod fire;
 mod hud;
 mod input;
+mod music;
 mod player;
 mod render;
 mod rooms;
@@ -40,6 +41,7 @@ fn main() -> AppExit {
         .add_plugins((
             render::PixelRenderPlugin,
             audio::AudioPlugin,
+            music::MusicPlugin,
             backdrop::BackdropPlugin,
             tuning::TuningPlugin,
             input::InputPlugin,

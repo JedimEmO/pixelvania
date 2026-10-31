@@ -5,6 +5,8 @@
 
 pub mod backgrounds;
 #[cfg(feature = "sfx")]
+pub mod music;
+#[cfg(feature = "sfx")]
 pub mod sfx;
 
 use image::{Rgba, RgbaImage};
