@@ -1,14 +1,17 @@
 //! The player: the movement controller on the fixed tick, and how it looks and feels.
 //!
 //! The movement itself is [`world::Controller`]. This plugin feeds it each tick's input,
-//! draws the body between ticks, and turns what happened into squash and stretch,
-//! afterimages and rumble. Everything here is placeholder art until the rig arrives.
+//! draws the body between ticks as the pixelfx rig, and turns what happened into squash and stretch,
+//! afterimages, dust and rumble.
 
 use std::time::Duration;
 
+use anim::{Animator, Motion, Rig};
+use bevy::asset::RenderAssetUsages;
 use bevy::camera::visibility::RenderLayers;
 use bevy::input::gamepad::{GamepadRumbleIntensity, GamepadRumbleRequest};
 use bevy::prelude::*;
+use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy::sprite::Anchor;
 use world::{Abilities, Controller, Events};
 
@@ -32,6 +35,7 @@ impl Plugin for PlayerPlugin {
                     reset,
                     spawn,
                     place,
+                    animate,
                     react,
                     recover_shape,
                     leave_afterimages,
@@ -45,8 +49,9 @@ impl Plugin for PlayerPlugin {
 /// Width and height of the body, in pixels.
 pub const SIZE: IVec2 = IVec2::new(12, 34);
 
-const BODY_COLOR: Color = Color::srgb(0.55, 0.53, 0.60);
-const FRONT_COLOR: Color = Color::srgb(0.80, 0.78, 0.84);
+/// The size of the image the rig is drawn into, and where the feet are in it.
+const LOOK_SIZE: UVec2 = UVec2::new(96, 80);
+const LOOK_FEET: [f64; 2] = [48.0, 64.0];
 
 #[derive(Component)]
 pub struct Player {
@@ -55,6 +60,8 @@ pub struct Player {
     prev: Vec2,
     /// What happened in the ticks since the last frame.
     events: Events,
+    /// In a Swoon, from the second jump until the body next stands or clings.
+    swooning: bool,
 }
 
 impl Player {
@@ -82,9 +89,36 @@ pub(crate) struct Shape {
     scale: Vec2,
 }
 
-/// The lighter strip on the side the player faces.
+/// The rig, its animation, and the image it is drawn into each frame.
 #[derive(Component)]
-pub(crate) struct Front;
+struct Look {
+    rig: Rig,
+    animator: Animator,
+    frame: pixelfx::Frame,
+    image: Handle<Image>,
+}
+
+fn look_image() -> Image {
+    Image::new_fill(
+        Extent3d {
+            width: LOOK_SIZE.x,
+            height: LOOK_SIZE.y,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        &[0, 0, 0, 0],
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD,
+    )
+}
+
+/// Puts the image's feet point on the entity's position.
+fn look_anchor() -> Anchor {
+    Anchor(Vec2::new(
+        LOOK_FEET[0] as f32 / LOOK_SIZE.x as f32 - 0.5,
+        0.5 - LOOK_FEET[1] as f32 / LOOK_SIZE.y as f32,
+    ))
+}
 
 #[derive(Component)]
 struct Afterimage {
@@ -92,7 +126,12 @@ struct Afterimage {
 }
 
 /// Spawns the player at the room's `spawn` entity once a room has loaded.
-fn spawn(mut commands: Commands, active: Res<ActiveRoom>, existing: Query<(), With<Player>>) {
+fn spawn(
+    mut commands: Commands,
+    active: Res<ActiveRoom>,
+    existing: Query<(), With<Player>>,
+    mut images: ResMut<Assets<Image>>,
+) {
     let Some(room) = &active.room else { return };
     if !existing.is_empty() {
         return;
@@ -107,29 +146,31 @@ fn spawn(mut commands: Commands, active: Res<ActiveRoom>, existing: Query<(), Wi
         ctrl,
         prev: Vec2::ZERO,
         events: Events::default(),
+        swooning: false,
     };
     let feet = player.feet();
     let size = SIZE.as_vec2();
+    let image = images.add(look_image());
     commands.spawn((
         Name::new("player"),
         Player {
             prev: feet,
             ..player
         },
+        Look {
+            rig: anim::player_rig(),
+            animator: Animator::default(),
+            frame: pixelfx::Frame::new(LOOK_SIZE.x, LOOK_SIZE.y),
+            image: image.clone(),
+        },
         Transform::from_xyz(feet.x, -feet.y, 1.0),
         Visibility::default(),
         children![
             (
                 Shape { scale: Vec2::ONE },
-                Sprite::from_color(BODY_COLOR, size),
-                Anchor::BOTTOM_CENTER,
+                Sprite::from_image(image),
+                look_anchor(),
                 Transform::default(),
-                children![(
-                    Front,
-                    Sprite::from_color(FRONT_COLOR, Vec2::new(3.0, size.y - 8.0)),
-                    Anchor::BOTTOM_LEFT,
-                    Transform::from_xyz(size.x / 2.0 - 3.0, 4.0, 0.1),
-                )],
             ),
             (
                 // A faint light of the player's own, so they never vanish in the dark.
@@ -165,25 +206,52 @@ fn tick(
     for mut p in &mut players {
         p.prev = p.feet();
         let ev = p.ctrl.tick(room, &tuning.movement, controls.0, dt);
+        if ev.swooned {
+            p.swooning = true;
+        } else if p.ctrl.grounded || p.ctrl.wall != 0 {
+            p.swooning = false;
+        }
         p.events.merge(ev);
     }
 }
 
-/// Puts the player at the interpolated position, on whole pixels, and faces the body.
-pub(crate) fn place(
-    fixed: Res<Time<Fixed>>,
-    mut players: Query<(&Player, &mut Transform)>,
-    mut fronts: Query<&mut Transform, (With<Front>, Without<Player>)>,
-) {
+/// Puts the player at the interpolated position, on whole pixels.
+pub(crate) fn place(fixed: Res<Time<Fixed>>, mut players: Query<(&Player, &mut Transform)>) {
     let t = fixed.overstep_fraction();
-    // There is one player; the front strip follows whichever way it faces.
     for (p, mut transform) in &mut players {
         let pos = p.render_feet(t).round();
         transform.translation.x = pos.x;
         transform.translation.y = pos.y;
-        let half = SIZE.x as f32 / 2.0;
-        for mut front in &mut fronts {
-            front.translation.x = if p.ctrl.facing > 0 { half - 3.0 } else { -half };
+    }
+}
+
+/// Poses the rig from how the player is moving and draws it.
+fn animate(
+    time: Res<Time>,
+    tuning: Res<Tuning>,
+    mut players: Query<(&Player, &mut Look)>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    for (p, mut look) in &mut players {
+        let look = &mut *look;
+        let c = &p.ctrl;
+        look.animator.update(
+            Motion {
+                grounded: c.grounded,
+                vx: c.vx,
+                vy: c.vy,
+                facing: c.facing,
+                wall: c.wall,
+                lunging: c.lunging > 0.0,
+                swooning: p.swooning,
+                run_speed: tuning.movement.run_speed,
+            },
+            time.delta_secs_f64(),
+        );
+        look.frame.clear();
+        anim::draw(&look.rig, &look.animator.pose(), &mut look.frame, LOOK_FEET);
+        if let Some(mut image) = images.get_mut(&look.image) {
+            image.data = Some(look.frame.color.as_flattened().to_vec());
         }
     }
 }
@@ -288,22 +356,39 @@ fn recover_shape(
 fn leave_afterimages(
     mut commands: Commands,
     time: Res<Time>,
-    players: Query<(&Player, &Transform)>,
+    players: Query<(&Player, &Transform, &Look)>,
+    mut images: ResMut<Assets<Image>>,
     mut since: Local<f32>,
 ) {
     *since += time.delta_secs();
-    for (p, t) in &players {
+    for (p, t, look) in &players {
         if p.ctrl.lunging <= 0.0 || *since < 1.0 / 60.0 {
             continue;
         }
         *since = 0.0;
+        // A copy of this frame's body, as a silhouette the sprite colour tints.
+        let mut copy = look_image();
+        copy.data = Some(
+            look.frame
+                .color
+                .iter()
+                .flat_map(|c| {
+                    if c[3] > 0 {
+                        [255, 255, 255, 255]
+                    } else {
+                        [0; 4]
+                    }
+                })
+                .collect(),
+        );
         commands.spawn((
             Afterimage { age: 0.0 },
-            Sprite::from_color(
-                Color::LinearRgba(LinearRgba::new(0.9, 0.35, 0.55, 0.5)),
-                SIZE.as_vec2(),
-            ),
-            Anchor::BOTTOM_CENTER,
+            Sprite {
+                image: images.add(copy),
+                color: Color::LinearRgba(LinearRgba::new(0.9, 0.35, 0.55, 0.5)),
+                ..default()
+            },
+            look_anchor(),
             Transform::from_translation(t.translation.with_z(0.5)),
             RenderLayers::layer(GLOW_LAYER),
         ));

@@ -184,9 +184,65 @@ fn fx(id: EffectId, seed: u32, out: &Path) -> Result<()> {
     }
     Ok(())
 }
+/// Renders every animation state of the player, one row of eight steps per state, at 2x.
+fn player_sheet() -> Result<()> {
+    let out = root().join("target/rig");
+    fs::create_dir_all(&out)?;
+    let rig = anim::player_rig();
+    let (w, h, scale) = (64u32, 64u32, 2u32);
+    let states = anim::State::ALL;
+    let mut sheet = RgbaImage::from_pixel(
+        w * 8 * scale,
+        h * states.len() as u32 * scale,
+        image::Rgba([24, 20, 34, 255]),
+    );
+    for (row, state) in states.iter().enumerate() {
+        for i in 0..8 {
+            let pose = anim::pose_for(*state, i as f64 / anim::FPS, i as f64 / 8.0);
+            let mut f = Frame::new(w, h);
+            anim::draw(&rig, &pose, &mut f, [32.0, 56.0]);
+            let img = rgba(&f);
+            for (x, y, px) in img.enumerate_pixels() {
+                if px[3] == 0 {
+                    // The ground line, so feet can be checked against it.
+                    if y == 56 {
+                        for dy in 0..scale {
+                            for dx in 0..scale {
+                                sheet.put_pixel(
+                                    (i * w + x) * scale + dx,
+                                    (row as u32 * h + y) * scale + dy,
+                                    image::Rgba([60, 52, 80, 255]),
+                                );
+                            }
+                        }
+                    }
+                    continue;
+                }
+                for dy in 0..scale {
+                    for dx in 0..scale {
+                        sheet.put_pixel(
+                            (i * w + x) * scale + dx,
+                            (row as u32 * h + y) * scale + dy,
+                            *px,
+                        );
+                    }
+                }
+            }
+        }
+        println!("{:>2}: {}", row, state.name());
+    }
+    let path = out.join("player.png");
+    sheet.save(&path)?;
+    println!("{}", path.display());
+    Ok(())
+}
+
 fn rig(character: &str) -> Result<()> {
+    if character == "player" {
+        return player_sheet();
+    }
     if character != "stock" {
-        return Err(format!("unknown character {character}; available: stock").into());
+        return Err(format!("unknown character {character}; available: stock, player").into());
     }
     let out = root().join("target/rig");
     fs::create_dir_all(&out)?;
@@ -255,6 +311,9 @@ fn main() -> Result<()> {
             }
             fx(id, seed, &out)
         }
-        _ => Err("usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock] | golden".into()),
+        _ => Err(
+            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player] | golden"
+                .into(),
+        ),
     }
 }

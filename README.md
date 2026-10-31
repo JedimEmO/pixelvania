@@ -42,7 +42,8 @@ jump is pressed at frame 60 and the Lunge at frame 90.
 
 `crates/pixelfx` is a Rust port of [pixelfx](https://github.com/patch-gg/pixelfx), MIT licensed.
 `cargo xtask fx <id>` renders an effect to a contact sheet and a GIF in `target/fx/`,
-and `cargo xtask rig` renders the character rig's animations to `target/rig/`.
+and `cargo xtask rig` renders the character rig's animations to `target/rig/`;
+`cargo xtask rig player` renders every pose of the player's animation, one row per state.
 `cargo xtask golden` renders reference frames from the JavaScript original, which needs Node and git;
 the golden tests themselves run without either.
 In the game, effects land on the room's floors, hide behind its walls, and light what is around them.

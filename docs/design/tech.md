@@ -45,6 +45,7 @@ crates/
   game/       the binary and the game's Bevy plugins
   pixelfx/    the pixelfx port: frames, painter, simulation, rig, effects; no Bevy dependency
   world/      the room and world formats, auto-tiling, the reachability checker; no Bevy dependency
+  anim/       character animation: from how a body moves to the rig pose it holds; no Bevy dependency
   assetgen/   offline generators: tiles, backgrounds, music, sound effects
   xtask/      the command line for everything that is not the game
 ```
@@ -53,7 +54,7 @@ Game code lives in `game` as Bevy plugins, one per concern:
 render, input, player, camera, rooms, combat, enemies, mood, audio, effects, save and ui.
 We split a plugin into its own crate only when compile times or reuse ask for it.
 
-`pixelfx` and `world` have no Bevy dependency on purpose.
+`pixelfx`, `world` and `anim` have no Bevy dependency on purpose.
 Their tests run in milliseconds, the tools use them without starting an engine,
 and a Bevy upgrade does not touch them.
 

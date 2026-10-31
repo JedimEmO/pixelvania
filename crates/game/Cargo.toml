@@ -19,6 +19,7 @@ bevy_enhanced_input.workspace = true
 serde.workspace = true
 ron.workspace = true
 world.workspace = true
+anim.workspace = true
 pixelfx.workspace = true
 bevy_egui = { workspace = true, optional = true }
 
