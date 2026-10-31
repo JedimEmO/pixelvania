@@ -52,11 +52,6 @@ impl Sim {
         }
     }
 
-    fn with_abilities(mut self, abilities: Abilities) -> Self {
-        self.c = Controller::new(self.c.body, abilities);
-        self
-    }
-
     fn tick(&mut self, input: Controls) -> world::Events {
         self.ticks += 1;
         self.c.tick(&self.room, &self.tuning, input, DT)
@@ -116,15 +111,15 @@ fn jump_height(sim: &mut Sim, held_ticks: u32) -> f32 {
 }
 
 #[test]
-fn a_full_jump_rises_more_than_three_tiles() {
+fn a_full_jump_rises_about_five_tiles() {
     let mut sim = Sim::new(flat(), 100.0, floor_y(10));
     sim.run_for(0.1, Controls::default());
     let h = jump_height(&mut sim, u32::MAX);
     println!("full jump height: {h} px = {:.2} tiles", h / TILE as f32);
-    assert!(h >= 3.0 * TILE as f32, "full jump rose only {h} px");
+    assert!(h >= 4.5 * TILE as f32, "full jump rose only {h} px");
     assert!(
-        h < 4.0 * TILE as f32,
-        "full jump rose {h} px, past four tiles"
+        h < 5.5 * TILE as f32,
+        "full jump rose {h} px, past five and a half tiles"
     );
 }
 
@@ -265,13 +260,9 @@ fn jumping_just_after_leaving_a_ledge_still_works() {
 
 #[test]
 fn a_jump_pressed_just_before_landing_fires_on_landing() {
+    // With the Swoon ready: a press that lands in time is a jump from the ground, not a Swoon.
     for (early, expect_jump) in [(0.1, true), (0.2, false)] {
-        // Without the Swoon, which would spend an early press in the air.
-        let no_swoon = Abilities {
-            swoon: false,
-            ..Abilities::ALL
-        };
-        let mut sim = Sim::new(flat(), 100.0, floor_y(10) - 80.0).with_abilities(no_swoon);
+        let mut sim = Sim::new(flat(), 100.0, floor_y(10) - 80.0);
         // Fall until `early` seconds before landing: find the landing tick first.
         let mut probe = Sim::new(flat(), 100.0, floor_y(10) - 80.0);
         let mut land_tick = 0;
@@ -280,23 +271,37 @@ fn a_jump_pressed_just_before_landing_fires_on_landing() {
             land_tick += 1;
         }
         let press_at = land_tick - (early / DT).round() as u32;
-        let mut jumped = false;
+        let (mut jumped, mut swooned) = (false, false);
         for i in 0..land_tick + 4 {
             let input = if i == press_at {
                 press_jump(0.0)
             } else {
                 hold_jump(0.0)
             };
-            jumped |= sim.tick(input).jumped;
+            let ev = sim.tick(input);
+            jumped |= ev.jumped;
+            swooned |= ev.swooned;
         }
         assert_eq!(jumped, expect_jump, "jump pressed {early} s early");
+        assert_eq!(swooned, !expect_jump, "Swoon on a press {early} s early");
     }
+}
+
+#[test]
+fn a_press_in_the_air_with_no_ground_coming_still_swoons() {
+    // Walk off a ledge over a deep drop and press jump straight away: the Swoon fires.
+    let mut sim = Sim::new(flat(), 100.0, floor_y(10) - 120.0);
+    sim.tick(Controls::default());
+    let ev = sim.tick(press_jump(0.0));
+    assert!(ev.swooned);
 }
 
 #[test]
 fn a_jump_that_clips_a_ceiling_corner_slides_round_it() {
     // A ceiling block above the left part of the room; the gap starts at column 5.
     let rows = [
+        "#..........#",
+        "#..........#",
         "#..........#",
         "#..........#",
         "#####......#",
@@ -307,14 +312,17 @@ fn a_jump_that_clips_a_ceiling_corner_slides_round_it() {
     ];
     let edge = 5.0 * TILE as f32;
     // Body overlaps the block by 3 px.
-    let mut sim = Sim::new(room(&rows), edge + W as f32 / 2.0 - 3.0, floor_y(6));
+    let mut sim = Sim::new(room(&rows), edge + W as f32 / 2.0 - 3.0, floor_y(8));
     sim.run_for(0.1, Controls::default());
     sim.tick(press_jump(0.0));
-    sim.run_for(0.5, hold_jump(0.0));
+    let mut top = sim.c.body.y;
+    for _ in 0..60 {
+        sim.tick(hold_jump(0.0));
+        top = top.min(sim.c.body.y);
+    }
     assert!(
-        sim.c.body.y < 3 * TILE,
-        "the jump bonked: feet at {:?}",
-        sim.feet()
+        top < 5 * TILE,
+        "the jump bonked: the body rose only to y {top}"
     );
     assert_eq!(sim.c.body.x, 5 * TILE);
 }
@@ -361,6 +369,36 @@ fn holding_down_falls_faster() {
         sim.ticks
     };
     assert!(fall_time(true) < fall_time(false));
+}
+
+#[test]
+fn a_jump_and_swoon_at_the_apex_rise_seven_to_nine_tiles() {
+    // The lab's Swoon wall is seven tiles high; a jump alone must not clear it.
+    let open = format!("#{}#", ".".repeat(20));
+    let floor = "#".repeat(22);
+    let mut rows = vec![open.as_str(); 16];
+    rows.push(&floor);
+    let mut sim = Sim::new(room(&rows), 100.0, floor_y(16));
+    sim.run_for(0.1, Controls::default());
+    let start = sim.feet().1;
+    sim.tick(press_jump(0.0));
+    while sim.c.vy < 0.0 {
+        sim.tick(hold_jump(0.0));
+    }
+    assert!(sim.tick(press_jump(0.0)).swooned);
+    let mut best: f32 = 0.0;
+    for _ in 0..240 {
+        sim.tick(hold_jump(0.0));
+        best = best.max(start - sim.feet().1);
+    }
+    println!(
+        "jump and Swoon: {best} px = {:.2} tiles",
+        best / TILE as f32
+    );
+    assert!(
+        (7.0 * TILE as f32..9.0 * TILE as f32).contains(&best),
+        "a jump and Swoon rose {best} px"
+    );
 }
 
 #[test]

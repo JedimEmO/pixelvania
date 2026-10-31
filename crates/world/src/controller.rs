@@ -80,14 +80,14 @@ impl Default for MoveTuning {
             air_accel: 1400.0,
             air_decel: 900.0,
             air_overspeed_decel: 300.0,
-            gravity: 950.0,
-            max_fall: 340.0,
-            jump_speed: 320.0,
+            gravity: 1450.0,
+            max_fall: 420.0,
+            jump_speed: 480.0,
             jump_cut: 0.4,
             apex_threshold: 40.0,
             apex_gravity: 0.5,
             fast_fall_gravity: 1.6,
-            fast_fall_max: 480.0,
+            fast_fall_max: 560.0,
             coyote_time: 0.1,
             jump_buffer: 0.12,
             corner_correction: 4,
@@ -97,15 +97,15 @@ impl Default for MoveTuning {
             lunge_speed: 400.0,
             lunge_time: 0.14,
             lunge_cooldown: 0.25,
-            swoon_speed: 260.0,
+            swoon_speed: 370.0,
             swoon_apex_gravity: 0.3,
             swoon_apex_threshold: 60.0,
             wall_slide_max: 70.0,
             wall_jump_x: 190.0,
-            wall_jump_y: 300.0,
+            wall_jump_y: 380.0,
             wall_jump_lock: 0.12,
             wall_coyote: 0.08,
-            hard_landing_speed: 300.0,
+            hard_landing_speed: 370.0,
         }
     }
 }
@@ -347,7 +347,7 @@ impl Controller {
                 self.wall_lock_dir = -away;
                 self.wall_coyote = 0.0;
                 ev.wall_jumped = Some(away);
-            } else if self.swoon_ready {
+            } else if self.swoon_ready && !self.lands_before_buffer_ends(room, t, dt) {
                 self.vy = -t.swoon_speed;
                 self.swoon_ready = false;
                 self.swooning = true;
@@ -388,6 +388,19 @@ impl Controller {
             self.vy = 0.0;
         }
         ev
+    }
+
+    /// Whether the body, falling as it is now, touches the ground before the jump buffer runs out.
+    /// A press that lands in time is a full jump from the ground, not a Swoon spent just above it.
+    fn lands_before_buffer_ends(&self, room: &Room, t: &MoveTuning, dt: f32) -> bool {
+        // On the buffer's last tick the press is spent on the Swoon rather than lost.
+        let left = self.jump_buffer - dt;
+        if left <= 0.0 {
+            return false;
+        }
+        let drop =
+            (self.vy * left + 0.5 * t.gravity * left * left).min(self.vy.max(t.max_fall) * left);
+        (1..=drop.ceil() as i32).any(|dy| self.body.collides_at(room, 0, dy))
     }
 
     fn run(&mut self, t: &MoveTuning, dir: i32, dt: f32) {

@@ -21,7 +21,9 @@ impl Plugin for InputPlugin {
             .init_resource::<TickControls>()
             .configure_sets(FixedUpdate, (TickSet::Input, TickSet::Simulate).chain())
             .add_systems(Startup, spawn_controls)
-            .add_systems(PreUpdate, collect.after(EnhancedInputSystems::Update))
+            // After `Apply`, which copies this frame's values onto the typed actions;
+            // after only `Update`, held buttons and the stick would read a frame late.
+            .add_systems(PreUpdate, collect.after(EnhancedInputSystems::Apply))
             .add_systems(FixedUpdate, take_controls.in_set(TickSet::Input));
     }
 }
@@ -137,4 +139,43 @@ pub fn take_controls(mut input: ResMut<TickInput>, mut controls: ResMut<TickCont
         jump_pressed: std::mem::take(&mut input.jump_pressed),
         lunge_pressed: std::mem::take(&mut input.lunge_pressed),
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A press must read as held on the same frame it starts.
+    /// Reading the typed action before the library applies its value lags held buttons
+    /// and the stick by a frame, and a jump started on that frame is cut short at once.
+    #[test]
+    fn a_press_reads_as_held_on_the_frame_it_starts() {
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            bevy::input::InputPlugin,
+            AssetPlugin::default(),
+            bevy::scene::ScenePlugin,
+            InputPlugin,
+        ));
+        app.finish();
+        app.cleanup();
+        app.update();
+
+        let set_space = |app: &mut App, down: bool| {
+            let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+            if down {
+                keys.press(KeyCode::Space);
+            } else {
+                keys.release(KeyCode::Space);
+            }
+            app.update();
+            let i = app.world().resource::<TickInput>();
+            (i.jump_held, i.jump_pressed)
+        };
+        assert_eq!(set_space(&mut app, true), (true, true));
+        app.world_mut().resource_mut::<TickInput>().jump_pressed = false;
+        assert_eq!(set_space(&mut app, true), (true, false));
+        assert_eq!(set_space(&mut app, false), (false, false));
+    }
 }

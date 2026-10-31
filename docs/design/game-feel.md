@@ -54,7 +54,7 @@ The techniques we start with:
 | Apex hang | Gravity halves near the top of a jump while jump is held | Within 40 px/s of zero |
 | Fast fall | Holding down falls faster | 1.6 x gravity |
 | Coyote time | Jump still works just after walking off a ledge | 0.1 s |
-| Jump buffer | Jump pressed just before landing still fires | 0.12 s |
+| Jump buffer | Jump pressed just before landing still fires, as a full jump; it does not spend the Swoon | 0.12 s |
 | Corner correction | Nudge round a ledge corner instead of bonking | Up to 4 px |
 | Ledge forgiveness | A dash that clips a ledge top pops you onto it | Up to 3 px |
 | Landing recovery | A hard landing squashes the pose and kicks dust, without slowing control | 2 frames of pose |
@@ -64,7 +64,7 @@ The first three abilities are movement too, and the feel lab tunes them alongsid
 | Ability | What it does | Starting value |
 |---|---|---|
 | Lunge | A horizontal dash on the ground or in the air, once per jump; a jump out of it keeps its speed | 400 px/s for 0.14 s |
-| Swoon | A second jump in the air, with a slower, floatier apex than the first | 260 px/s, apex gravity 0.3 x |
+| Swoon | A second jump in the air, with a slower, floatier apex than the first | 370 px/s, apex gravity 0.3 x |
 | Cling | Pressing into a wall while falling slides down it; jumping pushes off | Slide at 70 px/s |
 
 Collision is our own kinematic controller against a grid of tiles.
@@ -130,8 +130,9 @@ With the starting values:
 
 | Metric | Value | Pinned to |
 |---|---|---|
-| Full jump height | 3.3 tiles | 3 to 4 tiles |
-| Tapped jump height | 0.75 tiles | 0.5 to 1.25 tiles |
+| Full jump height | 4.9 tiles | 4.5 to 5.5 tiles |
+| Jump and Swoon at the apex | 7.9 tiles | 7 to 9 tiles |
+| Tapped jump height | 1.1 tiles | 0.5 to 1.25 tiles |
 | Widest gap, running jump | 7 tiles | 6 or 7 |
 | Widest gap, running jump and Lunge | 10 tiles | 9 to 11 |
 | Ground Lunge | 3.7 tiles | 3 to 4 tiles |
