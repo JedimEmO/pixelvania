@@ -75,6 +75,23 @@ pub fn ready() -> Pose {
     }
 }
 
+/// The Toast: the blade raised high, like a glass, to meet a blow.
+pub fn toast() -> Pose {
+    Pose {
+        weapon: Some(Weapon::Sword),
+        crouch: 2.0,
+        lean: -2.0,
+        fx: 7.0,
+        fy: -37.0,
+        bx: -4.0,
+        by: -24.0,
+        sa: -1.35,
+        ffx: 6.0,
+        fbx: -6.0,
+        ..Pose::default()
+    }
+}
+
 /// The sabre held at the ready in the air.
 fn ready_air() -> Pose {
     Pose {
@@ -369,6 +386,11 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn the_toast_reaches_its_hands() {
+        assert!(player_rig().shortfall(&toast()) < 3.0);
     }
 
     #[test]

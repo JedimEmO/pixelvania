@@ -24,6 +24,7 @@ use crate::camera::Shake;
 use crate::effects::SpawnFx;
 use crate::input::TickSet;
 use crate::player::Player;
+use crate::render::Light2d;
 use crate::tuning::Tuning;
 
 pub struct CombatPlugin;
@@ -46,7 +47,7 @@ impl Plugin for CombatPlugin {
             .configure_sets(FixedUpdate, SimulateBodies.in_set(TickSet::Simulate))
             .add_systems(
                 Update,
-                (swing_effects, impact, fade_flash, slow_motion)
+                (swing_effects, impact, fade_flash, slow_motion, fade_glints)
                     .chain()
                     .after(crate::player::place)
                     .before(crate::player::animate)
@@ -379,6 +380,27 @@ fn swing_effects(
     for (mut f, t, player, guest) in &mut fighters {
         let phase = f.combat.attacker.phase();
         let started = phase == Phase::Active && f.last_phase != Phase::Active;
+        // A guest's wind-up opens with a glint at its weapon hand: the warning before the blow.
+        if let Some(g) = guest
+            && phase == Phase::Windup
+            && f.last_phase != Phase::Windup
+            && let Some(facing) = f.combat.attacker.facing()
+        {
+            let k = g.class.scale() as f32;
+            let at = t.translation.truncate() + Vec2::new(facing as f32 * 8.0 * k, 26.0 * k);
+            commands.spawn((
+                Name::new("glint"),
+                crate::rooms::RoomPart,
+                Glint { age: 0.0 },
+                Light2d {
+                    color: LinearRgba::rgb(1.0, 0.75, 0.55),
+                    radius: 28.0,
+                    strength: 0.6,
+                    glow: 1.4,
+                },
+                Transform::from_translation(at.extend(3.0)),
+            ));
+        }
         f.last_phase = phase;
         let (Some(id), Some(facing)) = (f.combat.attacker.attack(), f.combat.attacker.facing())
         else {
@@ -430,6 +452,32 @@ fn swing_effects(
         }
         if player.is_some() || guest.is_some() {
             fx.write(req);
+        }
+    }
+}
+
+/// A brief flash of light at a guest's weapon as its wind-up begins.
+#[derive(Component)]
+struct Glint {
+    age: f32,
+}
+
+/// How long a glint lasts, in seconds.
+const GLINT_LIFE: f32 = 0.18;
+
+fn fade_glints(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut glints: Query<(Entity, &mut Glint, &mut Light2d)>,
+) {
+    for (e, mut g, mut l) in &mut glints {
+        g.age += time.delta_secs();
+        if g.age >= GLINT_LIFE {
+            commands.entity(e).despawn();
+        } else {
+            let k = 1.0 - g.age / GLINT_LIFE;
+            l.glow = 1.4 * k;
+            l.strength = 0.6 * k;
         }
     }
 }
@@ -638,6 +686,9 @@ pub fn combat_pose(f: &Fighting, charge_ticks: u32, standing: bool) -> Option<an
     };
     if let Some(r) = reaction {
         return Some(reaction_pose(r, f.reaction_time as f64));
+    }
+    if c.parrying() {
+        return Some(anim::swing::toast());
     }
     let a = &c.attacker;
     if let (Some(id), Some(data)) = (a.attack(), a.data()) {
