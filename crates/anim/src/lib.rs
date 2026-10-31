@@ -7,6 +7,8 @@
 
 use std::f64::consts::{PI, TAU};
 
+pub mod swing;
+
 use pixelfx::Frame;
 use pixelfx::act::lerp_pose;
 use pixelfx::color::hex;

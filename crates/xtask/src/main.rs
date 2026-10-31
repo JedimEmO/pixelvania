@@ -184,55 +184,77 @@ fn fx(id: EffectId, seed: u32, out: &Path) -> Result<()> {
     }
     Ok(())
 }
-/// Renders every animation state of the player, one row of eight steps per state, at 2x.
+/// Renders the player's animation to contact sheets at 2x: one row of eight steps for each
+/// movement state, and one row for each sabre swing through wind-up, release and recovery.
 fn player_sheet() -> Result<()> {
+    use anim::swing::{Phase, Swing, swing_pose};
     let out = root().join("target/rig");
     fs::create_dir_all(&out)?;
+    let moves: Vec<(&str, Vec<anim::Pose>)> = anim::State::ALL
+        .iter()
+        .map(|s| {
+            let poses = (0..8)
+                .map(|i| anim::pose_for(*s, i as f64 / anim::FPS, i as f64 / 8.0))
+                .collect();
+            (s.name(), poses)
+        })
+        .collect();
+    draw_rows(&moves, &out.join("player.png"))?;
+    let steps = [
+        (Phase::Windup, 0.0),
+        (Phase::Windup, 0.35),
+        (Phase::Windup, 0.7),
+        (Phase::Windup, 1.0),
+        (Phase::Active, 0.0),
+        (Phase::Active, 1.0),
+        (Phase::Recovery, 0.4),
+        (Phase::Recovery, 1.0),
+    ];
+    let swings: Vec<(&str, Vec<anim::Pose>)> = Swing::ALL
+        .iter()
+        .map(|s| {
+            (
+                s.name(),
+                steps.iter().map(|&(p, u)| swing_pose(*s, p, u)).collect(),
+            )
+        })
+        .collect();
+    draw_rows(&swings, &out.join("player-sabre.png"))
+}
+
+fn draw_rows(rows: &[(&str, Vec<anim::Pose>)], path: &Path) -> Result<()> {
     let rig = anim::player_rig();
-    let (w, h, scale) = (64u32, 64u32, 2u32);
-    let states = anim::State::ALL;
-    let mut sheet = RgbaImage::from_pixel(
-        w * 8 * scale,
-        h * states.len() as u32 * scale,
-        image::Rgba([24, 20, 34, 255]),
-    );
-    for (row, state) in states.iter().enumerate() {
-        for i in 0..8 {
-            let pose = anim::pose_for(*state, i as f64 / anim::FPS, i as f64 / 8.0);
+    let (w, h, scale) = (80u32, 64u32, 2u32);
+    let cols = rows.iter().map(|r| r.1.len()).max().unwrap_or(1) as u32;
+    let bg = image::Rgba([24, 20, 34, 255]);
+    let ground = image::Rgba([60, 52, 80, 255]);
+    let mut sheet = RgbaImage::from_pixel(w * cols * scale, h * rows.len() as u32 * scale, bg);
+    for (row, (name, poses)) in rows.iter().enumerate() {
+        for (col, pose) in poses.iter().enumerate() {
             let mut f = Frame::new(w, h);
-            anim::draw(&rig, &pose, &mut f, [32.0, 56.0]);
+            anim::draw(&rig, pose, &mut f, [36.0, 56.0]);
             let img = rgba(&f);
             for (x, y, px) in img.enumerate_pixels() {
-                if px[3] == 0 {
-                    // The ground line, so feet can be checked against it.
-                    if y == 56 {
-                        for dy in 0..scale {
-                            for dx in 0..scale {
-                                sheet.put_pixel(
-                                    (i * w + x) * scale + dx,
-                                    (row as u32 * h + y) * scale + dy,
-                                    image::Rgba([60, 52, 80, 255]),
-                                );
-                            }
-                        }
-                    }
+                // The ground line shows through empty pixels, so feet can be checked against it.
+                let c = if px[3] > 0 {
+                    *px
+                } else if y == 56 {
+                    ground
+                } else {
                     continue;
-                }
+                };
                 for dy in 0..scale {
                     for dx in 0..scale {
-                        sheet.put_pixel(
-                            (i * w + x) * scale + dx,
-                            (row as u32 * h + y) * scale + dy,
-                            *px,
-                        );
+                        let sx = (col as u32 * w + x) * scale + dx;
+                        let sy = (row as u32 * h + y) * scale + dy;
+                        sheet.put_pixel(sx, sy, c);
                     }
                 }
             }
         }
-        println!("{:>2}: {}", row, state.name());
+        println!("{row:>2}: {name}");
     }
-    let path = out.join("player.png");
-    sheet.save(&path)?;
+    sheet.save(path)?;
     println!("{}", path.display());
     Ok(())
 }
