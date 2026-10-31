@@ -51,7 +51,7 @@ Draw them through a `Painter`, with the feet at its origin.
 `Measurements`, body palettes and light direction can be changed per character.
 The stock body parts and eleven weapons use the original depth and shading rules.
 `Weapon::Bottle` and `Weapon::Candelabrum`, two of the game's weapons, are our additions
-and have no counterpart in the original.
+and have no counterpart in the original; nor does `Rig::tails`, a tailcoat's tails behind the hips.
 The solver uses f64; depth and tone buffers use f32, as in the original typed arrays.
 There is no quantized pose cache, so rendering does not depend on earlier calls.
 

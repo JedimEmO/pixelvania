@@ -38,8 +38,8 @@ and see the README for the controls and the debug keys.
 
 ## Rough edges we know about
 
-The player is the stock mannequin in a burgundy suit;
-the costume silhouette the art direction asks for, a coat or hair, needs new rig parts.
+The player is the stock mannequin in a burgundy tailcoat, whose tails are the first costume part on the rig;
+hair, masks and hats would push the silhouette further.
 Dust from running and jumping is faint in dark rooms.
 Guests do not jump, block or circle. They approach and swing; the light guest then skips back,
 and the medium guest keeps its spear's distance.

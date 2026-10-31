@@ -368,11 +368,12 @@ fn air() -> Pose {
 
 const AIR_LIFT: f64 = 1.0;
 
-/// The player's rig: the stock figure in a burgundy velvet suit.
+/// The player's rig: the stock figure in a burgundy velvet tailcoat.
 pub fn player_rig() -> Rig {
     Rig {
         shell: [hex(0xe8b4bc), hex(0xb46a7c), hex(0x7c3c50), hex(0x4c2034)],
         core: [hex(0x5c3a4a), hex(0x402834), hex(0x2c1a24), hex(0x2c1a24)],
+        tails: 14.0,
         ..Rig::default()
     }
 }

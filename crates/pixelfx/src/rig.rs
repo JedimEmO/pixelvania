@@ -500,6 +500,9 @@ pub struct Rig {
     pub light: [f64; 3],
     pub shell: [Color; 4],
     pub core: [Color; 4],
+    /// Length in pixels of a tailcoat's two tails hanging behind the hips; 0 for none.
+    /// Not in the JavaScript original.
+    pub tails: f64,
 }
 impl Default for Rig {
     fn default() -> Self {
@@ -508,6 +511,7 @@ impl Default for Rig {
             light: [-0.55, 0.72, 0.5],
             shell: [hex(0xe4e6ec), hex(0xb6b9c3), hex(0x868995), hex(0x5c5e6a)],
             core: [hex(0x6e707c), hex(0x4b4d58), hex(0x34353f), hex(0x34353f)],
+            tails: 0.0,
         }
     }
 }
@@ -634,6 +638,17 @@ impl Raster {
                 ]);
                 self.plot(x, y, c[2] + dz, dot(n, self.light), part, mat, [0; 4]);
             }
+        }
+    }
+    /// A tailcoat's two tails: from the back of the waist, down and out behind the legs,
+    /// in the darker core material so they read as cloth over the figure.
+    fn tails(&mut self, s: &Solved, length: f64) {
+        let b = &s.b;
+        self.frame = 0;
+        for side in [-1.4, 1.4] {
+            let top = add(b[0].t, mv(b[0].r, [-2.2, 2.4, side]));
+            let tip = add(b[0].t, mv(b[0].r, [-6.5, 2.4 - length, side * 1.3]));
+            self.sweep(top, tip, 2.4, 1.3, 25, 1, 0.4);
         }
     }
     fn body(&mut self, s: &Solved) {
@@ -1277,6 +1292,9 @@ impl Rig {
         let mut r = Raster::new(self.light);
         r.clip = clip;
         r.body(&s);
+        if self.tails > 0.0 {
+            r.tails(&s, self.tails);
+        }
         r.clip = false;
         if let Some(w) = q.weapon {
             Handle {
