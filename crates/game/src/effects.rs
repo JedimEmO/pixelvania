@@ -56,9 +56,17 @@ impl SpawnFx {
         self
     }
 
+    /// A puff of dust. The stock brown vanishes against dark stone, so ours is a paler,
+    /// cooler grey that the room's light can pick out.
     pub fn dust(pos: Vec2, variant: pixelfx::effects::DustVariant) -> Self {
         let mut fx = Self::new(EffectId::Dust, pos);
         fx.options.dust = variant;
+        fx.options.palette = [
+            0x2a2636, 0x3e3a4e, 0x5a546c, 0x7a7490, 0x9c96b0, 0xc0bad0, 0xe4e0f0,
+        ]
+        .iter()
+        .map(|&c| pixelfx::color::hex(c))
+        .collect();
         fx
     }
 }
