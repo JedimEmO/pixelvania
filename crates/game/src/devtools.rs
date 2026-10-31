@@ -6,6 +6,7 @@
 //! `PIXELVANIA_REPLAY=path` plays such a file back instead of reading the controller.
 //! `PIXELVANIA_FX=sword-slash` spawns that effect in front of the player once it has landed;
 //! the number keys 1 to 6 spawn each pixelfx effect there at any time.
+//! F2 pauses the game and F3, while paused, steps it one gameplay tick.
 //! A replay is exact as long as the room and the tuning are the same as when it was recorded.
 //!
 //! With the `dev` feature, F1 opens a panel that edits the tuning live and saves it to the file.
@@ -71,6 +72,7 @@ impl Plugin for DevToolsPlugin {
         let planned = std::env::var("PIXELVANIA_FX")
             .ok()
             .and_then(|v| pixelfx::EffectId::parse(v.trim()));
+        app.add_systems(Update, pause_and_step);
         app.insert_resource(PlannedFx(planned))
             .add_systems(Update, spawn_test_fx.before(crate::player::react));
         app.add_systems(
@@ -135,6 +137,34 @@ fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut frame: L
             "lunge" => input.lunge_pressed |= *frame == 90,
             _ => {}
         }
+    }
+}
+
+/// F2 pauses and resumes; F3 runs one gameplay tick while paused.
+fn pause_and_step(world: &mut World) {
+    let keys = world.resource::<ButtonInput<KeyCode>>();
+    let (toggle, step) = (
+        keys.just_pressed(KeyCode::F2),
+        keys.just_pressed(KeyCode::F3),
+    );
+    let mut time = world.resource_mut::<Time<Virtual>>();
+    if toggle {
+        if time.is_paused() {
+            time.unpause();
+        } else {
+            time.pause();
+        }
+        info!(
+            "game {}",
+            if time.is_paused() {
+                "paused"
+            } else {
+                "running"
+            }
+        );
+    }
+    if step && time.is_paused() {
+        world.run_schedule(bevy::app::FixedMain);
     }
 }
 
@@ -365,6 +395,7 @@ mod panel {
                         squash_recovery: 1.0 => 60.0,
                         afterimage_life: 0.0 => 1.0,
                         rumble: 0.0 => 2.0,
+                        shake: 0.0 => 2.0,
                     });
                     pair(ui, "jump stretch", &mut j.jump_stretch);
                     pair(ui, "land squash", &mut j.land_squash);

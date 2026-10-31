@@ -80,6 +80,8 @@ pub struct Juice {
     pub afterimage_life: f32,
     /// Multiplies every rumble; 0 turns rumble off.
     pub rumble: f32,
+    /// Multiplies every screen shake; 0 turns shake off.
+    pub shake: f32,
 }
 
 impl Default for Juice {
@@ -91,6 +93,7 @@ impl Default for Juice {
             lunge_stretch: (1.45, 0.75),
             afterimage_life: 0.2,
             rumble: 1.0,
+            shake: 1.0,
         }
     }
 }

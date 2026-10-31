@@ -16,6 +16,7 @@ cargo dev
 `cargo dev` runs the game with the `dev` feature:
 tuning in `assets/tuning.ron` and rooms in `assets/rooms/` reload when you save them.
 Press F1 for a panel that edits the tuning live and saves it back to the file.
+F2 pauses the game, and F3 steps it one gameplay tick at a time while paused.
 
 | Action | Gamepad | Keyboard |
 |---|---|---|

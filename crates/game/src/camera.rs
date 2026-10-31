@@ -5,6 +5,9 @@
 //! Vertically, it follows the height the player last stood at, not the player,
 //! so jumps do not bob the view. Falling or rising far enough lets go of that height
 //! until the player stands again.
+//!
+//! Screen shake rides on top: a damped spring that a hit kicks along its own line,
+//! so the view jolts the way the blow went and settles, instead of rattling at random.
 
 use bevy::prelude::*;
 
@@ -18,13 +21,16 @@ pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Follow>()
-            .add_systems(Update, follow.after(crate::player::place));
+            .init_resource::<Shake>()
+            .add_systems(Update, (follow, shake).chain().after(crate::player::place));
     }
 }
 
 #[derive(Resource, Default)]
 struct Follow {
     started: bool,
+    /// The smoothed view centre, before shake.
+    pos: Vec2,
     lead: f32,
     /// The height the camera follows, world y up.
     anchor_y: f32,
@@ -39,7 +45,6 @@ fn follow(
     active: Res<ActiveRoom>,
     player: Option<Single<&Player>>,
     mut state: ResMut<Follow>,
-    mut focus: ResMut<CameraFocus>,
 ) {
     let (Some(room), Some(player)) = (&active.room, player) else {
         return;
@@ -73,8 +78,8 @@ fn follow(
         let kx = 1.0 - (-c.follow_rate_x * dt).exp();
         let ky = 1.0 - (-c.follow_rate_y * dt).exp();
         Vec2::new(
-            focus.0.x + (target.x - focus.0.x) * kx,
-            focus.0.y + (target.y - focus.0.y) * ky,
+            state.pos.x + (target.x - state.pos.x) * kx,
+            state.pos.y + (target.y - state.pos.y) * ky,
         )
     } else {
         state.started = true;
@@ -93,5 +98,43 @@ fn follow(
     };
     pos.x = clamp_axis(pos.x, half.x, rw as f32 - half.x);
     pos.y = clamp_axis(pos.y, -(rh as f32) + half.y, -half.y);
-    focus.0 = pos;
+    state.pos = pos;
+}
+
+/// How fast the shake spring swings, in radians per second, and how quickly it settles.
+const SHAKE_OMEGA: f32 = 90.0;
+const SHAKE_DAMPING: f32 = 0.3;
+
+/// Screen shake: a damped spring the view rides on.
+#[derive(Resource, Default)]
+pub struct Shake {
+    offset: Vec2,
+    velocity: Vec2,
+}
+
+impl Shake {
+    /// Jolts the view along `dir`, by about `pixels` at the first swing.
+    pub fn kick(&mut self, dir: Vec2, pixels: f32) {
+        self.velocity += dir.normalize_or_zero() * pixels * SHAKE_OMEGA;
+    }
+}
+
+fn shake(
+    time: Res<Time>,
+    tuning: Res<Tuning>,
+    state: Res<Follow>,
+    mut shake: ResMut<Shake>,
+    mut focus: ResMut<CameraFocus>,
+) {
+    // Small steps keep the stiff spring stable at any frame rate.
+    let steps = (time.delta_secs() * 1000.0).ceil().max(1.0);
+    let dt = time.delta_secs() / steps;
+    for _ in 0..steps as u32 {
+        let accel = -SHAKE_OMEGA * SHAKE_OMEGA * shake.offset
+            - 2.0 * SHAKE_DAMPING * SHAKE_OMEGA * shake.velocity;
+        shake.velocity += accel * dt;
+        let v = shake.velocity;
+        shake.offset += v * dt;
+    }
+    focus.0 = state.pos + shake.offset * tuning.juice.shake;
 }

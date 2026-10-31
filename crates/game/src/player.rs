@@ -195,14 +195,15 @@ fn reset(mut commands: Commands, input: Res<TickInput>, players: Query<Entity, W
 }
 
 fn tick(
-    time: Res<Time>,
+    fixed: Res<Time<Fixed>>,
     controls: Res<TickControls>,
     tuning: Res<Tuning>,
     active: Res<ActiveRoom>,
     mut players: Query<&mut Player>,
 ) {
     let Some(room) = &active.room else { return };
-    let dt = time.delta_secs();
+    // The tick's own length, so a tick stepped by hand while paused is a whole tick.
+    let dt = fixed.timestep().as_secs_f32();
     for mut p in &mut players {
         p.prev = p.feet();
         let ev = p.ctrl.tick(room, &tuning.movement, controls.0, dt);
@@ -261,6 +262,7 @@ pub(crate) fn react(
     tuning: Res<Tuning>,
     mut players: Query<(&mut Player, &Children, &Transform)>,
     mut fx: MessageWriter<SpawnFx>,
+    mut shake: ResMut<crate::camera::Shake>,
     mut shapes: Query<&mut Shape>,
     gamepads: Query<Entity, With<Gamepad>>,
     mut rumble: MessageWriter<GamepadRumbleRequest>,
@@ -308,6 +310,7 @@ pub(crate) fn react(
             // A slam from a fast fall cracks the floor; an ordinary landing puffs dust.
             if speed > m.max_fall + 20.0 {
                 fx.write(SpawnFx::new(EffectId::HeavyLanding, feet));
+                shake.kick(Vec2::NEG_Y, 3.0);
             } else if speed >= 150.0 {
                 fx.write(SpawnFx::dust(feet, DustVariant::Land));
             }
