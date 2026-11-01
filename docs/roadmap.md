@@ -159,6 +159,32 @@ Then the slice's content:
     and the player a blinking dot. Rooms visited are kept in the progress record.
     `cargo xtask map` draws the whole world to an image.
 
+## After the first playtest of the slice
+
+The director played the slice and asked for: rooms that are about something, more impact in combat,
+abilities found rather than given, a narrative, clearer tells and music for the boss,
+more juice, and levelling. And a boss arena that cannot be left by accident. All of it is built:
+
+25. **Starting with nothing.** A new game has the sabre and nothing more. The slice gives the Lunge
+    (the cloakroom), the Jeroboam (the champagne cellar), Cling (the stair tower), the Swoon (the balcony),
+    the Lure (the crystal gallery), the candelabrum (the ballroom's alcove) and, from the Dancer, the Plunge.
+    A reach test checks each step opens the next and traps nobody.
+26. **Rooms with an identity.** 35 painted props (`prop x y kind=...`, `cargo xtask props`),
+    placed so each room shows what it is, with its own light and materials.
+27. **The story.** `docs/design/story.md` and `assets/story.ron`: five guests who talk, whose lines follow
+    what has been found; six of the Host's cards; a new game opening on black; a room's name on its first visit;
+    the Dancer's lines; and the slice's last line in the cellar.
+28. **Levelling.** Nectar bought at a lounge into Vitality, Composure, Strength and Appetite,
+    each level dearer than the last. A blackout keeps the Nectar.
+29. **Impact**, by Codex: flinches, slides, launches, bounces and wall splats; poise breaking sooner into clear staggers;
+    hit-stop by weight; the Plunge's landing as a shockwave; per-fighter damage, poise and defence multipliers.
+30. **The Dancer's tells and music**, by Codex: each move announced by its own pose, effect and sound,
+    and a 132 BPM fight track whose stems build with the phases. The arena's doors stay shut while she stands.
+31. **Juice.** Drifting motes in every room, and a moment of slow motion when an ability is found.
+
+Known gaps: there is one backdrop, the ballroom's windows, behind every room (underground rooms have none);
+a lamp's glow is drawn over the player standing in front of it; the fight and the slice's ending have not been played through end to end.
+
 ## For the director
 
 Play the ballroom with a gamepad; `cargo run --bin pixelvania` starts there.
