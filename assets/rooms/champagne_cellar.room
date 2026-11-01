@@ -1,7 +1,7 @@
 // The champagne cellar: racks of bottles under the ballroom, with a lounge among them.
 //
 // From the champagne stair, the way in stops at a trench where a rack gave way: Lunge across it.
-// Beyond are the racks, climbable to the largest bottle of all, the Jeroboam,
+// Beyond are the racks, climbable to a Favour on the top shelf,
 // and the wine vault's door at the west end. A step in the trench lets a fall climb back out.
 [room]
 name = champagne_cellar
@@ -48,7 +48,7 @@ music = ballroom
 door 63 17 h=3 id=east to=champagne_stair:west_bottom
 door 0 17 h=3 id=west to=wine_vault:east
 lounge 31 20 id=racks
-pickup 14 11 item=jeroboam
+pickup 14 11 item=favour
 note 21 19 id=champagne_cellar
 guest 12 20 class=heavy
 guest 38 20 class=medium

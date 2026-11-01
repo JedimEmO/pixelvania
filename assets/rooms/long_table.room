@@ -1,0 +1,57 @@
+// The long table: a table the length of the room, set above the banquet hall.
+//
+// Come up from the banquet hall through the floor near the east end.
+// West is the pastry room; east, past the sideboard's lounge, the Glutton's hall.
+[room]
+name = long_table
+background = ballroom 8a2020
+music = ballroom muffled
+
+[legend]
+# stone
+= wood
+v velvet
+
+[tiles]
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+vv............................................................vv
+..........=============================.........................
+..........=============================.........................
+..........=============================.........................
+##############################################...###############
+##############################################...###############
+##############################################...###############
+
+[entities]
+door 46 23 w=3 id=down to=banquet_hall:up
+door 0 18 h=3 id=west to=pastry_room:east
+door 63 18 h=3 id=east to=gluttons_hall:west
+lounge 56 21 id=sideboard
+guest 16 18 class=heavy
+guest 28 18 class=heavy
+guest 34 18 class=toaster
+prop 14 18 kind=banquet_table
+prop 24 18 kind=cake
+prop 32 18 kind=banquet_table
+prop 60 21 kind=sofa
+chandelier 24 5
+chandelier 44 5
+nectar 6 20.5
+light 24 8 radius=170 strength=0.5 color=ff6040 glow=0.3
+light 56 16 radius=110 strength=0.7 color=ffc070 glow=0.4

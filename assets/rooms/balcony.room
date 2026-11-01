@@ -1,8 +1,8 @@
 // The balcony over the gardens: a long terrace under an awning of lanterns, open to the night.
 //
-// Enter from the antechamber at the bottom right. At the rail the night air makes the head spin:
-// the Swoon is found there, beside the wallflower. Planters climb the terrace, each a Swoon
-// below a ledge: west to the powder room, east to the upper gallery.
+// Enter from the antechamber at the bottom right. At the rail, beside the wallflower, a Goblet.
+// Planters step up the west end to the powder room's door. East, each a Swoon below a ledge,
+// they climb to the upper gallery.
 [room]
 name = balcony
 background = ballroom
@@ -32,16 +32,16 @@ g gilt
 gggggggggg....................................................##
 ##............................................................##
 ##............................................................##
-##............................................................##
+##.........ggggg..............................................##
 ##..........................................ggggg.............##
 ##............................................................##
+##.ggggg......................................................##
 ##............................................................##
 ##............................................................##
-##..........ggggg.............................................##
-##............................................................##
+##........ggggg...............................................##
 ##............................................................##
 ##..................................gggggg....................##
-##..............................................................
+##.ggggg........................................................
 ##..............................................................
 ##..............................................................
 ################################################################
@@ -50,10 +50,10 @@ gggggggggg....................................................##
 door 63 27 h=3 id=east_low to=antechamber:west_high
 door 63 8 h=3 id=east_high to=upper_gallery:west
 door 0 12 h=3 id=west to=powder_room:east
-pickup 29.5 28.5 item=swoon
+pickup 29.5 28.5 item=goblet
 npc 25 30 id=wallflower
 guest 40 30 class=spinner
-guest 14 23 class=toaster
+guest 12 24 class=toaster
 guest 8 30 class=light
 pickup 52 10.5 item=favour
 lantern 14 12

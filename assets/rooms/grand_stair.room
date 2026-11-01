@@ -1,10 +1,12 @@
 // The grand stair: the house's hub, a tall well of landings that every way passes through.
 //
-// From the floor, steps climb to two landings, each by a pair of doors that will not open yet:
-// the feast's on the west and the gardens' on the east. Above the landings the walls are sheer.
+// From the floor, steps climb to two landings, each by a pair of doors that will not open:
+// the feast's on the west, whose card sends the player upstairs, and the gardens' on the east.
+// Above the landings the walls are sheer.
 // Cling up the west wall to the music room's door and the gallery across the well;
 // cling up the east wall from the gallery to the Doorman's hall.
 // The letter room's door is high in the west wall, a Lunge from the platforms in the middle.
+// At the very top of the east wall, a cling past the Doorman's door, the service stair climbs to the feast.
 [room]
 name = grand_stair
 background = foyer a06030
@@ -18,9 +20,9 @@ g gilt
 [tiles]
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-vv........................................vv
-vv........................................vv
-vv........................................vv
+vv..........................................
+vv..........................................
+vv..........................................
 vv........................................vv
 vv........................................vv
 vv........................................vv
@@ -95,6 +97,7 @@ door 43 66 h=3 id=east_low to=coat_check:west
 door 0 42 h=3 id=west_mid to=music_room:east
 door 43 30 h=3 id=east_high to=doormans_hall:west
 door 0 18 h=3 id=west_top to=letter_room:east
+door 43 2 h=3 id=east_top to=service_stair:west
 note 5 56 id=feast_doors
 note 38 56 id=garden_doors
 chandelier 22 52

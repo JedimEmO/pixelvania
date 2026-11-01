@@ -1,0 +1,33 @@
+// The supper room: a quiet room off the banquet hall, where the feast's first lounge waits.
+//
+// The gourmand has eaten here every night. He can't remember a single dish.
+[room]
+name = supper_room
+background = ballroom 8a2020
+music = ballroom muffled
+
+[legend]
+# stone
+v velvet
+
+[tiles]
+vvvvvvvvvvvvvvvvvvvvvv
+vvvvvvvvvvvvvvvvvvvvvv
+vv..................vv
+vv..................vv
+vv..................vv
+vv..................vv
+....................vv
+....................vv
+....................vv
+######################
+######################
+######################
+
+[entities]
+door 0 6 h=3 id=west to=banquet_hall:east_low
+lounge 13 9 id=supper
+npc 7 9 id=gourmand
+prop 17 9 kind=sofa
+prop 4 9 kind=cake
+light 12 5 radius=110 strength=0.7 color=ffc070 glow=0.4

@@ -44,9 +44,9 @@ The order you find things in, and where.
 | Order | Find | Where | How it is staged |
 |---|---|---|---|
 | 1 | The Lunge | The Arrival's coat check | A pair of dancing shoes left on the counter, still warm |
-| 2 | The Jeroboam | The champagne cellar | The largest bottle in the racks, too heavy to drink from |
-| 3 | Cling | The Arrival's coat lift | A pair of long silk gloves hung over the cage, at the bottom of the shaft |
-| 4 | The Swoon | The balcony | At the rail, where the night air makes the head spin |
+| 2 | Cling | The Arrival's coat lift | A pair of long silk gloves hung over the cage, at the bottom of the shaft |
+| 3 | The Jeroboam | The feast, on the Glutton's table | The largest bottle at the feast, too heavy to drink from |
+| 4 | The Swoon | The feast's afters | By the fainting couch, where the guests who reached the end of the table lie down |
 | 5 | The Lure | The crystal gallery | A moth circling the first chandelier; it leads you to the light |
 | 6 | The candelabrum | The ballroom's alcove | Beside the lounge, still burning |
 | 7 | The Plunge | The stage | The Dancer's fall breaks the floor |
@@ -113,6 +113,32 @@ With the Plunge:
 - "She isn't dancing any more? Then I've missed it."
 - "Well. There will be another."
 
+### The gourmand, in the supper room
+
+Has eaten every course of every night, and remembers none of them.
+
+At first:
+- "I have eaten here every night. Every course."
+- "Ask me what I had. Go on. No? Neither can I."
+- "Rest, if you like. The next course is always coming."
+
+With the Swoon:
+- "You've been to the end of the table. Did he save you anything?"
+- "He never does. He never stops, either."
+
+### A guest lying down, in the afters
+
+Reached the end of the table and lay down where they were.
+
+At first:
+- "Shh. I'm digesting."
+- "Went to the end of the table. You don't come back from the end of the table."
+- "You just lie down for a bit. Get up, though. Someone should."
+
+With the Swoon:
+- "Light-headed? That's the trick of it."
+- "When you feel yourself go, go up instead of down."
+
 ### The card player, in the card room
 
 Deals a hand to four empty chairs, and wins every time.
@@ -129,6 +155,8 @@ With the Lure:
 
 - Vestibule, on the chaise: *You are expected. Do come through. — H.*
 - Coat check: *Leave whatever you came in with. You will not need it. — H.*
+- The feast's doors on the grand stair: *Not these doors, darling. The feast is served upstairs, for those who can climb. — H.*
+- The larder: *There is more here than anyone could eat. That was never the point. — H.*
 - Antechamber: *You found your way in. They always do. — H.*
 - Cloakroom: *Nobody has come back for these. Nobody will. — H.*
 - Champagne cellar: *Take what you like. There is always more. — H.*

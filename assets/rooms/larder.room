@@ -1,0 +1,37 @@
+// The larder: cold after the kitchens, hung with more than anyone could eat.
+//
+// A dead end off the kitchens, with a card from the Host.
+[room]
+name = larder
+background = cellars 30486a
+music = ballroom muffled
+
+[legend]
+# stone
+= wood
+
+[tiles]
+##################
+##################
+##..............##
+##..............##
+##..............##
+##..............##
+##..............##
+##..............##
+##..............##
+##........======##
+................##
+................##
+................##
+##################
+##################
+##################
+
+[entities]
+door 0 10 h=3 id=west to=kitchens:east
+note 12 12 id=larder
+prop 6 13 kind=barrel
+prop 15 13 kind=crate
+nectar 13 8.5
+light 9 6 radius=100 strength=0.5 color=a0c0ff glow=0.2

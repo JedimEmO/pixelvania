@@ -149,16 +149,19 @@ fn the_slice_gives_its_abilities_in_order() {
         // The Arrival: the Lunge in the coat check, Cling at the bottom of the coat lift.
         (&["coat_check:lunge"], Ability::Lunge),
         (&["coat_lift:cling", "porters_lodge:favour"], Ability::Cling),
-        // Past the Doorman, the ballroom's wing.
+        // Up the grand stair, the feast: the Jeroboam on the Glutton's table, the Swoon after him.
+        // The ballroom's wing, past the Doorman, is open too.
         (
             &[
-                "champagne_cellar:jeroboam",
-                "balcony:swoon",
+                "gluttons_hall:jeroboam",
+                "afters:swoon",
+                "kitchens:goblet",
                 "letter_room:favour",
+                "champagne_cellar:favour",
             ],
             Ability::Swoon,
         ),
-        (&["crystal_gallery:lure"], Ability::Lure),
+        (&["crystal_gallery:lure", "afters:favour"], Ability::Lure),
         // The Dancer gives the Plunge, after the candelabrum.
         (&["ballroom:candelabrum"], Ability::Plunge),
     ];

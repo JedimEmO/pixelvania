@@ -1,0 +1,50 @@
+// The service stair: the servants' way up from the grand stair to the feast.
+//
+// Enter low on the west, from the top of the grand stair's east wall.
+// Landings zigzag up to the banquet hall's door, high on the east.
+[room]
+name = service_stair
+background = ballroom 8a3020
+music = ballroom muffled
+
+[legend]
+# stone
+= wood
+
+[tiles]
+========================
+========================
+==....................==
+==......................
+==......................
+==......................
+==.............=========
+==....................==
+==....................==
+==....=====...........==
+==....................==
+==....................==
+==.............=====..==
+==....................==
+==....................==
+==.......=====........==
+==....................==
+==....................==
+...............=====..==
+......................==
+......................==
+########################
+########################
+########################
+
+[entities]
+door 0 18 h=3 id=west to=grand_stair:east_top
+door 23 3 h=3 id=east to=banquet_hall:west
+guest 14 21 class=light
+prop 4 21 kind=crate
+prop 7 21 kind=crate
+prop 20 6 kind=candlestand
+lantern 12 4
+nectar 8 8.5
+light 12 6 radius=110 strength=0.6 color=ffb060 glow=0.3
+light 18 16 radius=80 strength=0.5 color=ff6040 glow=0.3

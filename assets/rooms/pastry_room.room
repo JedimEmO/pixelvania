@@ -1,0 +1,50 @@
+// The pastry room: sugar towers nobody will cut, and a Favour on a high shelf.
+//
+// Enter high on the east from the long table and drop to the floor.
+// Landings zigzag back up to the door; the Favour is a Lunge west from the highest of them.
+[room]
+name = pastry_room
+background = ballroom 8a4a60
+music = ballroom muffled
+
+[legend]
+# stone
+= wood
+v velvet
+g gilt
+
+[tiles]
+vvvvvvvvvvvvvvvvvvvvvvvv
+vvvvvvvvvvvvvvvvvvvvvvvv
+vv....................vv
+vv......................
+vv......................
+vv......................
+vv................====vv
+vv....................vv
+vv....................vv
+vvggg.......=====.....vv
+vv....................vv
+vv....................vv
+vv.............=====..vv
+vv....................vv
+vv....................vv
+vv.......=====........vv
+vv....................vv
+vv....................vv
+vv.............=====..vv
+vv....................vv
+vv....................vv
+########################
+########################
+########################
+
+[entities]
+door 23 3 h=3 id=east to=long_table:west
+pickup 3 8.5 item=favour
+guest 10 21 class=toaster
+prop 5 21 kind=cake
+prop 18 21 kind=cake
+prop 11 15 kind=champagne_tower
+light 10 8 radius=130 strength=0.6 color=ffb0d0 glow=0.4
+light 18 18 radius=90 strength=0.5 color=ffc070 glow=0.3

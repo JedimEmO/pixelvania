@@ -248,6 +248,18 @@ the Lure as stand-ins until the feast and the gardens exist. [The Arrival's page
 The Arrival keeps the ballroom heard through its walls as its music; the party next door suits it.
 Still to do: a listening pass on the Doorman's theme.
 
+## The feast
+
+The feast is next to the Arrival on the map, up the grand stair, and gives the Swoon and the Jeroboam.
+[The feast's page](design/feast.md) has its rooms.
+
+46. **The feast blocked out.** Nine rooms above the Arrival, from the service stair at the top of the
+    grand stair's east wall: the banquet hall, the supper room's lounge, the kitchens, the larder,
+    the long table and its lounge, the pastry room, the Glutton's hall and the afters with the Swoon.
+    The Swoon and the Jeroboam moved there from the ballroom, and the balcony gained planters
+    so the ballroom's wing can be left with Cling alone. The gourmand, a guest in the afters and two cards are new.
+
+
 ## For the director
 
 Play the ballroom with a gamepad; `cargo run --bin pixelvania` starts there.

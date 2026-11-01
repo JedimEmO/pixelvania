@@ -51,7 +51,7 @@
                     "I have played it so long I've forgotten how it ends. Perhaps it doesn't.",
                     "Rest, if you like. Everyone rests here before they meet him.",
                 ]),
-                (when: [Swoon], say: [
+                (when: [Lure], say: [
                     "You got past him. Then you've heard the real band.",
                     "Don't tell me what they're like. I'd rather imagine.",
                 ]),
@@ -117,11 +117,42 @@
                 ]),
             ],
         ),
+        "gourmand": (
+            name: "The gourmand",
+            look: "heavy",
+            lines: [
+                (when: [], say: [
+                    "I have eaten here every night. Every course.",
+                    "Ask me what I had. Go on. No? Neither can I.",
+                    "Rest, if you like. The next course is always coming.",
+                ]),
+                (when: [Swoon], say: [
+                    "You've been to the end of the table. Did he save you anything?",
+                    "He never does. He never stops, either.",
+                ]),
+            ],
+        ),
+        "sleeper_at_table": (
+            name: "A guest, lying down",
+            look: "light",
+            lines: [
+                (when: [], say: [
+                    "Shh. I'm digesting.",
+                    "Went to the end of the table. You don't come back from the end of the table.",
+                    "You just lie down for a bit. Get up, though. Someone should.",
+                ]),
+                (when: [Swoon], say: [
+                    "Light-headed? That's the trick of it.",
+                    "When you feel yourself go, go up instead of down.",
+                ]),
+            ],
+        ),
     },
     cards: {
         "vestibule": "You are expected. Do come through.  - H.",
         "coat_check": "Leave whatever you came in with. You will not need it.  - H.",
-        "feast_doors": "The feast is still being laid. Later, darling.  - H.",
+        "feast_doors": "Not these doors, darling. The feast is served upstairs, for those who can climb.  - H.",
+        "larder": "There is more here than anyone could eat. That was never the point.  - H.",
         "garden_doors": "The gardens are not yet in bloom. Patience is not your gift, is it?  - H.",
         "letter_room": "Your invitation was never sent. You came anyway. How like you.  - H.",
         "inner_doors": "Through here. Everyone is through here.  - H.",

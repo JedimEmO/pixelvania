@@ -5,9 +5,9 @@ Its feeling is anticipation: warm candlelight, the party heard through the walls
 and doors that promise more than they show.
 It gives the Lunge and Cling, and its boss, the Doorman, keeps the way into the rest of the house.
 
-Until the feast and the gardens exist, the Arrival leads straight on to the ballroom.
-The grand stair's doors to those two areas are sealed, each with a card from the Host,
-and the ballroom keeps the Swoon and the Lure it gave in the slice.
+The grand stair leads on to the feast, at the very top of its east wall, and past the Doorman to the ballroom.
+Its doors on the landings stay sealed, each with a card from the Host:
+the feast's card sends the player upstairs, and until the gardens exist the ballroom keeps the Lure.
 
 ## The rooms
 
@@ -27,7 +27,7 @@ and the ballroom keeps the Swoon and the Lure it gave in the slice.
 
 The player can reach the vestibule, the receiving line, the lodge, the foot of the stair and the coat check with nothing.
 The Lunge opens the coat lift and the lodge's Favour.
-Cling opens the rest of the stair, and with it the music room, the portrait hall, the letter room and the Doorman.
+Cling opens the rest of the stair, and with it the music room, the portrait hall, the letter room, the Doorman and the feast.
 `crates/world/tests/reach.rs` checks this order against the rooms.
 
 ## The Doorman
