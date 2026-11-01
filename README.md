@@ -42,6 +42,10 @@ Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev
 | Back to the spawn point, and the guests back to theirs | Select | R |
 
 Hold down while falling to fall faster, and press into a wall while falling to slide down it.
+Press up beside a lounge, a velvet chaise under a standing lamp, to rest:
+it heals, saves, and is where you wake after a blackout.
+The save is `save.ron` in your data folder (`~/.local/share/pixelvania` on Linux),
+and the game starts from it; delete it, or set `PIXELVANIA_FRESH=1`, for a new game.
 On the Lure's rope, push the stick the way you want to swing, and up or down to climb or lower.
 A diamond marks the light the Lure would take hold of.
 The number keys 1 to 6 set off each pixelfx effect in front of the player.
@@ -56,6 +60,7 @@ jump is pressed at frame 60 and the Lunge at frame 90.
 `PIXELVANIA_RECORD=path` writes every tick's input to a file, and `PIXELVANIA_REPLAY=path` plays it back.
 `PIXELVANIA_PANEL=1` opens the tuning panel at start, with the `dev` feature.
 `PIXELVANIA_FX=sword-slash` sets off that effect in front of the player at frame 80.
+Every switch that picks the start, below, also ignores the save.
 `PIXELVANIA_ROOM=arena` starts in the combat lab (or `lab`, `ballroom`),
 `PIXELVANIA_MOOD=high` or `comedown` in that mood, `PIXELVANIA_FADE=0.5` with that much progression fade,
 `PIXELVANIA_SPAWN=34,13` with the player at that tile,

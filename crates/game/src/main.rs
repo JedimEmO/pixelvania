@@ -12,6 +12,7 @@ mod fire;
 mod hanging;
 mod hud;
 mod input;
+mod lounge;
 mod lure;
 mod music;
 mod player;
@@ -66,6 +67,7 @@ fn main() -> AppExit {
             fade::FadePlugin,
             travel::TravelPlugin,
             progress::ProgressPlugin,
+            lounge::LoungePlugin,
         ))
         .run()
 }

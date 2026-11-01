@@ -4,10 +4,14 @@
 //! and is built, the player is put just inside the door it leads to, facing into the room,
 //! and the camera jumps to them. Then the curtain opens again.
 //! The player keeps their running speed through a side door, so a run carries on.
+//!
+//! A blackout uses the same passage, with a slower curtain:
+//! the defeated player is taken to the last lounge and gets up there.
 
 use bevy::prelude::*;
 
 use crate::camera::Follow;
+use crate::combat::Fighting;
 use crate::player::Player;
 use crate::render::Lighting;
 use crate::rooms::ActiveRoom;
@@ -21,21 +25,42 @@ impl Plugin for TravelPlugin {
     }
 }
 
-/// Seconds for the curtain to close and to open.
+/// Seconds for the curtain to close and to open, through a door and in a blackout.
 const CLOSE: f32 = 0.12;
 const OPEN: f32 = 0.2;
+const BLACKOUT_CLOSE: f32 = 0.9;
+const BLACKOUT_OPEN: f32 = 1.2;
+
+/// Where a passage arrives.
+#[derive(Debug, Clone)]
+pub enum Arrival {
+    /// Just inside a door, through it.
+    Door(String),
+    /// At a lounge, getting up from a blackout.
+    Wake(String),
+}
 
 /// Where a passage through a door is.
 #[derive(Resource, Default, Debug)]
 pub enum Travel {
     #[default]
     Idle,
-    /// The curtain is closing before going to this room and door.
-    Closing { room: String, door: String },
+    /// The curtain is closing before going to this room.
+    Closing { room: String, to: Arrival },
     /// The next room is loading behind the closed curtain.
-    Loading { door: String },
-    /// The player has arrived and the curtain is opening.
-    Opening,
+    Loading { to: Arrival },
+    /// The player has arrived and the curtain is opening, over this many seconds.
+    Opening { seconds: f32 },
+}
+
+impl Travel {
+    /// Blacks out and wakes at a lounge.
+    pub fn blackout(lounge: &crate::lounge::LoungeRef) -> Travel {
+        Travel::Closing {
+            room: lounge.room.clone(),
+            to: Arrival::Wake(lounge.id.clone()),
+        }
+    }
 }
 
 fn travel(
@@ -45,12 +70,12 @@ fn travel(
     mut active: ResMut<ActiveRoom>,
     mut lighting: ResMut<Lighting>,
     mut follow: ResMut<Follow>,
-    mut players: Query<&mut Player>,
+    mut players: Query<(&mut Player, &mut Fighting)>,
 ) {
     let dt = time.delta_secs();
     match &*state {
         Travel::Idle => {
-            let (Some(room), Ok(p)) = (&active.room, players.single()) else {
+            let (Some(room), Ok((p, _))) = (&active.room, players.single()) else {
                 return;
             };
             let b = &p.ctrl.body;
@@ -61,31 +86,45 @@ fn travel(
             if let Some(d) = through {
                 *state = Travel::Closing {
                     room: d.to_room.clone(),
-                    door: d.to_door.clone(),
+                    to: Arrival::Door(d.to_door.clone()),
                 };
             }
         }
-        Travel::Closing { room, door } => {
-            lighting.curtain = (lighting.curtain + dt / CLOSE).min(1.0);
+        Travel::Closing { room, to } => {
+            let seconds = match to {
+                Arrival::Door(_) => CLOSE,
+                Arrival::Wake(_) => BLACKOUT_CLOSE,
+            };
+            lighting.curtain = (lighting.curtain + dt / seconds).min(1.0);
             if lighting.curtain >= 1.0 {
-                let door = door.clone();
+                let to = to.clone();
                 active.go_to(&assets, &room.clone());
-                *state = Travel::Loading { door };
+                *state = Travel::Loading { to };
             }
         }
-        Travel::Loading { door } => {
+        Travel::Loading { to } => {
             let Some(room) = &active.room else { return };
-            let arrival = room.door(door).and_then(|d| d.arrival(room));
-            if let (Some((feet, facing)), Ok(mut p)) = (arrival, players.single_mut()) {
+            let (arrival, seconds) = match to {
+                Arrival::Door(door) => (room.door(door).and_then(|d| d.arrival(room)), OPEN),
+                Arrival::Wake(id) => (
+                    crate::lounge::lounge_feet(room, id).map(|f| (f, 1)),
+                    BLACKOUT_OPEN,
+                ),
+            };
+            if let (Some((feet, facing)), Ok((mut p, mut f))) = (arrival, players.single_mut()) {
                 p.arrive(feet, facing);
+                if matches!(to, Arrival::Wake(_)) {
+                    p.ctrl.vx = 0.0;
+                    crate::player::revive(&mut f);
+                }
             } else {
-                warn!("room `{}` has no door `{door}` to arrive at", room.name);
+                warn!("room `{}` has nowhere to arrive for {to:?}", room.name);
             }
             follow.snap();
-            *state = Travel::Opening;
+            *state = Travel::Opening { seconds };
         }
-        Travel::Opening => {
-            lighting.curtain = (lighting.curtain - dt / OPEN).max(0.0);
+        Travel::Opening { seconds } => {
+            lighting.curtain = (lighting.curtain - dt / *seconds).max(0.0);
             if lighting.curtain <= 0.0 {
                 *state = Travel::Idle;
             }

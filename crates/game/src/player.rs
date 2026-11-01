@@ -284,6 +284,8 @@ fn spawn(
     existing: Query<(), With<Player>>,
     mut images: ResMut<Assets<Image>>,
     weapons: Res<Weapons>,
+    last: Res<crate::lounge::LastLounge>,
+    mut woken: Local<bool>,
 ) {
     let Some(room) = &active.room else { return };
     if !existing.is_empty() {
@@ -294,8 +296,16 @@ fn spawn(
         let (x, y) = v.split_once(',')?;
         Some((x.trim().parse::<f32>().ok()?, y.trim().parse::<f32>().ok()?))
     });
+    // A game started from a save wakes at its lounge.
+    let lounge = last
+        .0
+        .as_ref()
+        .filter(|l| l.room == room.name && !*woken)
+        .and_then(|l| crate::lounge::lounge_feet(room, &l.id));
+    *woken = true;
     let (x, y) = wanted
         .map(|(x, y)| (x * world::TILE as f32, y * world::TILE as f32))
+        .or(lounge)
         .or_else(|| room.entities_of("spawn").next().map(|s| s.pixel_pos()))
         .unwrap_or((32.0, 32.0));
     let ctrl = Controller::standing_at(x, y, SIZE.x, SIZE.y, Abilities::ALL);
@@ -345,18 +355,49 @@ fn spawn(
     ));
 }
 
-/// Sends the player back to the spawn point on Reset, or after lying defeated for a while.
+/// Sends the player back to the spawn point on Reset. After lying defeated for a while,
+/// the player blacks out and wakes at the last lounge with a hangover, a Comedown that lasts
+/// until they rest; with no lounge rested at yet, they wake at the room's spawn point.
 fn reset(
     mut commands: Commands,
     input: Res<TickInput>,
+    last: Res<crate::lounge::LastLounge>,
+    mut travel: ResMut<crate::travel::Travel>,
+    mut mood: ResMut<crate::combat::Mood>,
     players: Query<(Entity, &Fighting), With<Player>>,
 ) {
     for (p, f) in &players {
         let defeated = f.combat.reaction() == Reaction::Dead && f.reaction_time() > DEFEAT_TIME;
-        if input.reset_pressed || defeated {
-            commands.entity(p).despawn();
+        if defeated && !matches!(*travel, crate::travel::Travel::Idle) {
+            continue;
+        }
+        if defeated {
+            *mood = crate::combat::Mood::ALL[2];
+        }
+        match (&last.0, defeated) {
+            (Some(lounge), true) => {
+                info!(
+                    "blacked out; waking at `{}` in `{}`",
+                    lounge.id, lounge.room
+                );
+                *travel = crate::travel::Travel::blackout(lounge);
+            }
+            _ if input.reset_pressed || defeated => {
+                commands.entity(p).despawn();
+            }
+            _ => {}
         }
     }
+}
+
+/// Gets up again after a blackout: health and poise back, standing.
+pub fn revive(f: &mut Fighting) {
+    let weapon = f.weapon.clone();
+    *f = Fighting::new(
+        Combatant::new(HEALTH, POISE, WeightClass::Medium),
+        PLAYER_TEAM,
+        weapon,
+    );
 }
 
 fn tick(

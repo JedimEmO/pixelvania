@@ -1,7 +1,7 @@
 // The antechamber: a quiet room between the gardens and the ballroom.
 //
 // The vertical slice starts here. Music comes through the wall from the ballroom,
-// whose door is at the right end of the floor. A warm lamp lights the left end.
+// whose door is at the right end of the floor. A lounge waits at the left end.
 [room]
 name = antechamber
 background = ballroom
@@ -45,5 +45,5 @@ door 43 18 h=3 id=east to=ballroom:west
 chandelier 22 13
 lantern 36 5
 lantern 4 16.5
-light 8 19 radius=100 strength=1.1 color=ff9a6a glow=0.6
+lounge 10 21 id=bench
 light 40 19.5 radius=110 strength=1.0 color=ff5aa0 glow=0.7 pulse=0.6

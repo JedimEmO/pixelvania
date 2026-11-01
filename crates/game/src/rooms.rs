@@ -95,9 +95,11 @@ pub struct RoomPart;
 /// Starts in the room `PIXELVANIA_ROOM` names, or the world's start.
 fn load_first_room(mut commands: Commands, assets: Res<AssetServer>) {
     let wanted = std::env::var("PIXELVANIA_ROOM").unwrap_or_default();
+    let saved = crate::lounge::startup_save().map(|s| s.lounge.room);
     let name = room_names()
         .into_iter()
         .find(|r| *r == wanted)
+        .or(saved)
         .unwrap_or_else(|| world().start.clone());
     commands.insert_resource(ActiveRoom {
         handle: assets.load(format!("rooms/{name}.room")),

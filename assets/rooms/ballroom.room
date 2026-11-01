@@ -22,7 +22,7 @@ g gilt
 #..............................................................#
 #..............................................................#
 #..............................................................#
-#vvv...........................................................#
+#..............................................................#
 ############...................................................#
 #..............................................................#
 #..............................................................#
@@ -59,7 +59,8 @@ g gilt
 [entities]
 spawn 4 37
 door 0 34 h=3 id=west to=antechamber:east
-pickup 7 7 item=candelabrum
+lounge 5 8 id=alcove
+pickup 10 7 item=candelabrum
 guest 21 37 class=light
 guest 29 37 class=medium
 guest 39 37 class=heavy
@@ -82,5 +83,4 @@ light 9 36 radius=120 strength=1.2 color=ff5aa0 glow=0.7 pulse=0.7
 light 22 36 radius=120 strength=1.2 color=60d0ff glow=0.7 pulse=0.7
 light 35 36 radius=120 strength=1.2 color=ff5aa0 glow=0.7 pulse=0.7
 light 50 38.5 radius=130 strength=1.3 color=b070ff glow=0.8 pulse=0.5
-light 6 6 radius=100 strength=1.1 color=ff9a6a glow=0.6
 light 43 11 radius=130 strength=0.9 color=ff5aa0 glow=0.6

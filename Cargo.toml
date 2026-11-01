@@ -17,6 +17,7 @@ bevy = { version = "0.20.1", default-features = false, features = ["2d", "ui"] }
 bevy_enhanced_input = "0.27.2"
 serde = { version = "1", features = ["derive"] }
 ron = "0.12"
+dirs = "6"
 world = { path = "crates/world" }
 assetgen = { path = "crates/assetgen" }
 pixelfx = { path = "crates/pixelfx" }

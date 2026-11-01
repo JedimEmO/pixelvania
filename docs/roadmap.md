@@ -114,7 +114,12 @@ First the systems it needs, then its rooms.
     Pickups are room entities (`pickup 7 7 item=candelabrum`), a glowing diamond that bobs,
     taken with a burst, a sound and a banner naming what it gives.
     North only steps through weapons found. The candelabrum waits in the ballroom's lounge.
-17. **Lounges and saving.** Resting at a lounge saves and heals; a blackout wakes the player at the last one.
+17. **Lounges and saving.** Done. A lounge (`lounge 10 21 id=bench`) is a painted chaise and standing lamp;
+    pressing up beside it heals, lifts a hangover, and saves the progress and the lounge
+    to `save.ron` in the data folder, which the next start loads.
+    A blackout closes a slow curtain and wakes the player at the last lounge with a hangover,
+    the Comedown, until they rest. The antechamber and the ballroom's alcove each have one.
+    The web build does not save yet.
 18. **The reachability checker.** The ballroom's route search, grown to walk the whole world.
 
 ## For the director

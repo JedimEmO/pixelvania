@@ -30,7 +30,9 @@ impl Plugin for ProgressPlugin {
         let progress = match std::env::var("PIXELVANIA_PROGRESS").as_deref() {
             Ok("new") => Progress::new_game(),
             Ok("all") => Progress::everything(),
-            _ => Progress::slice_start(),
+            _ => crate::lounge::startup_save()
+                .map(|s| s.progress)
+                .unwrap_or_else(Progress::slice_start),
         };
         app.insert_resource(PlayerProgress(progress))
             .init_resource::<SpawnedFor>()
@@ -218,7 +220,7 @@ fn collect(
 
 /// The name of what was just found, and how to use it, across the top of the screen.
 #[derive(Component)]
-struct Banner {
+pub(crate) struct Banner {
     age: f32,
 }
 
@@ -228,6 +230,11 @@ const BANNER_TIME: f32 = 3.0;
 impl Banner {
     fn bundle(item: Item) -> impl Bundle {
         let (title, hint) = words(item);
+        Self::bundle_text(title, hint)
+    }
+
+    /// A banner with a title and a line under it.
+    pub(crate) fn bundle_text(title: &str, hint: &str) -> impl Bundle {
         (
             Banner { age: 0.0 },
             Text2d::new(format!("{title}\n{hint}")),
