@@ -63,7 +63,7 @@ The first three abilities are movement too, and the feel lab tunes them alongsid
 
 | Ability | What it does | Starting value |
 |---|---|---|
-| Lunge | A horizontal dash on the ground or in the air, once per jump; a jump out of it keeps its speed | 400 px/s for 0.14 s |
+| Lunge | A horizontal dash on the ground or in the air, once per jump; a jump out of it keeps its speed. It passes through other bodies | 400 px/s for 0.14 s |
 | Swoon | A second jump in the air, with a slower, floatier apex than the first | 370 px/s, apex gravity 0.3 x |
 | Cling | Pressing into a wall while falling slides down it; jumping pushes off | Slide at 70 px/s |
 

@@ -356,7 +356,9 @@ fn separate(
         }
     };
     for (mut p, pf) in &mut players {
-        if !solid(pf) {
+        // The Lunge passes through bodies. Once it ends, the push resumes from the far side,
+        // which nudges the guest out behind the player rather than back in front.
+        if !solid(pf) || p.ctrl.lunging > 0.0 {
             continue;
         }
         for (mut g, gf) in &mut guests {

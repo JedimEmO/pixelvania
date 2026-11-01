@@ -3,7 +3,7 @@
 How the player moves through the game:
 which ability is found where, in what order the areas open,
 what else the player gains on the way, and what it costs them.
-This page is a proposal; the choices still waiting for the director are listed at the end.
+The director has settled its main choices; the ones still open are listed at the end.
 
 ## What grows and what fades
 
@@ -30,7 +30,7 @@ and its grand stair is the place the player keeps passing through.
 
 | Area | Feeling | Its light | Ability found | Boss |
 |---|---|---|---|---|
-| The Arrival | Anticipation | Warm candlelight | Cling | The Doorman |
+| The Arrival | Anticipation | Warm candlelight | Lunge, then Cling | The Doorman |
 | The feast | Abundance, then too much | Red and gold | Swoon | The Glutton |
 | The gardens | Sensual, overgrown | Green and cyan bioluminescence | Lure | The Sleeper |
 | The ballroom | Euphoria, flow | Pink and gold, on the beat | Plunge | The Dancer |
@@ -53,14 +53,15 @@ but the Host is the centre's boss, so one fewer is the honest count.
 
 ## The order of abilities
 
-The player starts with the Lunge, the sabre and the Toast.
-Movement is the pleasure, so the first minute has to feel good,
-and the feel lab was tuned with the Lunge in hand.
+The player starts with running, jumping, the sabre and the Toast, and nothing more.
+The Lunge comes within the first ten minutes, in the Arrival's cloakroom,
+so the plain start is short and the first find is the one that changes how moving feels.
 Arriving late and in a hurry is impatience, which is the Lunge's theme.
+It passes through bodies, so it is also the first way past a guest instead of through a fight.
 
 | Order | Ability | Found | Opens first | Opens again, going back |
 |---|---|---|---|---|
-| Start | Lunge | | Wide gaps, curtains to dash through | |
+| 0 | Lunge | The Arrival's cloakroom | Wide gaps, curtains to dash through, past guests | |
 | 1 | Cling | The Arrival's coat-room shaft | The Arrival's stair towers | Shafts everywhere |
 | 2 | Swoon | The feast, after the Glutton | High galleries; the gardens' upper terraces | Ledges in the Arrival |
 | 3 | Lure | The gardens, from a glowing flower | The ballroom; the gardens' canopy | Every lit lantern since the start |
@@ -124,15 +125,15 @@ so the early game is barely touched and Numb takes the most.
 
 | Ability | Step | Fade after it |
 |---|---|---|
-| Cling | 0.04 | 0.04 |
-| Swoon | 0.08 | 0.12 |
-| Lure | 0.12 | 0.24 |
-| Plunge | 0.14 | 0.38 |
-| Submerge | 0.16 | 0.54 |
-| Drift | 0.18 | 0.72 |
-| Numb | 0.28 | 1.00 |
+| Lunge | 0.02 | 0.02 |
+| Cling | 0.04 | 0.06 |
+| Swoon | 0.08 | 0.14 |
+| Lure | 0.12 | 0.26 |
+| Plunge | 0.14 | 0.40 |
+| Submerge | 0.16 | 0.56 |
+| Drift | 0.18 | 0.74 |
+| Numb | 0.26 | 1.00 |
 
-The Lunge costs nothing, since the player arrives with it.
 Dawn is the one place the fade lifts: daylight brings the colour back without a High,
 which is the last thing the player sees and the last question the game asks.
 
@@ -162,7 +163,7 @@ About 150 rooms over five to ten hours, so roughly an hour to an hour and a half
 ## What it means for the vertical slice
 
 The slice is the ballroom as a player would reach it:
-arriving with the Lunge, Cling, Swoon and the Lure, at a fade of 0.24.
+arriving with the Lunge, Cling, Swoon and the Lure, at a fade of 0.26.
 Inside it are the candelabrum, a Carnation, a Goblet, three lounges,
 the Dancer, and Plunge as the reward, which ends the slice by dropping the player through the floor.
 
@@ -171,12 +172,17 @@ rooms joined by doors in a world file, abilities as pickups that the fade counts
 saving at lounges, and the reachability checker,
 which can grow from the route search in `crates/world/tests/ballroom.rs`.
 
-## Waiting for the director
+## Decided
 
-- Starting with the Lunge, or with nothing and finding it in the Arrival.
-- The order of the night above, in particular the gardens teaching the Lure before the ballroom.
+The director has chosen, on 2026-11-01:
+
+- The player starts with nothing and finds the Lunge early in the Arrival, and the Lunge passes through bodies.
+- The gardens teach the Lure before the ballroom asks for it at speed.
+- The candelabrum lights unlit sconces, which stay lit and become Lure points.
+- The Host's ending starts the night again and keeps the fade.
+
+## Still open
+
 - Seven bosses, with the three answer-guests among them.
-- The candelabrum lighting sconces as Lure points.
 - Carnations and Goblets as the only upgrades, with no currency.
 - The fade's steps, and whether Dawn lifts it.
-- A new game from the Host's ending that keeps the fade.
