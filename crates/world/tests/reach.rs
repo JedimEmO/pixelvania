@@ -150,28 +150,34 @@ fn the_slice_gives_its_abilities_in_order() {
         (&["coat_check:lunge"], Ability::Lunge),
         (&["coat_lift:cling", "porters_lodge:favour"], Ability::Cling),
         // Up the grand stair, the feast: the Jeroboam on the Glutton's table, the Swoon after him.
-        // The ballroom's wing, past the Doorman, is open too.
+        // Down the coat lift, the gardens: the Lure in the glasshouse. Either can come first;
+        // the ballroom's wing, past the Doorman, is open too.
         (
             &[
                 "gluttons_hall:jeroboam",
                 "afters:swoon",
+                "glasshouse:lure",
                 "kitchens:goblet",
                 "letter_room:favour",
                 "champagne_cellar:favour",
             ],
             Ability::Swoon,
         ),
-        // The Swoon opens the feast's last Favour, and a Goblet back in the Arrival.
+        // The Swoon opens the feast's last Favour, the crystal gallery's perch,
+        // and a Goblet back in the Arrival.
         (
             &[
-                "crystal_gallery:lure",
                 "afters:favour",
                 "receiving_line:goblet",
+                "crystal_gallery:favour",
             ],
             Ability::Lure,
         ),
-        // The Dancer gives the Plunge, after the candelabrum.
-        (&["ballroom:candelabrum"], Ability::Plunge),
+        // The Lure opens the rest of the gardens, past the bloom walk.
+        (
+            &["summerhouse:favour", "ballroom:candelabrum"],
+            Ability::Plunge,
+        ),
     ];
     let mut found = Progress::new_game().abilities;
     assert!(found.is_empty(), "a new game starts with no abilities");

@@ -1,0 +1,39 @@
+// The potting shed: the gardener's lean-to at the bottom of the coat lift, and the gardens' first lounge.
+//
+// In from the coat lift's shaft on the west; out to the glasshouse on the east.
+[room]
+name = potting_shed
+background = cellars 3a6a48
+music = ballroom muffled
+
+[legend]
+# stone
+= wood
+
+[tiles]
+========================
+========================
+==....................==
+==....................==
+==....................==
+==....................==
+==....................==
+==....................==
+==....................==
+==....................==
+........................
+........................
+........................
+########################
+########################
+########################
+
+[entities]
+door 0 10 h=3 id=west to=coat_lift:east
+door 23 10 h=3 id=east to=glasshouse:west
+lounge 14 13 id=shed
+npc 7 13 id=gardener
+prop 4 13 kind=crate
+prop 19 13 kind=potted_palm
+lantern 12 5
+light 12 7 radius=110 strength=0.7 color=ffb060 glow=0.4

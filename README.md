@@ -14,7 +14,8 @@ cargo dev
 ```
 
 A new game starts in the Arrival, the house's front rooms, where the Lunge and Cling are found
-and the Doorman keeps the inner doors. Up the grand stair is the feast, where the Glutton keeps the Swoon.
+and the Doorman keeps the inner doors. Up the grand stair is the feast, where the Glutton keeps the Swoon,
+and down the coat lift the gardens, where the Lure is found.
 Past the Doorman is the vertical slice: twenty rooms of the ballroom,
 with the Dancer waiting on the stage and the cellar beneath it where the slice ends.
 `cargo xtask map` draws them all; Select shows the ones you have visited.

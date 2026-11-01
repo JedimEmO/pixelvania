@@ -147,13 +147,29 @@
                 ]),
             ],
         ),
+        "gardener": (
+            name: "The gardener",
+            look: "medium",
+            lines: [
+                (when: [], say: [
+                    "Mind the beds. Everything in them is asleep, and should stay that way.",
+                    "The flowers glow at night. It is always night, so they always glow.",
+                    "There's one in the glasshouse that opens for nobody. Climb up and ask it.",
+                ]),
+                (when: [Lure], say: [
+                    "It let you hold on, then. It does that, with some.",
+                    "Through the walk and down, he sleeps. Don't wake him. Everyone wakes him.",
+                ]),
+            ],
+        ),
     },
     cards: {
         "vestibule": "You are expected. Do come through.  - H.",
         "coat_check": "Leave whatever you came in with. You will not need it.  - H.",
         "feast_doors": "Not these doors, darling. The feast is served upstairs, for those who can climb.  - H.",
         "larder": "There is more here than anyone could eat. That was never the point.  - H.",
-        "garden_doors": "The gardens are not yet in bloom. Patience is not your gift, is it?  - H.",
+        "garden_doors": "The gardens are not through here. Go down, darling, the way the coats go.  - H.",
+        "summerhouse": "It is always summer here. Nothing grows old. Nothing grows.  - H.",
         "letter_room": "Your invitation was never sent. You came anyway. How like you.  - H.",
         "inner_doors": "Through here. Everyone is through here.  - H.",
         "antechamber": "You found your way in. They always do.  - H.",

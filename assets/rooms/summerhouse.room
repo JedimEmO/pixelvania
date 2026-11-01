@@ -1,0 +1,40 @@
+// The summerhouse: a little house of glass at the end of the gardens, where it is always summer.
+//
+// The gardens' second lounge, a Favour, and a card from the Host.
+[room]
+name = summerhouse
+background = ballroom 3a6a48
+music = ballroom muffled
+
+[legend]
+# stone
+= wood
+g gilt
+
+[tiles]
+========================
+========================
+==....................==
+==....................==
+==....................==
+==....................==
+==....................==
+==....................==
+==....................==
+==..............gggggg==
+......................==
+......................==
+......................==
+########################
+########################
+########################
+
+[entities]
+door 0 10 h=3 id=west to=sleepers_bower:east
+lounge 8 13 id=summerhouse
+note 12 12 id=summerhouse
+pickup 19 8.5 item=favour
+prop 4 13 kind=sofa
+prop 20 13 kind=potted_palm
+bloom 18 4
+light 12 6 radius=120 strength=0.6 color=ffb060 glow=0.4

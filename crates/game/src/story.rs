@@ -583,10 +583,11 @@ fn scenes(
 /// and `doormans_hall` becomes `The Doorman's Hall`.
 pub fn title(name: &str) -> String {
     /// Words that are someone's, and lost their apostrophe in a file name.
-    const POSSESSIVE: [(&str, &str); 3] = [
+    const POSSESSIVE: [(&str, &str); 4] = [
         ("doormans", "doorman's"),
         ("porters", "porter's"),
         ("gluttons", "glutton's"),
+        ("sleepers", "sleeper's"),
     ];
     let words: Vec<String> = name
         .split('_')
@@ -639,5 +640,6 @@ mod tests {
         assert_eq!(title("card_room"), "The Card Room");
         assert_eq!(title("doormans_hall"), "The Doorman's Hall");
         assert_eq!(title("gluttons_hall"), "The Glutton's Hall");
+        assert_eq!(title("sleepers_bower"), "The Sleeper's Bower");
     }
 }

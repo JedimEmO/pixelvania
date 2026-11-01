@@ -1,7 +1,7 @@
 // The crystal gallery: a long room of chandeliers above the ballroom.
 //
 // Enter from the stair tower at the top right. A moth circles the chandeliers, and on a gilt perch
-// eight tiles above the floor waits the Lure: Swoon up to it. Walk on to the upper gallery's door
+// eight tiles above the floor waits a Favour: Swoon up to it. Walk on to the upper gallery's door
 // at the bottom left, or swing from chandelier to chandelier.
 [room]
 name = crystal_gallery
@@ -41,7 +41,7 @@ g gilt
 [entities]
 door 0 18 h=3 id=west to=upper_gallery:east
 door 63 12 h=3 id=east to=stair_tower:west_high
-pickup 38.5 12 item=lure
+pickup 38.5 12 item=favour
 nectar 25 12.5
 chandelier 12 5
 chandelier 24 5

@@ -278,6 +278,10 @@ The gardens open off the Arrival too, from the bottom of the coat lift, and give
 
 52. **Blooms.** A third kind of Lure point: a glowing flower hanging from a vine, lit cyan-green,
     for the gardens to teach the Lure with, low and close together.
+53. **The gardens blocked out.** Five rooms from the bottom of the coat lift: the potting shed's lounge,
+    the glasshouse with the Lure on its pillar, the bloom walk, the Sleeper's bower and the summerhouse.
+    The crystal gallery's Lure became a Favour. The coat lift could not be climbed from the bottom,
+    which a playtest found as a trap; its two wall ledges are gone.
 
 
 ## For the director

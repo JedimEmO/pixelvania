@@ -47,7 +47,7 @@ The order you find things in, and where.
 | 2 | Cling | The Arrival's coat lift | A pair of long silk gloves hung over the cage, at the bottom of the shaft |
 | 3 | The Jeroboam | The feast, on the Glutton's table | The largest bottle at the feast, too heavy to drink from |
 | 4 | The Swoon | The feast's afters | By the fainting couch, where the guests who reached the end of the table lie down |
-| 5 | The Lure | The crystal gallery | A moth circling the first chandelier; it leads you to the light |
+| 5 | The Lure | The gardens' glasshouse | The night-blooming flower at the top of a pillar, glowing for nobody |
 | 6 | The candelabrum | The ballroom's alcove | Beside the lounge, still burning |
 | 7 | The Plunge | The stage | The Dancer's fall breaks the floor |
 
@@ -139,6 +139,19 @@ With the Swoon:
 - "Light-headed? That's the trick of it."
 - "When you feel yourself go, go up instead of down."
 
+### The gardener, in the potting shed
+
+Tends beds of things that must not be woken.
+
+At first:
+- "Mind the beds. Everything in them is asleep, and should stay that way."
+- "The flowers glow at night. It is always night, so they always glow."
+- "There's one in the glasshouse that opens for nobody. Climb up and ask it."
+
+With the Lure:
+- "It let you hold on, then. It does that, with some."
+- "Through the walk and down, he sleeps. Don't wake him. Everyone wakes him."
+
 ### The card player, in the card room
 
 Deals a hand to four empty chairs, and wins every time.
@@ -157,6 +170,8 @@ With the Lure:
 - Coat check: *Leave whatever you came in with. You will not need it. — H.*
 - The feast's doors on the grand stair: *Not these doors, darling. The feast is served upstairs, for those who can climb. — H.*
 - The larder: *There is more here than anyone could eat. That was never the point. — H.*
+- The gardens' doors on the grand stair: *The gardens are not through here. Go down, darling, the way the coats go. — H.*
+- The summerhouse: *It is always summer here. Nothing grows old. Nothing grows. — H.*
 - Antechamber: *You found your way in. They always do. — H.*
 - Cloakroom: *Nobody has come back for these. Nobody will. — H.*
 - Champagne cellar: *Take what you like. There is always more. — H.*

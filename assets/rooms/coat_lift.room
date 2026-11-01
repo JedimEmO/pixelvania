@@ -2,7 +2,7 @@
 //
 // The door from the coat check opens high in the west wall; the shaft drops to the bottom,
 // where a pair of long silk gloves hang over the cage: they give the Cling, and the way back up.
-// A Favour waits on a ledge high on the east wall.
+// A Favour waits on a ledge high on the east wall. At the bottom, a door east goes on to the gardens.
 [room]
 name = coat_lift
 background = cellars 8a5a30
@@ -24,7 +24,7 @@ music = ballroom muffled
 ..................==
 ..................==
 ..................==
-=====.............==
+==................==
 ==................==
 ==................==
 ==................==
@@ -49,7 +49,7 @@ music = ballroom muffled
 ==................==
 ==................==
 ==................==
-======............==
+==..====..........==
 ==................==
 ==................==
 ==................==
@@ -59,15 +59,16 @@ music = ballroom muffled
 ==................==
 ==................==
 ==................==
-==................==
-==................==
-==................==
+==..................
+==..................
+==..................
 ####################
 ####################
 ####################
 
 [entities]
 door 0 8 h=3 id=west to=coat_check:east
+door 19 46 h=3 id=east to=potting_shed:west
 pickup 10 48 item=cling
 prop 10 49 kind=gloves_on_banister
 pickup 16 19 item=favour

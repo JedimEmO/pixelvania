@@ -1,0 +1,56 @@
+// The glasshouse: iron and glass over beds gone wild, lit from inside by what grows there.
+//
+// In the middle a pillar holds up the night-blooming flower: cling up it to find the Lure,
+// and over it to go on.
+// Blooms hang low on either side, close enough to swing between. East is the bloom walk.
+[room]
+name = glasshouse
+background = ballroom 2a6a5a
+music = ballroom muffled
+
+[legend]
+# stone
+= wood
+g gilt
+
+[tiles]
+gggggggggggggggggggggggggggggggggggggggggggggggg
+gggggggggggggggggggggggggggggggggggggggggggggggg
+gg............................................gg
+gg............................................gg
+gg............................................gg
+gg............................................gg
+gg............................................gg
+gg............................................gg
+gg............................................gg
+gg....................ggg.....................gg
+gg....................###.....................gg
+gg....................###.....................gg
+gg....................###.....................gg
+gg....................###.....................gg
+gg....................###.....................gg
+gg....................###.....................gg
+gg....................###.....................gg
+gg....................###.....................gg
+......................###.......................
+......=======.........###..........=======......
+......=======.........###..........=======......
+################################################
+################################################
+################################################
+
+[entities]
+door 0 18 h=3 id=west to=potting_shed:east
+door 47 18 h=3 id=east to=bloom_walk:west
+pickup 23.5 8.5 item=lure
+bloom 23.5 4
+bloom 10 11
+bloom 16 9
+bloom 31 9
+bloom 37 11
+guest 14 21 class=light
+guest 33 21 class=spinner
+prop 9 19 kind=potted_palm
+prop 38 19 kind=potted_palm
+light 24 6 radius=160 strength=0.8 color=70ffd0 glow=0.5
+light 24 18 radius=200 strength=0.3 color=a0c8ff glow=0.2
