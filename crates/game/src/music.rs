@@ -4,12 +4,36 @@ use bevy::prelude::*;
 pub struct MusicPlugin;
 impl Plugin for MusicPlugin {
     fn build(&self, app: &mut App) {
+        app.init_resource::<Beat>()
+            .add_systems(PreUpdate, advance_beat);
         #[cfg(not(target_arch = "wasm32"))]
         app.insert_non_send(native::Music::default())
             .add_systems(PostUpdate, native::update);
         #[cfg(target_arch = "wasm32")]
         app.add_systems(Startup, || info!("Ballroom music is disabled on wasm"));
     }
+}
+
+/// Where the music is, in seconds, so the room can move on its beat.
+/// It follows the stems' own playback position while the ballroom music plays,
+/// and runs on real time when there is no music, so lights still pulse in silence.
+#[derive(Resource, Default, Debug, Clone, Copy)]
+pub struct Beat {
+    pub seconds: f64,
+}
+
+impl Beat {
+    /// The ballroom's tempo; `assetgen::music` renders it at this tempo.
+    pub const BPM: f64 = 120.0;
+
+    /// How far through the current beat, from 0 on the beat to 1 just before the next.
+    pub fn phase(&self) -> f32 {
+        (self.seconds * Self::BPM / 60.0).fract() as f32
+    }
+}
+
+fn advance_beat(time: Res<Time<Real>>, mut beat: ResMut<Beat>) {
+    beat.seconds += time.delta_secs_f64();
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -180,6 +204,7 @@ mod native {
         active: Option<Res<ActiveRoom>>,
         mood: Option<Res<Mood>>,
         progression: Option<Res<crate::fade::ProgressionFade>>,
+        mut beat: ResMut<Beat>,
         mut music: NonSendMut<Music>,
     ) {
         let audible = active
@@ -216,6 +241,9 @@ mod native {
                 return;
             }
             Ok(true) => {}
+        }
+        if let Some(stem) = player.stems.first() {
+            beat.seconds = stem.position();
         }
         if changed {
             player.apply(wanted.0, wanted.1);

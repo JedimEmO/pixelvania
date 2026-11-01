@@ -13,11 +13,17 @@ Start with [the plan](docs/plan.md), which links to the design pages.
 cargo dev
 ```
 
+The game starts in the ballroom, the first room at final quality:
+a dance floor, an orchestra pit, a lantern-lit shaft, a gilt gallery and a lounge,
+joined by chandeliers to swing from with the Lure.
+Start or Tab steps on to the feel lab and the combat lab.
+
 `cargo dev` runs the game with the `dev` feature:
 tuning in `assets/tuning.ron` and rooms in `assets/rooms/` reload when you save them.
 Press F1 for a panel that edits the tuning live and saves it back to the file.
 F2 pauses the game, and F3 steps it one gameplay tick at a time while paused.
 F4 cycles the mood of combat: neutral, the High and the Comedown.
+F6 steps the progression fade, which drains the colour from surfaces but not from light.
 F5 shows hurtboxes, active hitboxes, and health and poise bars,
 and the keys 7, 8 and 9 spawn a light, medium or heavy guest in front of the player.
 Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev` feature.
@@ -31,7 +37,7 @@ Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev
 | Toast, the parry | Left bumper (LB, L1) | K |
 | Lure: take hold of the light the stick aims at; hold to swing, release to let go | Right trigger (RT, R2) | I |
 | Next weapon: the sabre, the Jeroboam, the candelabrum | North (Y, Triangle) | L |
-| Next test room: the feel lab or the combat lab | Start | Tab |
+| Next room: the ballroom, the feel lab, the combat lab | Start | Tab |
 | Back to the spawn point, and the guests back to theirs | Select | R |
 
 Hold down while falling to fall faster, and press into a wall while falling to slide down it.
@@ -49,7 +55,9 @@ jump is pressed at frame 60 and the Lunge at frame 90.
 `PIXELVANIA_RECORD=path` writes every tick's input to a file, and `PIXELVANIA_REPLAY=path` plays it back.
 `PIXELVANIA_PANEL=1` opens the tuning panel at start, with the `dev` feature.
 `PIXELVANIA_FX=sword-slash` sets off that effect in front of the player at frame 80.
-`PIXELVANIA_ROOM=arena` starts in the combat lab, and `PIXELVANIA_MOOD=high` or `comedown` in that mood.
+`PIXELVANIA_ROOM=arena` starts in the combat lab (or `lab`, `ballroom`),
+`PIXELVANIA_MOOD=high` or `comedown` in that mood, `PIXELVANIA_FADE=0.5` with that much progression fade,
+and `PIXELVANIA_SPAWN=34,13` with the player at that tile.
 `PIXELVANIA_HOLD` also takes `attack` (a three-hit combo), `charge`, `toast`, `finish`,
 `jeroboam` and `candelabrum`, and `PIXELVANIA_GUEST=heavy` spawns a guest in front of the player.
 

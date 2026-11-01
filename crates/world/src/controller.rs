@@ -543,13 +543,8 @@ impl Controller {
             }
             self.vy = 0.0;
         }
-        // A rope that loses sight of its light snaps.
-        if let Some(rope) = self.rope
-            && !room.clear_line(self.hands(), rope.anchor)
-        {
-            self.release(t);
-            ev.released = true;
-        }
+        // A rope needs a clear line to take hold, but once held it stays held, even when
+        // the swing carries the line past a corner: snapping there would feel arbitrary.
         ev
     }
 

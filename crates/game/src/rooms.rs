@@ -22,7 +22,7 @@ impl Plugin for RoomsPlugin {
             .register_asset_loader(RoomLoader)
             .add_systems(Startup, load_first_room)
             .add_systems(PreUpdate, build_on_change)
-            .add_systems(Update, next_room);
+            .add_systems(Update, (next_room, pulse));
     }
 }
 
@@ -30,7 +30,7 @@ impl Plugin for RoomsPlugin {
 pub struct RoomAsset(pub Arc<Room>);
 
 /// The test rooms, in the order Start or Tab steps through them.
-const ROOMS: [&str; 2] = ["lab", "arena"];
+const ROOMS: [&str; 3] = ["ballroom", "lab", "arena"];
 
 /// The room the player is in. `room` is `None` until it has loaded.
 #[derive(Resource)]
@@ -38,6 +38,23 @@ pub struct ActiveRoom {
     handle: Handle<RoomAsset>,
     index: usize,
     pub room: Option<Arc<Room>>,
+}
+
+/// A light that swells on every beat of the music: `pulse=0.6` in the room file.
+#[derive(Component)]
+struct Pulse {
+    /// The light's strength in the room file.
+    strength: f32,
+    /// How deep the pulse is, 0 to 1.
+    amount: f32,
+}
+
+/// Swells pulsing lights on the beat and lets them sink until the next.
+fn pulse(beat: Res<crate::music::Beat>, mut lights: Query<(&Pulse, &mut Light2d)>) {
+    let swell = (-beat.phase() * 6.0).exp();
+    for (p, mut light) in &mut lights {
+        light.strength = (p.strength * (1.0 - 0.5 * p.amount + p.amount * swell)).min(2.0);
+    }
 }
 
 /// Marks everything built from the active room, so a rebuild can clear it.
@@ -120,15 +137,22 @@ fn build(commands: &mut Commands, images: &mut Assets<Image>, room: &Room) {
                 glow: light.num("glow", 0.0)?,
             })
         };
-        match read() {
-            Ok(l) => {
+        match read().and_then(|l| Ok((l, light.num("pulse", 0.0)?))) {
+            Ok((l, pulse)) => {
                 let (x, y) = light.pixel_pos();
-                commands.spawn((
+                let strength = l.strength;
+                let mut e = commands.spawn((
                     RoomPart,
                     Name::new("light"),
                     l,
                     Transform::from_xyz(x, -y, 0.0),
                 ));
+                if pulse > 0.0 {
+                    e.insert(Pulse {
+                        strength,
+                        amount: pulse.min(1.0),
+                    });
+                }
             }
             Err(e) => error!("room `{}`: {e}", room.name),
         }

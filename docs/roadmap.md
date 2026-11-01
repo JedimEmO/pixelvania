@@ -72,23 +72,48 @@ Its stems are rendered, not committed: run `cargo xtask music` once after clonin
 ## One finished room
 
 The director has played the combat lab and signed off on its feel.
-The next milestone is one room of the ballroom at final quality, built from these pieces,
-and these are its steps:
+This milestone is one room of the ballroom at final quality, built from those pieces.
+Its five steps are built; what decides it now is playing the room and listening to it.
 
-10. **The Lure.** The grapple that only takes hold of light, on the right trigger,
-    aimed with the stick and swung from like a pendulum. In `world::controller`, with headless tests.
-11. **The chandelier.** A lit, painted chandelier hanging on its chain, the Lure's first anchor,
-    swaying when the player swings from it.
-12. **Costumed guests.** Masks, hats and hair on the rig, so guests stop reading as mannequins.
-13. **The progression fade.** The colour of surfaces drains with progress while light keeps its colour;
-    a switch in the dev tools, because this room decides whether the fade stays.
-14. **The room.** A tall ballroom hall built for the Lure, with chandeliers, a costumed crowd,
-    the backdrop and the music, at final quality.
+10. **The Lure.** Done. The right trigger throws a rope to the chandelier or lantern the stick aims at,
+    within reach and in sight, and the body swings from it as a pendulum:
+    pumped by the stick, climbed with up and down, flung on when let go.
+    A rope snapping taut keeps the body's speed, turned along the swing, so momentum carries through a catch.
+    Taking hold gives back the Swoon and the Lunge. Seven headless tests in `crates/world/tests/lure.rs`.
+11. **The chandelier.** Done, and a lantern with it, painted by `assetgen::hanging`
+    and repainted at each angle as they sway, so every pixel stays whole.
+    They lean towards a body on their rope and flare when the Lure takes hold.
+12. **Costumed guests.** Done, by Codex: hats, masks and hair on the rig.
+    The light guest wears a bouffant and a domino mask, the medium a beak mask and a plume,
+    the heavy a top hat. `cargo xtask rig` shows them.
+13. **The progression fade.** Done, set by hand: F6, a slider in the F1 panel, or `PIXELVANIA_FADE`.
+    Surfaces go grey while light keeps its colour, the High gives back four fifths of it,
+    and the fade thins the music's warm stems.
+14. **The room.** Done in a first full form: `assets/rooms/ballroom.room`, where the game now starts.
+    A dance floor whose lights pulse on the music's beat, an orchestra pit with two chandeliers over it,
+    a lantern-lit shaft, a gilt gallery, and a lounge reached by one last swing.
+    `crates/world/tests/ballroom.rs` finds a way through each route against the real room and tuning,
+    so a change that breaks one fails a test.
 
 ## For the director
 
-Play the feel lab and the combat lab with a gamepad; both milestones are decided by how they feel.
-The combat lab's done test is a fight against the heavy guest with the Jeroboam,
+Play the ballroom with a gamepad; `cargo run --bin pixelvania` starts there.
+Its done test is that it looks like the game we described, and that you sign off on the music's direction.
+Climb it both ways: by the chandeliers from the dance floor to the gallery and on to the lounge,
+and by the lanterns up the shaft. Then press F6 to see the progression fade, and F4 for the High.
+
+Questions this room is meant to answer:
+
+- **Does the progression fade stay?** At full fade the stone, the gilt and every costume go grey,
+  and the lamps keep their colour. The player fades too, since the rig is drawn into the colour buffer;
+  keeping the player's colour is a small change if the fade should spare them.
+- **How does the Lure feel?** Every number is in the F1 panel under *Lure*.
+  The rope reels in to 96 px, swings at up to 560 px/s, and letting go multiplies the speed by 1.12.
+  Once held, a rope stays held when the swing carries its line past a corner; it only needs sight to take hold.
+- **Is the room bright enough?** It follows the art direction's dark silhouettes and vivid lights,
+  which in a hall this size leaves stretches of near-black between the chandeliers.
+
+The combat lab's done test still stands: a fight against the heavy guest with the Jeroboam,
 once in neutral or the High and once in the Comedown (F4).
 
 Things only you can judge, because nobody has seen or heard them in play:
@@ -100,10 +125,12 @@ Things only you can judge, because nobody has seen or heard them in play:
   when it is not mid-swing), then hit it: it should die in a burst of pink, with slow motion.
   It works in code, but no scripted run could time it, so it has not been seen.
 - **Rumble.** Written for every hit by weight, never felt on a pad.
+- **The Lure's sounds.** A catch plucks a D and an A in the ballroom's key; letting go is a soft swish.
 
 Decisions taken with a default, to confirm or change:
 
-- **Buttons.** Attack is West (X, Square), the Toast is the left bumper, and North (Y, Triangle) switches weapons.
+- **Buttons.** Attack is West (X, Square), the Toast is the left bumper, North (Y, Triangle) switches weapons,
+  and the Lure is the right trigger, as the game-feel page has it.
 - **The charge.** Pressing attack swings at once; keeping it held then releases into the charged attack.
   The other way, where holding delays the first swing, makes every attack wait for the release.
 - **Hit-stop is per body.** The attacker freezes and the victim shivers, and the rest of the world moves on.

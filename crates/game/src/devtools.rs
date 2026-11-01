@@ -13,7 +13,8 @@
 //! The keys 7, 8 and 9 spawn a light, medium or heavy guest in front of the player,
 //! and `PIXELVANIA_GUEST=light`, `medium` or `heavy` spawns one there once the player stands.
 //! F5 shows hurtboxes, active hitboxes, and health and poise bars; `PIXELVANIA_BOXES=1` starts with them on.
-//! `PIXELVANIA_MOOD=high` or `comedown` starts in that mood.
+//! `PIXELVANIA_MOOD=high` or `comedown` starts in that mood, and `PIXELVANIA_SPAWN=40,13`
+//! starts the player at that tile instead of the room's spawn point.
 //! A replay is exact as long as the room and the tuning are the same as when it was recorded.
 //!
 //! With the `dev` feature, F1 opens a panel that edits the tuning live and saves it to the file.

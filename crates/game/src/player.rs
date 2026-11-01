@@ -249,10 +249,14 @@ fn spawn(
     if !existing.is_empty() {
         return;
     }
-    let (x, y) = room
-        .entities_of("spawn")
-        .next()
-        .map(|s| s.pixel_pos())
+    // `PIXELVANIA_SPAWN=x,y`, in tiles, starts the player there instead, for screenshots.
+    let wanted = std::env::var("PIXELVANIA_SPAWN").ok().and_then(|v| {
+        let (x, y) = v.split_once(',')?;
+        Some((x.trim().parse::<f32>().ok()?, y.trim().parse::<f32>().ok()?))
+    });
+    let (x, y) = wanted
+        .map(|(x, y)| (x * world::TILE as f32, y * world::TILE as f32))
+        .or_else(|| room.entities_of("spawn").next().map(|s| s.pixel_pos()))
         .unwrap_or((32.0, 32.0));
     let ctrl = Controller::standing_at(x, y, SIZE.x, SIZE.y, Abilities::ALL);
     let player = Player {
