@@ -1,23 +1,27 @@
 // Phase durations and ranges are ticks at 120 Hz. Ranges exclude their end.
+// Mobile swings (the first two of the combo, the first in the air and the pogo) leave the body free:
+// the stick steers and a jump or Lunge ends them in recovery. The others hold the body to the end.
 (
     name: "sabre",
     charge_ticks: 48,
     combo: (
         (
-            windup: 10, active: 8, recovery: 18, cancel_window: 4,
+            windup: 5, active: 8, recovery: 14, cancel_window: 4,
             hitboxes: [(rect: (x: 4.0, y: -32.0, w: 42.0, h: 30.0), ticks: None)],
             damage: 12.0, poise_damage: 8.0, hit_stop: 0.04,
             knockback: (154.0, -80.0), launches: false,
             weight: Light, armour: false, step: Some(45.0),
-            chain: Some((next: Combo2, window: (start: 1, end: 18))), air_hang: 0,
+            chain: Some((next: Combo2, window: (start: 1, end: 14))), air_hang: 0,
+            mobile: true, recoil: 120.0,
         ),
         (
-            windup: 12, active: 8, recovery: 20, cancel_window: 4,
+            windup: 6, active: 8, recovery: 16, cancel_window: 4,
             hitboxes: [(rect: (x: 4.0, y: -32.0, w: 42.0, h: 30.0), ticks: None)],
             damage: 14.0, poise_damage: 10.0, hit_stop: 0.04,
             knockback: (182.0, -100.0), launches: false,
             weight: Light, armour: false, step: Some(55.0),
-            chain: Some((next: Combo3, window: (start: 3, end: 20))), air_hang: 0,
+            chain: Some((next: Combo3, window: (start: 3, end: 16))), air_hang: 0,
+            mobile: true, recoil: 120.0,
         ),
         (
             windup: 22, active: 10, recovery: 30, cancel_window: 4,
@@ -46,12 +50,13 @@
     ),
     air: (
         (
-            windup: 10, active: 8, recovery: 18, cancel_window: 4,
+            windup: 5, active: 8, recovery: 14, cancel_window: 4,
             hitboxes: [(rect: (x: 4.0, y: -32.0, w: 42.0, h: 30.0), ticks: None)],
             damage: 12.0, poise_damage: 8.0, hit_stop: 0.04,
             knockback: (126.0, -80.0), launches: false,
             weight: Light, armour: false, step: Some(30.0),
-            chain: Some((next: Air2, window: (start: 1, end: 18))), air_hang: 18,
+            chain: Some((next: Air2, window: (start: 1, end: 14))), air_hang: 0,
+            mobile: true, recoil: 120.0,
         ),
         (
             windup: 16, active: 10, recovery: 24, cancel_window: 4,
@@ -63,11 +68,12 @@
         ),
     ),
     pogo: (
-        windup: 12, active: 10, recovery: 24, cancel_window: 4,
+        windup: 6, active: 10, recovery: 20, cancel_window: 4,
         hitboxes: [(rect: (x: -10.0, y: -4.0, w: 28.0, h: 36.0), ticks: None)],
         damage: 16.0, poise_damage: 16.0, hit_stop: 0.09,
         knockback: (140.0, -160.0), launches: true,
         weight: Heavy, armour: false, step: None,
         chain: None, air_hang: 0,
+        mobile: true,
     ),
 )

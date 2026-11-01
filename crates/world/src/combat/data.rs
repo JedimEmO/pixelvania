@@ -138,6 +138,14 @@ pub struct AttackData {
     pub chain: Option<Chain>,
     /// Ticks held at zero vertical speed, counted from the start of the move.
     pub air_hang: u32,
+    /// A light swing that leaves the body free: the stick still steers, a jump still jumps,
+    /// and a jump or a Lunge in recovery ends the swing, hit or miss. Facing stays fixed.
+    /// Without it the swing holds the body from first tick to last.
+    #[serde(default)]
+    pub mobile: bool,
+    /// The attacker's push back, away from the target, when this swing lands, in pixels per second.
+    #[serde(default)]
+    pub recoil: f32,
 }
 
 impl AttackData {

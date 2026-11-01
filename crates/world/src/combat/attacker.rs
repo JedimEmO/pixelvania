@@ -92,6 +92,11 @@ impl Attacker {
         }
     }
 
+    /// Whether the swing under way leaves the body free to move; see [`AttackData::mobile`].
+    pub fn mobile(&self) -> bool {
+        self.data().is_some_and(|d| d.mobile)
+    }
+
     pub fn armoured(&self) -> bool {
         self.data().is_some_and(|d| d.armour)
     }

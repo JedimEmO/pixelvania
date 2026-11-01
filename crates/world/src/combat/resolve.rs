@@ -190,6 +190,16 @@ pub fn resolve(fighters: &mut [Fighter<'_>], mood: ImpactScale) -> Vec<CombatEve
         fighters[c.source].combat.freeze(c.hit.hit_stop, false);
         fighters[c.target].combat.freeze(c.hit.hit_stop, true);
         fighters[c.target].combat.receive(&c.hit, c.armoured);
+        let recoil = fighters[c.source]
+            .combat
+            .attacker
+            .data()
+            .map_or(0.0, |d| d.recoil);
+        if recoil > 0.0 && c.hit.attack != AttackId::Pogo {
+            fighters[c.source]
+                .combat
+                .recoil(-c.hit.direction as f32 * recoil);
+        }
         if c.hit.attack == AttackId::Pogo
             && bounced.insert(c.source)
             && !fighters[c.source].combat.helpless()

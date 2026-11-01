@@ -107,14 +107,14 @@ fn ron_files_validate_and_pin_the_weapon_numbers() {
             sabre(),
             48,
             [
-                (10, 8, 18, 12.0, 8.0, 0.04),
-                (12, 8, 20, 14.0, 10.0, 0.04),
+                (5, 8, 14, 12.0, 8.0, 0.04),
+                (6, 8, 16, 14.0, 10.0, 0.04),
                 (22, 10, 30, 24.0, 26.0, 0.09),
                 (28, 12, 40, 40.0, 55.0, 0.16),
                 (16, 10, 26, 18.0, 20.0, 0.09),
-                (10, 8, 18, 12.0, 8.0, 0.04),
+                (5, 8, 14, 12.0, 8.0, 0.04),
                 (16, 10, 24, 20.0, 20.0, 0.09),
-                (12, 10, 24, 16.0, 16.0, 0.09),
+                (6, 10, 20, 16.0, 16.0, 0.09),
             ],
         ),
         (
@@ -642,7 +642,9 @@ fn toast_parries_inside_its_window_and_staggers_even_an_armoured_attacker() {
 
 #[test]
 fn controller_lock_enforces_commitment_step_and_lunge_only_cancel() {
-    let weapon = sabre();
+    // The sabre's first swing is mobile; held swings are what this pins.
+    let mut weapon = sabre();
+    weapon.combo[0].mobile = false;
     let room = room();
     let tuning = MoveTuning::default();
     let mut a = guest(WeightClass::Light);
@@ -710,6 +712,78 @@ fn controller_lock_enforces_commitment_step_and_lunge_only_cancel() {
     assert!(events.lunged);
     assert_eq!(a.attacker.phase(), Phase::Idle);
     assert_eq!(c.vx, tuning.lunge_speed);
+}
+
+#[test]
+fn a_mobile_swing_steers_jumps_and_cancels_in_recovery_hit_or_miss() {
+    let weapon = sabre();
+    assert!(weapon.combo[0].mobile && !weapon.combo[2].mobile);
+    let room = room();
+    let tuning = MoveTuning::default();
+    let mut a = guest(WeightClass::Light);
+    let mut c = player(80.0, 192.0);
+    // The stick steers through the windup, but the swing keeps facing the way it started.
+    a.tick_controller(1, &mut c, &room, &tuning, &weapon, press());
+    for _ in 0..weapon.combo[0].windup {
+        a.tick_controller(
+            1,
+            &mut c,
+            &room,
+            &tuning,
+            &weapon,
+            Controls {
+                x: -1.0,
+                ..Controls::default()
+            },
+        );
+    }
+    assert!(c.vx < 0.0);
+    assert_eq!(c.facing, 1);
+    // A miss: once in recovery, a jump ends the swing.
+    while a.attacker.phase() != Phase::Recovery {
+        a.tick_controller(1, &mut c, &room, &tuning, &weapon, Controls::default());
+    }
+    let (events, _) = a.tick_controller(
+        1,
+        &mut c,
+        &room,
+        &tuning,
+        &weapon,
+        Controls {
+            jump_pressed: true,
+            jump_held: true,
+            ..Controls::default()
+        },
+    );
+    assert!(events.jumped);
+    assert_eq!(a.attacker.phase(), Phase::Idle);
+}
+
+#[test]
+fn a_landed_mobile_swing_pushes_its_attacker_back() {
+    let weapon = sabre();
+    let mut a = guest(WeightClass::Light);
+    let mut b = guest(WeightClass::Light);
+    active(&mut a, &weapon, AttackId::Combo1);
+    let mut c = player(80.0, 192.0);
+    let target = Body::new(c.body.x + 20, c.body.y, 12, 34);
+    contact_at(&mut a, &mut b, &c.body, &target, ImpactScale::NEUTRAL);
+    thaw(&mut a, &weapon);
+    let x = c.body.x;
+    for _ in 0..12 {
+        a.tick_controller(
+            1,
+            &mut c,
+            &room(),
+            &MoveTuning::default(),
+            &weapon,
+            Controls::default(),
+        );
+    }
+    assert!(
+        c.body.x < x,
+        "recoil moves the attacker away from the target"
+    );
 }
 
 #[test]
@@ -988,7 +1062,7 @@ fn active_swings_keep_their_frame_data_when_a_weapon_is_reloaded() {
         tick(&mut a, &weapon);
     }
     assert_eq!(a.phase(), Phase::Active);
-    assert_eq!(a.data().unwrap().windup, 10);
+    assert_eq!(a.data().unwrap().windup, 5);
 }
 
 #[test]

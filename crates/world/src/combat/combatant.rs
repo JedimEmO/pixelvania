@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use crate::{Body, Controller, Controls, Events, MoveTuning, MovementLock, Room};
 
 use super::{
-    Attacker, CombatEvent, DT, Hit, PARRY_SECONDS, Reaction::*, WALL_SPLAT_DAMAGE,
+    Attacker, CombatEvent, DT, Hit, PARRY_SECONDS, Phase, Reaction::*, WALL_SPLAT_DAMAGE,
     WALL_SPLAT_SPEED, Weapon, Weight, seconds_to_ticks,
 };
 
@@ -191,10 +191,12 @@ impl Combatant {
             controller.vy = vy;
         }
         let motion = self.attacker.motion();
-        if let Some(facing) = self.attacker.facing() {
+        let swing_facing = self.attacker.facing();
+        if let Some(facing) = swing_facing {
             controller.facing = facing;
         }
-        let lock = motion.locked.then_some(MovementLock {
+        let mobile = self.attacker.mobile();
+        let lock = (motion.locked && !mobile).then_some(MovementLock {
             vx: motion.step_velocity,
             air_hang: motion.air_hang,
             allow_lunge: self.can_lunge_cancel(),
@@ -207,7 +209,16 @@ impl Combatant {
             }
         }
         let moved = controller.tick_with_lock(room, tuning, input, DT, lock);
-        if moved.lunged {
+        if mobile {
+            // The stick may have turned the body; the swing keeps the way it was facing.
+            if let Some(facing) = swing_facing {
+                controller.facing = facing;
+            }
+            let jumped = moved.jumped || moved.swooned || moved.wall_jumped.is_some();
+            if moved.lunged || (jumped && self.attacker.phase() == Phase::Recovery) {
+                self.attacker.interrupt();
+            }
+        } else if moved.lunged {
             self.attacker.lunge_happened();
         }
         (moved, events)
@@ -292,6 +303,13 @@ impl Combatant {
     pub(crate) fn freeze(&mut self, seconds: f32, victim: bool) {
         self.freeze_ticks = self.freeze_ticks.max(seconds_to_ticks(seconds));
         self.victim_stop |= victim;
+    }
+
+    /// Pushes a body that is not helpless along x, as a swing's recoil does; it eases off over a few ticks.
+    pub(crate) fn recoil(&mut self, vx: f32) {
+        if !self.helpless() {
+            self.velocity.0 = vx;
+        }
     }
 
     pub(crate) fn pogo(&mut self) {
