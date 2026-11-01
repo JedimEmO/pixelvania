@@ -152,7 +152,7 @@ fn spawn_controls(mut commands: Commands) {
             --
             Action::<Lure>::new()
             Bindings [
-                Binding(GamepadButton::RightTrigger)
+                Binding(GamepadButton::RightTrigger2)
                 --
                 Binding(KeyCode::KeyI)
             ]

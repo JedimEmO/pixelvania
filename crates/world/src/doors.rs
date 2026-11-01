@@ -134,6 +134,10 @@ pub struct WorldRoom {
     pub name: String,
     /// The area it belongs to, such as `ballroom`.
     pub area: String,
+    /// Where the room's top-left tile sits on the world map, in tiles.
+    /// Rooms joined by a door sit side by side, so the door lines up on both sides.
+    #[serde(default)]
+    pub pos: Option<(i32, i32)>,
 }
 
 impl World {
@@ -192,6 +196,17 @@ impl World {
                         d.to_room, d.to_door, back.to_room, back.to_door
                     ));
                 }
+                // On the map the two openings must meet: side by side, along the same tiles.
+                let here = self.rooms.iter().find(|r| r.name == *name).and_then(|r| r.pos);
+                let there = self.rooms.iter().find(|r| r.name == d.to_room).and_then(|r| r.pos);
+                if let (Some(a), Some(b)) = (here, there)
+                    && !meets(d, a, room, &back, b, other)
+                {
+                    problems.push(format!(
+                        "{at}: on the map it does not meet `{}:{}`; check both rooms' `pos`",
+                        d.to_room, d.to_door
+                    ));
+                }
                 if let Some(((x, y), _)) = back.arrival(other) {
                     let feet =
                         crate::Body::new(x.round() as i32 - 6, y.round() as i32 - 34, 12, 34);
@@ -205,6 +220,27 @@ impl World {
             }
         }
         problems
+    }
+}
+
+/// A door's opening on the world map, in tiles: left, top, right, bottom (exclusive).
+fn on_map(d: &Door, pos: (i32, i32)) -> (i32, i32, i32, i32) {
+    let t = TILE as f32;
+    let x0 = pos.0 + (d.x / t).round() as i32;
+    let y0 = pos.1 + (d.y / t).round() as i32;
+    (x0, y0, x0 + (d.w / t).round() as i32, y0 + (d.h / t).round() as i32)
+}
+
+/// Whether two doors meet on the map: openings on facing sides, touching, along the same tiles.
+fn meets(a: &Door, pa: (i32, i32), ra: &Room, b: &Door, pb: (i32, i32), rb: &Room) -> bool {
+    let (ax0, ay0, ax1, ay1) = on_map(a, pa);
+    let (bx0, by0, bx1, by1) = on_map(b, pb);
+    match (a.side(ra), b.side(rb)) {
+        (Some(Side::Right), Some(Side::Left)) => ax1 == bx0 && (ay0, ay1) == (by0, by1),
+        (Some(Side::Left), Some(Side::Right)) => bx1 == ax0 && (ay0, ay1) == (by0, by1),
+        (Some(Side::Bottom), Some(Side::Top)) => ay1 == by0 && (ax0, ax1) == (bx0, bx1),
+        (Some(Side::Top), Some(Side::Bottom)) => by1 == ay0 && (ax0, ax1) == (bx0, bx1),
+        _ => false,
     }
 }
 
@@ -227,10 +263,12 @@ mod tests {
                 WorldRoom {
                     name: "a".into(),
                     area: "x".into(),
+                    pos: None,
                 },
                 WorldRoom {
                     name: "b".into(),
                     area: "x".into(),
+                    pos: None,
                 },
             ],
         };

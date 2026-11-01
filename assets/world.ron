@@ -1,9 +1,11 @@
 // The rooms of the game and where a new game starts.
 // Each room is assets/rooms/<name>.room; doors inside the rooms join them.
+// `pos` places a room's top-left tile on the world map, in tiles: rooms joined by a door
+// sit side by side there, so the door's opening lines up on both sides.
 (
     start: "antechamber",
     rooms: [
-        (name: "antechamber", area: "ballroom"),
-        (name: "ballroom", area: "ballroom"),
+        (name: "antechamber", area: "ballroom", pos: Some((0, 16))),
+        (name: "ballroom", area: "ballroom", pos: Some((44, 0))),
     ],
 )
