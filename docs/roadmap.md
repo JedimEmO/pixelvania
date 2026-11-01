@@ -87,8 +87,10 @@ Its five steps are built; what decides it now is playing the room and listening 
     The light guest wears a bouffant and a domino mask, the medium a beak mask and a plume,
     the heavy a top hat. `cargo xtask rig` shows them.
 13. **The progression fade.** Done, set by hand: F6, a slider in the F1 panel, or `PIXELVANIA_FADE`.
-    Surfaces go grey while light keeps its colour, the High gives back four fifths of it,
-    and the fade thins the music's warm stems.
+    Lit surfaces go grey while lamps, flames and every glow keep their colour,
+    the High gives back four fifths of it, and the fade thins the music's warm stems.
+    The first version greyed only the surfaces' own colour, which the coloured lights then tinted again,
+    so in play it barely showed; it now applies after lighting.
 14. **The room.** Done in a first full form: `assets/rooms/ballroom.room`, where the game now starts.
     A dance floor whose lights pulse on the music's beat, an orchestra pit with two chandeliers over it,
     a lantern-lit shaft, a gilt gallery, and a lounge reached by one last swing.
@@ -105,7 +107,7 @@ and by the lanterns up the shaft. Then press F6 to see the progression fade, and
 Questions this room is meant to answer:
 
 - **Does the progression fade stay?** At full fade the stone, the gilt and every costume go grey,
-  and the lamps keep their colour. The player fades too, since the rig is drawn into the colour buffer;
+  even where a coloured lamp falls on them, and only the lamps, flames and glows keep their colour. The player fades too, since the rig is drawn into the colour buffer;
   keeping the player's colour is a small change if the fade should spare them.
 - **How does the Lure feel?** Every number is in the F1 panel under *Lure*.
   The rope reels in to 96 px, swings at up to 560 px/s, and letting go multiplies the speed by 1.12.

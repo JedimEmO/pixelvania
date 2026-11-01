@@ -89,8 +89,8 @@ pub struct Lighting {
     /// Colour saturation of the final frame: 1 as drawn, less towards grey, more richer.
     /// The mood sets it: the Comedown drains the world's colour, the High deepens it.
     pub saturation: f32,
-    /// How much colour the progression fade has taken from surfaces, 0 to 1.
-    /// Light and glow keep theirs, so a faded world is grey stone under vivid lamps.
+    /// How much colour the progression fade has taken from lit surfaces, 0 to 1.
+    /// The glow buffer keeps its colour, so a faded world is grey stone under vivid lamps.
     pub fade: f32,
 }
 

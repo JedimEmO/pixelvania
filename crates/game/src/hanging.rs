@@ -61,12 +61,19 @@ impl Hanging {
         Vec2::new(self.anchor.0, -(self.anchor.1 - self.hang()))
     }
 
+    pub fn kind(&self) -> Kind {
+        self.kind
+    }
+
     /// The grab point where it hangs now, swayed, in world space.
     pub fn grab_point(&self) -> Vec2 {
         let (s, c) = self.angle.sin_cos();
         self.pivot() + Vec2::new(s, -c) * self.hang()
     }
 }
+
+/// How much a fixture flares while the Lure is aimed at it: enough for tall flames.
+const AIMED_FLARE: f32 = 0.5;
 
 /// The light a fixture gives, its sway's stiffness, and how far a body on its rope leans it.
 struct Feel {
@@ -214,6 +221,7 @@ struct HangingLight((f32, f32));
 fn sway(
     time: Res<Time>,
     players: Query<&Player>,
+    aimed: Res<crate::lure::LureTarget>,
     mut fixtures: Query<&mut Hanging>,
     mut lights: Query<(&HangingLight, &mut Light2d, &mut Transform)>,
 ) {
@@ -235,6 +243,10 @@ fn sway(
             }
         }
         h.held = rope.is_some();
+        // The light the Lure is aimed at answers: its flames rise and its light swells.
+        if aimed.anchor == Some(h.anchor) {
+            h.flare = h.flare.max(AIMED_FLARE);
+        }
         let accel = f.stiffness * (target - h.angle) - 2.5 * h.spin;
         h.spin += accel * dt;
         h.angle = (h.angle + h.spin * dt).clamp(-0.35, 0.35);

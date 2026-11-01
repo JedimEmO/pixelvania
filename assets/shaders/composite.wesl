@@ -33,7 +33,8 @@ fn clamp_texel(p: vec2<i32>) -> vec2<i32> {
     return clamp(p, vec2(0), size - vec2(1));
 }
 
-// The progression fade: surfaces lose their colour, light never does.
+// The progression fade: lit surfaces lose their colour, while lamps, flames and every glow keep theirs.
+// It applies after lighting, so stone beside a pink lamp goes grey too; only the lamp stays pink.
 fn faded(c: vec3<f32>) -> vec3<f32> {
     return mix(c, vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), params.fade);
 }
@@ -64,8 +65,7 @@ fn fragment(in: FragmentIn) -> @location(0) vec4<f32> {
     }
     let p = vec2<i32>(floor(local + vec2(1.0) + params.offset));
 
-    let raw = textureLoad(color_tex, clamp_texel(p), 0);
-    let albedo = vec4(faded(raw.rgb), raw.a);
+    let albedo = textureLoad(color_tex, clamp_texel(p), 0);
     let light = light_at(p);
     var out: vec3<f32>;
     if albedo.a > 0.5 {
@@ -87,8 +87,9 @@ fn fragment(in: FragmentIn) -> @location(0) vec4<f32> {
         // empty rooms retain the old fill.
         let background = textureLoad(background_tex, clamp_texel(p), 0);
         let lift = clamp(vec3(0.45) + light * 0.6, vec3(0.45), vec3(1.2));
-        out = faded(background.rgb) * lift + faded(params.background.rgb) * light * (1.0 - background.a);
+        out = background.rgb * lift + params.background.rgb * light * (1.0 - background.a);
     }
+    out = faded(out);
     out += textureLoad(glow_tex, clamp_texel(p), 0).rgb;
     let foreground = textureLoad(foreground_tex, clamp_texel(p), 0);
     out = faded(foreground.rgb) + out * (1.0 - foreground.a);
