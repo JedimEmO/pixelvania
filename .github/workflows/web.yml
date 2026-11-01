@@ -1,0 +1,60 @@
+# Builds the web version with trunk and publishes it to https://jedimemo.github.io/pixelvania-play/.
+#
+# This repository is private, and the plan has no Pages for private repositories,
+# so the built files go to the public repository JedimEmO/pixelvania-play, which serves them.
+# Only the build is pushed there, never the source. The push uses a deploy key:
+# its public half is a write deploy key on pixelvania-play, its private half the secret PLAY_DEPLOY_KEY here.
+name: Web
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time; a newer push replaces a waiting one.
+concurrency:
+  group: web
+  cancel-in-progress: true
+
+env:
+  TRUNK_VERSION: v0.21.14
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: web
+
+      - name: Install trunk
+        run: |
+          curl -sSL "https://github.com/trunk-rs/trunk/releases/download/${TRUNK_VERSION}/trunk-x86_64-unknown-linux-gnu.tar.gz" \
+            | tar -xz -C /usr/local/bin trunk
+          trunk --version
+
+      # Trunk fetches the wasm-bindgen that matches Cargo.lock, and wasm-opt.
+      # The public URL is relative so the game works under the Pages path.
+      - name: Build
+        working-directory: web
+        run: trunk build --release --public-url ./
+
+      # Each deploy replaces the build repository's history, so it never grows.
+      - name: Publish
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.PLAY_DEPLOY_KEY }}
+          external_repository: JedimEmO/pixelvania-play
+          publish_branch: main
+          publish_dir: dist
+          force_orphan: true
+          full_commit_message: Build ${{ github.sha }}

@@ -56,6 +56,8 @@ A diamond marks the light the Lure would take hold of.
 The number keys 1 to 6 set off each pixelfx effect in front of the player.
 
 For the web build, install [trunk](https://trunkrs.dev) and run `trunk serve --release` in `web/`.
+Every push to `master` builds it and publishes it to https://jedimemo.github.io/pixelvania-play/;
+[the workflow](.github/workflows/web.yml) says how.
 
 ## Checking the game without playing it
 
