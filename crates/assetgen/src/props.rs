@@ -51,6 +51,10 @@ pub const KINDS: &[&str] = &[
     "fruit_pyramid",
     "game_rack",
     "range",
+    "flower_bed",
+    "bench",
+    "birdbath",
+    "mushrooms",
 ];
 
 /// The light a prop casts.
@@ -288,6 +292,10 @@ pub fn paint(kind: &str, step: u32) -> Option<Piece> {
         "fruit_pyramid" => fruit_pyramid(),
         "game_rack" => game_rack(),
         "range" => range(step),
+        "flower_bed" => flower_bed(step),
+        "bench" => bench(),
+        "birdbath" => birdbath(),
+        "mushrooms" => mushrooms(step),
         _ => return None,
     })
 }
@@ -304,6 +312,8 @@ pub fn animated(kind: &str) -> bool {
             | "ashtray_stand"
             | "candlestand"
             | "range"
+            | "flower_bed"
+            | "mushrooms"
     )
 }
 
@@ -325,6 +335,8 @@ pub fn light(kind: &str) -> Option<PropLight> {
         "mirror" => l(0.0, 30.0, [200, 190, 255], 40.0, 0.4),
         "ashtray_stand" => l(0.0, 22.0, [255, 120, 60], 30.0, 0.4),
         "range" => l(0.0, 8.0, [255, 120, 50], 80.0, 0.9),
+        "flower_bed" => l(0.0, 10.0, [110, 255, 210], 60.0, 0.6),
+        "mushrooms" => l(0.0, 6.0, [120, 200, 255], 50.0, 0.5),
         _ => return None,
     })
 }
@@ -1203,6 +1215,78 @@ fn range(step: u32) -> Piece {
     let lift = if (step / 2).is_multiple_of(4) { 1 } else { 0 };
     c.rect(18, 1 - lift, 31, 1 - lift, iron[0]);
     c.px(24, 0, iron[0]);
+    c.done()
+}
+
+/// A raised bed of stone, overgrown, with flowers that glow on their own.
+fn flower_bed(step: u32) -> Piece {
+    let mut c = Canvas::new(40, 18);
+    c.block(0, 10, 39, 17, STONE);
+    c.rect(1, 12, 38, 12, STONE[2]);
+    // Leaves spilling over the edge.
+    let leaf: Ramp = [[70, 110, 74], [44, 78, 52], [30, 54, 38], [20, 36, 26]];
+    for x in (2..38).step_by(3) {
+        let h = 3 + (x * 7 % 5);
+        c.rect(x, 10 - h, x + 1, 9, leaf[1 + (x as usize % 2)]);
+        c.px(x + 1, 10 - h, leaf[0]);
+    }
+    for x in [5, 17, 29] {
+        c.rect(x, 11, x + 1, 13, leaf[2]);
+    }
+    // The flowers: each a small cluster that glows, breathing on its own beat.
+    for (i, x) in [6, 13, 21, 27, 34].into_iter().enumerate() {
+        let y = 3 + (i as i32 * 3 % 4);
+        let k = 0.6 + 0.4 * (((step / 4 + i as u32) % 4) as f32 / 3.0);
+        let g = scale([110, 255, 210], k);
+        for (dx, dy) in [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)] {
+            c.both(x + dx, y + dy, [60, 120, 104], g);
+        }
+    }
+    c.done()
+}
+
+/// A stone garden bench, mossy at the feet.
+fn bench() -> Piece {
+    let mut c = Canvas::new(36, 14);
+    c.block(0, 4, 35, 6, STONE);
+    for x in [3, 29] {
+        c.block(x, 7, x + 3, 13, STONE);
+        c.rect(x, 12, x + 3, 13, [44, 70, 50]);
+    }
+    c.rect(0, 4, 35, 4, STONE[0]);
+    c.done()
+}
+
+/// A stone birdbath, the water in its bowl catching the light.
+fn birdbath() -> Piece {
+    let mut c = Canvas::new(22, 26);
+    c.block(1, 4, 20, 7, STONE);
+    c.rect(3, 4, 18, 4, [110, 140, 150]);
+    c.rect(9, 8, 12, 21, STONE[1]);
+    c.rect(9, 8, 9, 21, STONE[0]);
+    c.block(5, 22, 16, 25, STONE);
+    // A bird on the rim.
+    c.disc(17.0, 2.0, 2.0, 1.5, |_, _| [40, 36, 40]);
+    c.px(19, 1, [40, 36, 40]);
+    c.done()
+}
+
+/// A cluster of mushrooms whose caps glow blue.
+fn mushrooms(step: u32) -> Piece {
+    let mut c = Canvas::new(20, 14);
+    for (i, (x, h, r)) in [(4, 6, 3.0f32), (10, 10, 4.0), (15, 5, 2.5)].into_iter().enumerate() {
+        c.rect(x, 13 - h, x, 13, [150, 146, 140]);
+        let k = 0.55 + 0.35 * (((step / 3 + i as u32 * 2) % 5) as f32 / 4.0);
+        let g = scale([120, 200, 255], k);
+        let top = (13 - h) as f32;
+        for y in 0..=(r as i32) {
+            for dx in -(r as i32)..=(r as i32) {
+                if (dx * dx) as f32 + ((y as f32 - r) * (y as f32 - r)) * 1.8 <= r * r + 1.0 {
+                    c.both(x + dx, top as i32 - (r as i32) + y, [60, 80, 110], g);
+                }
+            }
+        }
+    }
     c.done()
 }
 

@@ -41,6 +41,9 @@ ggggggg.......................................##
 door 0 2 h=3 id=west to=bloom_walk:east
 door 47 18 h=3 id=east to=summerhouse:west
 boss 26 21 kind=sleeper
+prop 20 21 kind=flower_bed
+prop 32 21 kind=flower_bed
+prop 26 21 kind=mushrooms
 bloom 12 6
 bloom 20 5
 bloom 28 5

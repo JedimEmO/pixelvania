@@ -35,6 +35,6 @@ lounge 8 13 id=summerhouse
 note 12 12 id=summerhouse
 pickup 19 8.5 item=favour
 prop 4 13 kind=sofa
-prop 20 13 kind=potted_palm
+prop 20 13 kind=flower_bed
 bloom 18 4
 light 12 6 radius=120 strength=0.6 color=ffb060 glow=0.4

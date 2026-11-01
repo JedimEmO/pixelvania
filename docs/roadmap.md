@@ -289,6 +289,8 @@ The gardens open off the Arrival too, from the bottom of the coat lift, and give
 55. **The garden backdrop.** The glasshouse's ironwork against a night sky with stars and a moon,
     palms and round trees in tubs, vines hanging close with glowing buds, and great leaves at the edge.
     The gardens' rooms use it; the potting shed keeps the cellars.
+56. **The grotto and the gardens' props.** A cave under the glasshouse, lit by glowing mushrooms,
+    with a Favour; and a glowing flower bed, a stone bench, a birdbath and mushrooms through the gardens.
 
 
 ## For the director

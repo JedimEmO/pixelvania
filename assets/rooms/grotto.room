@@ -1,0 +1,43 @@
+// The grotto: a cave under the glasshouse, lit blue by mushrooms, dripping.
+//
+// Drop in through the glasshouse floor onto the landing under the hole; ledges climb back to it.
+// A Favour sits on a shelf high in the west wall, under a bloom, a jump from the top ledge.
+[room]
+name = grotto
+background = cellars 203a5a
+music = gardens muffled
+
+[legend]
+# stone
+
+[tiles]
+##############...###############
+##############...###############
+##............................##
+##............................##
+##............................##
+##............#######.........##
+#####.........................##
+##............................##
+##............................##
+##........####................##
+##............................##
+##............................##
+##..#####.....................##
+##............................##
+##............................##
+################################
+################################
+################################
+
+[entities]
+door 14 0 w=3 id=up to=glasshouse:down
+pickup 3 5.5 item=favour
+bloom 9 2
+guest 22 15 class=spinner
+prop 6 15 kind=mushrooms
+prop 18 15 kind=mushrooms
+prop 27 15 kind=mushrooms
+prop 11 9 kind=mushrooms
+nectar 24 14.5
+light 16 12 radius=150 strength=0.5 color=78c8ff glow=0.4

@@ -49,4 +49,7 @@ guest 30 21 class=light
 guest 40 21 class=medium
 nectar 24 20.5
 prop 50 5 kind=urn
+prop 20 21 kind=bench
+prop 46 21 kind=flower_bed
+prop 10 17 kind=mushrooms
 light 28 14 radius=220 strength=0.3 color=a0c8ff glow=0.2

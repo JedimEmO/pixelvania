@@ -27,6 +27,7 @@
         (name: "afters", area: "feast", pos: Some((-56, -58))),
         (name: "potting_shed", area: "gardens", pos: Some((-132, 72))),
         (name: "glasshouse", area: "gardens", pos: Some((-108, 64))),
+        (name: "grotto", area: "gardens", pos: Some((-93, 88))),
         (name: "bloom_walk", area: "gardens", pos: Some((-60, 72))),
         (name: "sleepers_bower", area: "gardens", pos: Some((-4, 72))),
         (name: "summerhouse", area: "gardens", pos: Some((44, 80))),

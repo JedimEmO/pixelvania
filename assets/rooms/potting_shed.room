@@ -35,5 +35,6 @@ lounge 14 13 id=shed
 npc 7 13 id=gardener
 prop 4 13 kind=crate
 prop 19 13 kind=potted_palm
+prop 10 13 kind=mushrooms
 lantern 12 5
 light 12 7 radius=110 strength=0.7 color=ffb060 glow=0.4
