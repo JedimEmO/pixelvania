@@ -152,6 +152,7 @@ pub struct Weapons {
     pub guest_spinner: Handle<WeaponAsset>,
     pub guest_toaster: Handle<WeaponAsset>,
     pub boss_dancer: Handle<WeaponAsset>,
+    pub boss_doorman: Handle<WeaponAsset>,
 }
 
 impl Weapons {
@@ -178,6 +179,7 @@ fn load_weapons(mut commands: Commands, assets: Res<AssetServer>) {
         guest_spinner: assets.load("combat/guest-spinner.ron"),
         guest_toaster: assets.load("combat/guest-toaster.ron"),
         boss_dancer: assets.load("combat/boss-dancer.ron"),
+        boss_doorman: assets.load("combat/boss-doorman.ron"),
     });
 }
 
@@ -309,18 +311,17 @@ pub(crate) fn resolve_contacts(
         Option<&Player>,
         Option<&crate::enemies::Guest>,
         Option<&crate::boss::Dancer>,
+        Option<&crate::boss::Boss>,
     )>,
 ) {
+    // A boss is finished only once it says it can be; a stagger before that is just a stagger.
     let blocked: Vec<u64> = fighters
         .iter()
-        .filter_map(|(e, f, _, _, b)| {
-            b.filter(|b| !b.finishable(f.combat.health))
-                .map(|_| combat_id(e))
-        })
+        .filter_map(|(e, _, _, _, _, boss)| boss.filter(|b| !b.finishable).map(|_| combat_id(e)))
         .collect();
     let mut rows: Vec<(u64, u32, Mut<Fighting>, Body, [Rect; 1])> = fighters
         .iter_mut()
-        .filter_map(|(e, f, p, g, b)| {
+        .filter_map(|(e, f, p, g, b, _)| {
             let body = *p
                 .map(HasBody::body)
                 .or(g.map(HasBody::body))

@@ -146,6 +146,9 @@ pub struct AttackData {
     /// The attacker's push back, away from the target, when this swing lands, in pixels per second.
     #[serde(default)]
     pub recoil: f32,
+    /// The hit is the attacker's own body, as in a rush, so a Lunge passes through it unhurt.
+    #[serde(default)]
+    pub body: bool,
 }
 
 impl AttackData {

@@ -13,15 +13,18 @@ pub enum Class {
     Heavy,
     Spinner,
     Toaster,
+    /// The Arrival's boss: a towering doorman in livery, with a staff.
+    Doorman,
 }
 
 impl Class {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 6] = [
         Self::Light,
         Self::Medium,
         Self::Heavy,
         Self::Spinner,
         Self::Toaster,
+        Self::Doorman,
     ];
 
     pub fn name(self) -> &'static str {
@@ -31,6 +34,7 @@ impl Class {
             Self::Heavy => "heavy",
             Self::Spinner => "spinner",
             Self::Toaster => "toaster",
+            Self::Doorman => "doorman",
         }
     }
 
@@ -40,6 +44,7 @@ impl Class {
             Self::Light | Self::Spinner => 0.85,
             Self::Medium | Self::Toaster => 1.0,
             Self::Heavy => 1.25,
+            Self::Doorman => 1.5,
         }
     }
 
@@ -50,6 +55,7 @@ impl Class {
             Self::Heavy => Weapon::Hammer,
             Self::Spinner => Weapon::Handle,
             Self::Toaster => Weapon::Coupe,
+            Self::Doorman => Weapon::Spear,
         }
     }
 
@@ -59,6 +65,7 @@ impl Class {
             Self::Light | Self::Spinner => (10, 29),
             Self::Medium | Self::Toaster => (12, 34),
             Self::Heavy => (18, 43),
+            Self::Doorman => (22, 52),
         }
     }
 }
@@ -101,7 +108,11 @@ impl Reaction {
 pub fn rig(class: Class) -> Rig {
     let k = class.scale();
     let d = Measurements::default();
-    let wide = if class == Class::Heavy { 1.35 } else { 1.0 };
+    let wide = match class {
+        Class::Heavy => 1.35,
+        Class::Doorman => 1.3,
+        _ => 1.0,
+    };
     let measurements = Measurements {
         pelvis: d.pelvis * k,
         spine1: d.spine1 * k,
@@ -137,6 +148,11 @@ pub fn rig(class: Class) -> Rig {
             [hex(0xe8d49a), hex(0xb89a5c), hex(0x7c6234), hex(0x4a3a1e)],
             [hex(0x50442c), hex(0x3a301e), hex(0x282014), hex(0x282014)],
         ),
+        // Oxblood livery.
+        Class::Doorman => (
+            [hex(0xd88a7a), hex(0xa04a44), hex(0x6a2a2c), hex(0x3a171c)],
+            [hex(0x4a2024), hex(0x34161a), hex(0x240f12), hex(0x240f12)],
+        ),
         // Bottle-green velvet, nearly black.
         Class::Heavy => (
             [hex(0x9cc49a), hex(0x5c8a62), hex(0x335a3c), hex(0x1c3424)],
@@ -164,6 +180,14 @@ pub fn rig(class: Class) -> Rig {
             Hair::None,
             [hex(0x64513b), hex(0x403223), hex(0x2a211c), hex(0x19151a)],
             [hex(0xf0d9a2), hex(0xceaf72), hex(0xba985e), hex(0x987442)],
+        ),
+        // Braided in gold, under a top hat.
+        Class::Doorman => (
+            Hat::TopHat,
+            Mask::None,
+            Hair::None,
+            [hex(0x6a3a36), hex(0x4a2426), hex(0x2e1618), hex(0x1c0e10)],
+            [hex(0xf2d58c), hex(0xd0aa5c), hex(0xa07c38), hex(0x705424)],
         ),
         Class::Heavy => (
             Hat::TopHat,
@@ -215,6 +239,123 @@ pub fn arm(p: Pose, class: Class) -> Pose {
         weapon: (class != Class::Spinner).then(|| class.weapon()),
         two: p.two || class == Class::Heavy,
         ..p
+    }
+}
+
+/// The Doorman's attacks, in the order of his frame data: the shove, the knock and the rush.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DoormanMove {
+    /// A long shove with the staff held level. Telegraphed by the staff drawn back.
+    Shove,
+    /// The staff struck on the floor, as when announcing a guest. Telegraphed by the staff raised high.
+    Knock,
+    /// A rush across the hall, shoulder down. Telegraphed by two stamps.
+    Rush,
+}
+
+/// The Doorman's pose for a move, `t` seconds into its phase, at the player's size.
+pub fn doorman_pose(m: DoormanMove, phase: crate::swing::Phase, t: f64) -> Pose {
+    use crate::swing::Phase;
+    let two = true;
+    match (m, phase) {
+        (DoormanMove::Shove, Phase::Windup) => Pose {
+            lean: -3.0,
+            fx: 2.0,
+            fy: -22.0,
+            bx: -8.0,
+            by: -21.0,
+            sa: 0.0,
+            ffx: 3.0,
+            fbx: -5.0,
+            two,
+            ..Pose::default()
+        },
+        (DoormanMove::Shove, Phase::Active) => Pose {
+            lean: 5.0,
+            fx: 17.0,
+            fy: -22.0,
+            bx: 8.0,
+            by: -21.0,
+            sa: 0.0,
+            ffx: 7.0,
+            fbx: -5.0,
+            two,
+            ..Pose::default()
+        },
+        (DoormanMove::Knock, Phase::Windup) => {
+            // The staff goes up slowly, and trembles at the top.
+            let k = (t / 0.4).min(1.0);
+            let tremble = if k >= 1.0 { (t * 60.0).sin() } else { 0.0 };
+            Pose {
+                lean: -3.0 * k,
+                fx: 3.0,
+                fy: -20.0 - 22.0 * k + tremble,
+                bx: -2.0,
+                by: -16.0 - 20.0 * k,
+                sa: -90.0 * k,
+                two,
+                ..Pose::default()
+            }
+        }
+        (DoormanMove::Knock, Phase::Active) => Pose {
+            lean: 4.0,
+            crouch: 3.0,
+            fx: 9.0,
+            fy: -14.0,
+            bx: 4.0,
+            by: -20.0,
+            sa: 90.0,
+            two,
+            ..Pose::default()
+        },
+        (DoormanMove::Rush, Phase::Windup) => {
+            // Two stamps: each foot lifts and comes down hard.
+            let stamp = (t * TAU * 2.5).sin().max(0.0);
+            let front = ((t * 2.5).floor() as i64) % 2 == 0;
+            Pose {
+                lean: 6.0,
+                crouch: 3.0,
+                fx: 6.0,
+                fy: -24.0,
+                bx: -4.0,
+                by: -22.0,
+                sa: -30.0,
+                ffy: if front { -4.0 - 5.0 * stamp } else { -4.0 },
+                fby: if front { -4.0 } else { -4.0 - 5.0 * stamp },
+                two,
+                ..Pose::default()
+            }
+        }
+        (DoormanMove::Rush, Phase::Active) => {
+            let stride = (t * TAU * 4.0).sin() * 7.0;
+            Pose {
+                lean: 9.0,
+                crouch: 2.0,
+                fx: 8.0,
+                fy: -26.0,
+                bx: -2.0,
+                by: -24.0,
+                sa: -20.0,
+                ffx: stride,
+                fbx: -stride,
+                two,
+                ..Pose::default()
+            }
+        }
+        (_, Phase::Recovery) => {
+            // Getting his breath back, the staff planted.
+            let breathe = (t * TAU * 0.8).sin();
+            Pose {
+                lean: -1.0,
+                crouch: 1.0 + breathe,
+                fx: 7.0,
+                fy: -17.0,
+                bx: -4.0,
+                by: -15.0,
+                sa: 90.0,
+                ..Pose::default()
+            }
+        }
     }
 }
 
@@ -383,6 +524,15 @@ mod tests {
                 }
                 poses.push(swing_pose(Swing::Combo1, phase, 1.0));
                 poses.push(swing_pose(Swing::Combo3, phase, 1.0));
+            }
+            if class == Class::Doorman {
+                for m in [DoormanMove::Shove, DoormanMove::Knock, DoormanMove::Rush] {
+                    for phase in [Phase::Windup, Phase::Active, Phase::Recovery] {
+                        for i in 0..4 {
+                            poses.push(doorman_pose(m, phase, i as f64 / 6.0));
+                        }
+                    }
+                }
             }
             for p in poses {
                 let p = arm(scale(&p, class.scale()), class);

@@ -469,6 +469,8 @@ fn tick(
             None => p.ctrl.tick(room, &moving, controls.0, dt),
         };
         crate::combat::fall_dead(&f, &mut p.ctrl, room, &tuning.movement);
+        // The Lunge passes through bodies, so a blow that is a body, as in a rush, misses it.
+        f.combat.passing = p.ctrl.lunging > 0.0;
         // A body taking a blow turns to face where it came from.
         if let Some(d) = f.hit_from.take()
             && f.combat.helpless()

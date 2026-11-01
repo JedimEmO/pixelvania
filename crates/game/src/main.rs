@@ -7,6 +7,7 @@ mod boss;
 mod camera;
 mod combat;
 mod devtools;
+mod doorman;
 mod edges;
 mod effects;
 mod encounter;
@@ -96,6 +97,7 @@ fn main() -> AppExit {
             prompt::PromptPlugin,
             edges::EdgesPlugin,
             ending::EndingPlugin,
+            doorman::DoormanPlugin,
         ))
         .run()
 }

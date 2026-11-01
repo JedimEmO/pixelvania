@@ -124,6 +124,7 @@ pub fn resolve(fighters: &mut [Fighter<'_>], mood: ImpactScale) -> Vec<CombatEve
                 || attacker.team == victim.team
                 || victim.combat.health <= 0.0
                 || state.has_hit(victim.id)
+                || (victim.combat.passing && state.data().is_some_and(|d| d.body))
                 || !boxes
                     .iter()
                     .any(|h| victim.hurtboxes.iter().any(|v| h.overlaps(*v)))

@@ -223,7 +223,10 @@ the Lure as stand-ins until the feast and the gardens exist. [The Arrival's page
     the coat lift with Cling at the bottom of its shaft, the music room's lounge, the portrait hall,
     the letter room, the Doorman's hall and the inner doors. The ballroom's own Lunge and Cling became a Favour
     and a Goblet. The reachability checker forgives a room whose way out is an ability found inside it.
-40. **The Doorman.** The Arrival's boss, before the inner doors, who teaches the Lunge through bodies.
+40. **The Doorman.** The Arrival's boss, before the inner doors, who teaches the Lunge through bodies:
+    a shove, a knock that runs along the floor, and a rush that only a Lunge passes.
+    Bosses now share a `Boss` component for their bar, the shut doors, their music and their words,
+    beaten bosses are kept in the save, and each pays two Favours the first time it falls.
 41. **The Arrival dressed.** Props, guests and light in every room, and its own backdrop of warm candlelight.
 42. **The music through the walls.** The Arrival hears the party muffled, as the vision asks.
 

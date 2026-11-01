@@ -253,11 +253,7 @@ fn show(
     let p = &progress.0;
     let rooms = crate::rooms::world().rooms.len();
     let found = p.taken.iter().filter(|t| t.ends_with(":favour")).count() as u32
-        + if p.has(Ability::Plunge) {
-            crate::plunge::DANCER_FAVOURS
-        } else {
-            0
-        };
+        + crate::boss::BOSS_FAVOURS * p.beaten.len() as u32;
     let jump = Control::Jump.key(*device);
     let lunge = Control::Lunge.key(*device);
     let choice = if confirming {
@@ -285,7 +281,7 @@ fn show(
     }
 }
 
-/// Every Favour the slice holds: those in its rooms, and the Dancer's.
+/// Every Favour the night holds so far: those in its rooms, and the bosses'.
 fn favours_in_slice(
     rooms: &crate::map::WorldRooms,
     assets: &Assets<crate::rooms::RoomAsset>,
@@ -295,13 +291,14 @@ fn favours_in_slice(
         .iter()
         .filter_map(|(_, handle)| assets.get(handle))
         .map(|room| {
-            room.0
+            let favours = room
+                .0
                 .entities_of("pickup")
                 .filter(|d| d.props.get("item").map(String::as_str) == Some("favour"))
-                .count() as u32
+                .count() as u32;
+            favours + crate::boss::BOSS_FAVOURS * room.0.entities_of("boss").count() as u32
         })
         .sum::<u32>()
-        + crate::plunge::DANCER_FAVOURS
 }
 
 /// Seconds as `1:02:03`, or `2:03` under an hour.

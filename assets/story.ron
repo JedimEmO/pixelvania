@@ -134,10 +134,19 @@
     },
     waking: "You are late.",
     ending: "The night goes on.",
-    dancer: (
-        waltz: "There you are. Dance with me.",
-        frenzy: "Faster. Faster!",
-        burning_out: "Don't let it stop. Don't let it stop.",
-        fall: "Was it lovely? Tell me it was lovely.",
-    ),
+    // Each boss speaks a line as each phase of its fight begins, and one as it falls.
+    bosses: {
+        "doorman": (
+            phases: ["Name?", "You're not on the list.", "Nobody leaves. Everyone's inside."],
+            fall: "Go on through, then. They all do.",
+        ),
+        "dancer": (
+            phases: [
+                "There you are. Dance with me.",
+                "Faster. Faster!",
+                "Don't let it stop. Don't let it stop.",
+            ],
+            fall: "Was it lovely? Tell me it was lovely.",
+        ),
+    },
 )

@@ -67,7 +67,7 @@ pub struct Words {
     cards: BTreeMap<String, String>,
     waking: String,
     pub ending: String,
-    pub dancer: DancerLines,
+    pub bosses: BTreeMap<String, BossLines>,
 }
 
 #[derive(Deserialize)]
@@ -83,12 +83,10 @@ struct Lines {
     say: Vec<String>,
 }
 
-/// What the Dancer says, one line per phase and one as she falls.
+/// What a boss says: one line as each phase of its fight begins, and one as it falls.
 #[derive(Deserialize, Clone)]
-pub struct DancerLines {
-    pub waltz: String,
-    pub frenzy: String,
-    pub burning_out: String,
+pub struct BossLines {
+    pub phases: Vec<String>,
     pub fall: String,
 }
 

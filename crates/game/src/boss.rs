@@ -1,4 +1,6 @@
-//! The ballroom's Dancer and its visible health and poise.
+//! Bosses: what every boss shares, the bar that shows its health and poise, and the ballroom's Dancer.
+//!
+//! The Arrival's Doorman is in `doorman.rs`.
 use crate::combat::{Fighting, GUEST_TEAM, SimulateBodies, WeaponAsset, Weapons, combat_id};
 use crate::player::{Look, Player, look_anchor};
 use crate::rooms::{ActiveRoom, RoomPart};
@@ -13,6 +15,7 @@ impl Plugin for BossPlugin {
         app.add_message::<BossDefeated>()
             .init_resource::<SpawnedFor>()
             .add_systems(Startup, spawn_hud)
+            .add_systems(Update, reward)
             .add_systems(
                 FixedUpdate,
                 (tick, separate)
@@ -30,8 +33,38 @@ impl Plugin for BossPlugin {
     }
 }
 
+/// Favours every boss gives when it falls.
+pub const BOSS_FAVOURS: u32 = 2;
+
+/// A boss, as the bar, the shut doors, and the fight's music and words know it.
+#[derive(Component)]
+pub struct Boss {
+    /// Its name on the bar.
+    pub name: &'static str,
+    /// Its words in `assets/story.ron`, and its music.
+    pub kind: &'static str,
+    pub music: &'static str,
+    pub max_health: f32,
+    /// The phase of the fight, from 1.
+    pub phase: u8,
+    /// Whether a blow on it while staggered finishes it.
+    pub finishable: bool,
+}
+
+/// A boss falling is kept in the progress record, and pays its Favours the first time.
+fn reward(
+    mut defeated: MessageReader<BossDefeated>,
+    mut progress: ResMut<crate::progress::PlayerProgress>,
+) {
+    for d in defeated.read() {
+        if progress.0.beaten.insert(d.kind.clone()) {
+            // The Host is pleased: two Favours, which the HUD shows arriving.
+            progress.0.favours += BOSS_FAVOURS;
+        }
+    }
+}
+
 #[derive(Message)]
-#[allow(dead_code)] // Consumed by the stage reward integration.
 pub struct BossDefeated {
     pub kind: String,
     /// Feet in world coordinates, with y up.
@@ -55,10 +88,6 @@ impl Dancer {
             x + self.ctrl.body.w as f32 / 2.0,
             y + self.ctrl.body.h as f32,
         )
-    }
-    /// Which phase of the fight it is in.
-    pub fn phase(&self) -> Phase {
-        self.phase
     }
 
     pub fn finishable(&self, health: f32) -> bool {
@@ -117,6 +146,14 @@ pub fn spawn_dancer(
     commands.spawn((
         Name::new("The Dancer"),
         RoomPart,
+        Boss {
+            name: "THE DANCER",
+            kind: "dancer",
+            music: "dancer",
+            max_health: HEALTH,
+            phase: 1,
+            finishable: false,
+        },
         Dancer {
             ctrl,
             phase: Phase::Waltz,
@@ -158,7 +195,7 @@ fn tick(
     tuning: Res<crate::tuning::Tuning>,
     weapons: Res<Assets<WeaponAsset>>,
     players: Query<(&Player, &Fighting), Without<Dancer>>,
-    mut dancers: Query<(Entity, &mut Dancer, &mut Fighting), Without<Player>>,
+    mut dancers: Query<(Entity, &mut Dancer, &mut Boss, &mut Fighting), Without<Player>>,
     mut log: ResMut<crate::combat::CombatLog>,
     mut shake: ResMut<crate::camera::Shake>,
     mut fx: MessageWriter<crate::effects::SpawnFx>,
@@ -170,7 +207,7 @@ fn tick(
         .iter()
         .find(|(_, f)| f.combat.health > 0.0)
         .map(|(p, _)| p.ctrl.body.x as f32 + 6.0);
-    for (entity, mut dancer, mut f) in &mut dancers {
+    for (entity, mut dancer, mut boss, mut f) in &mut dancers {
         let Some(asset) = weapons.get(&f.weapon) else {
             continue;
         };
@@ -181,6 +218,11 @@ fn tick(
             let phase = Phase::at(f.combat.health);
             if phase != d.phase {
                 d.phase = phase;
+                boss.phase = match phase {
+                    Phase::Waltz => 1,
+                    Phase::Frenzy => 2,
+                    Phase::Burnout => 3,
+                };
                 d.beat = 0;
                 d.pause = 132;
                 f.combat.stagger();
@@ -332,6 +374,7 @@ fn tick(
             }
         }
         crate::combat::fall_dead(&f, &mut d.ctrl, room, &tuning.movement);
+        boss.finishable = d.finishable(f.combat.health);
         if f.combat.reaction() == Reaction::Dead && !d.announced {
             d.announced = true;
             defeated.write(BossDefeated {
@@ -424,7 +467,7 @@ fn spawn_hud(mut commands: Commands) {
     }
     commands.spawn((
         BossHud(4),
-        Text2d::new("THE DANCER"),
+        Text2d::new(""),
         TextFont {
             font_size: bevy::text::FontSize::Px(9.0),
             ..default()
@@ -437,17 +480,27 @@ fn spawn_hud(mut commands: Commands) {
 }
 fn hud(
     focus: Res<crate::render::CameraFocus>,
-    dancers: Query<&Fighting, With<Dancer>>,
-    mut bars: Query<(&BossHud, &mut Transform, &mut Visibility)>,
+    bosses: Query<(&Fighting, &Boss)>,
+    mut bars: Query<(
+        &BossHud,
+        &mut Transform,
+        &mut Visibility,
+        Option<&mut Text2d>,
+    )>,
 ) {
-    let fighter = dancers.iter().find(|f| f.combat.health > 0.0);
-    for (bar, mut t, mut visibility) in &mut bars {
+    let fighter = bosses.iter().find(|(f, _)| f.combat.health > 0.0);
+    for (bar, mut t, mut visibility, text) in &mut bars {
         *visibility = if fighter.is_some() {
             Visibility::Inherited
         } else {
             Visibility::Hidden
         };
-        let Some(f) = fighter else { continue };
+        let Some((f, boss)) = fighter else { continue };
+        if let Some(mut text) = text
+            && text.0 != boss.name
+        {
+            text.0 = boss.name.to_owned();
+        }
         let offset = if bar.0 == 4 {
             Vec2::new(0.0, 23.0)
         } else {
@@ -457,7 +510,7 @@ fn hud(
             (focus.0.round() + Vec2::new(0.0, -(crate::render::HEIGHT as f32) / 2.0) + offset)
                 .extend(6.0 + bar.0 as f32 * 0.01);
         let k = match bar.0 {
-            2 => f.combat.health / HEALTH,
+            2 => f.combat.health / boss.max_health,
             3 => f.combat.poise / f.combat.max_poise,
             _ => 1.0,
         };

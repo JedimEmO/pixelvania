@@ -38,11 +38,17 @@ and his fight teaches the thing the Lunge is for: getting past a body instead of
 
 He fights in three phases, each with its own telegraph.
 
-- *The list*: a long shove with his staff that throws the player back, signalled by the staff raised level.
-  A door slam sends a shockwave along the floor, signalled by his turning to the doors.
+- *The list*: a long shove with his staff that throws the player back, signalled by the staff drawn back level.
+  The knock, his staff struck on the floor as when announcing a guest, sends a line out along the floor
+  both ways; jump it. It is signalled by the staff raised high.
 - *Impatience*, from 60% health: a rush across the hall, shoulder down, signalled by two stamps.
-  It is too tall to jump; the answer is to Lunge through him.
-- *Closing time*, under 25%: the rush and the slam come back to back.
+  The rush is his body and too tall to jump; the Lunge passes through it, and nothing else does.
+  A rush that ends in a wall staggers him.
+- *Closing time*, under 25%: the moves come back to back, with shorter windups.
+
+He is a guest of his own class in the rig, so he is hit, staggers and falls as guests do;
+`crates/game/src/doorman.rs` is his brain and `assets/combat/boss-doorman.ron` his frame data.
+For now he fights to the Dancer's music.
 
 His lines, one per phase and one as he falls:
 "Name?", "You're not on the list.", "Nobody leaves. Everyone's inside." and "Go on through, then. They all do."

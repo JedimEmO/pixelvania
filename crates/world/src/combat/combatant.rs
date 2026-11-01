@@ -40,6 +40,8 @@ pub struct Combatant {
     pub weight: WeightClass,
     pub poise_regen_per_second: f32,
     pub poise_regen_delay: u32,
+    /// Passing through bodies this tick, as in a Lunge: a hit that is a body does not land.
+    pub passing: bool,
     reaction: Reaction,
     reaction_ticks: u32,
     regen_wait: u32,
@@ -67,6 +69,7 @@ impl Combatant {
             weight,
             poise_regen_per_second: 30.0,
             poise_regen_delay: 120,
+            passing: false,
             reaction: Ready,
             reaction_ticks: 0,
             regen_wait: 0,

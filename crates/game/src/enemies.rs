@@ -49,12 +49,12 @@ pub struct Guest {
     /// Varies each guest's timing, so a group does not swing in unison.
     rng: u32,
     /// Feet at the start of the last tick, pixels with y down, for drawing between ticks.
-    prev: Vec2,
+    pub(crate) prev: Vec2,
 }
 
 impl Guest {
     /// Feet position in pixels with y down.
-    fn feet(&self) -> Vec2 {
+    pub(crate) fn feet(&self) -> Vec2 {
         let b = &self.ctrl.body;
         let (x, y) = b.exact_pos();
         Vec2::new(x + b.w as f32 / 2.0, y + b.h as f32)
@@ -106,6 +106,15 @@ fn temper(class: Class) -> Temper {
             health: 70.0,
             poise: 32.0,
         },
+        // The Doorman's own brain decides his moves; these are his walk and his body.
+        Class::Doorman => Temper {
+            reach: 64.0,
+            rest: 1.0,
+            speed: 60.0,
+            notice: 320.0,
+            health: 560.0,
+            poise: 140.0,
+        },
         Class::Heavy => Temper {
             reach: 44.0,
             rest: 2.2,
@@ -121,7 +130,7 @@ fn weight(class: Class) -> WeightClass {
     match class {
         Class::Light | Class::Spinner => WeightClass::Light,
         Class::Medium | Class::Toaster => WeightClass::Medium,
-        Class::Heavy => WeightClass::Heavy,
+        Class::Heavy | Class::Doorman => WeightClass::Heavy,
     }
 }
 
@@ -163,7 +172,7 @@ pub fn spawn_guest(
     feet: (f32, f32),
     weapons: &Weapons,
     images: &mut Assets<Image>,
-) {
+) -> Entity {
     let (x, y) = feet;
     let t = temper(class);
     let (w, h) = class.size();
@@ -191,40 +200,43 @@ pub fn spawn_guest(
         Class::Heavy => weapons.guest_heavy.clone(),
         Class::Spinner => weapons.guest_spinner.clone(),
         Class::Toaster => weapons.guest_toaster.clone(),
+        Class::Doorman => weapons.boss_doorman.clone(),
     };
     let look = Look::new(rig(class), images);
     let image = look.image.clone();
-    commands.spawn((
-        Name::new(format!("{} guest", class.name())),
-        RoomPart,
-        Guest {
-            class,
-            ctrl,
-            tuning,
-            rest: 1.0,
-            retreat: 0.0,
-            face: -1,
-            was_swinging: false,
-            rng: (x as u32).wrapping_mul(2_654_435_761) ^ (y as u32).wrapping_mul(40_503),
-            prev: Vec2::new(x, y),
-        },
-        Fighting::new(
-            Combatant::new(t.health, t.poise, weight(class)),
-            GUEST_TEAM,
-            weapon,
-        ),
-        look,
-        Transform::from_xyz(x, -y, 0.9),
-        Visibility::default(),
-        children![
-            (
-                Sprite::from_image(image.clone()),
-                look_anchor(),
-                Transform::default()
+    commands
+        .spawn((
+            Name::new(format!("{} guest", class.name())),
+            RoomPart,
+            Guest {
+                class,
+                ctrl,
+                tuning,
+                rest: 1.0,
+                retreat: 0.0,
+                face: -1,
+                was_swinging: false,
+                rng: (x as u32).wrapping_mul(2_654_435_761) ^ (y as u32).wrapping_mul(40_503),
+                prev: Vec2::new(x, y),
+            },
+            Fighting::new(
+                Combatant::new(t.health, t.poise, weight(class)),
+                GUEST_TEAM,
+                weapon,
             ),
-            crate::player::glow_mask(image),
-        ],
-    ));
+            look,
+            Transform::from_xyz(x, -y, 0.9),
+            Visibility::default(),
+            children![
+                (
+                    Sprite::from_image(image.clone()),
+                    look_anchor(),
+                    Transform::default()
+                ),
+                crate::player::glow_mask(image),
+            ],
+        ))
+        .id()
 }
 
 /// Reset brings every guest back, as well as the player.
@@ -298,7 +310,10 @@ fn tick(
     weapons: Res<Assets<WeaponAsset>>,
     mut log: ResMut<crate::combat::CombatLog>,
     players: Query<(&Player, &Fighting), Without<Guest>>,
-    mut guests: Query<(Entity, &mut Guest, &mut Fighting), Without<Player>>,
+    mut guests: Query<
+        (Entity, &mut Guest, &mut Fighting),
+        (Without<Player>, Without<crate::doorman::Doorman>),
+    >,
 ) {
     let Some(room) = &active.room else { return };
     let player = players
@@ -474,11 +489,11 @@ pub(crate) fn animate(
                 world::combat::Phase::Active => anim::swing::Phase::Active,
                 _ => anim::swing::Phase::Recovery,
             };
-            anim::guest::loop_pose(
-                g.class,
-                phase,
-                f.combat.attacker.phase_tick() as f64 / 120.0,
-            )
+            let t = f.combat.attacker.phase_tick() as f64 / 120.0;
+            match (g.class, crate::doorman::move_of(f.combat.attacker.attack())) {
+                (Class::Doorman, Some(m)) => Some(anim::guest::doorman_pose(m, phase, t)),
+                _ => anim::guest::loop_pose(g.class, phase, t),
+            }
         } else {
             None
         };

@@ -1,0 +1,85 @@
+// The Doorman's three moves, in ticks at 120 Hz. His brain in crates/game/src/doorman.rs picks
+// which to start and shortens the recoveries as the fight goes on; these are the first phase's.
+// Hitboxes are relative to the middle of his feet, facing right, y up negative.
+(
+    name: "boss-doorman",
+    charge_ticks: 120,
+    combo: (
+        // The shove: the staff held level and driven forward. Throws the player back.
+        (
+        windup: 54, active: 14, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: 6.0, y: -44.0, w: 58.0, h: 30.0), ticks: None)],
+        damage: 14.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (260.0, -90.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+        // The knock: the staff struck on the floor. A line runs out along the floor both ways,
+        // growing; jump it. The staff's own blow is the first box.
+        (
+        windup: 78, active: 30, recovery: 90, cancel_window: 4,
+        hitboxes: [
+            (rect: (x: 8.0, y: -24.0, w: 30.0, h: 24.0), ticks: Some((start: 0, end: 6))),
+            (rect: (x: -90.0, y: -8.0, w: 180.0, h: 8.0), ticks: Some((start: 2, end: 10))),
+            (rect: (x: -180.0, y: -8.0, w: 360.0, h: 8.0), ticks: Some((start: 8, end: 18))),
+            (rect: (x: -280.0, y: -8.0, w: 560.0, h: 8.0), ticks: Some((start: 16, end: 30))),
+        ],
+        damage: 16.0, poise_damage: 26.0, hit_stop: 0.08,
+        knockback: (110.0, -170.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+        // The rush: across the hall, shoulder down, the staff held high. The hit is his body,
+        // too tall to jump, so a Lunge passes through it and nothing else does.
+        (
+        windup: 66, active: 110, recovery: 96, cancel_window: 4,
+        hitboxes: [(rect: (x: -12.0, y: -100.0, w: 40.0, h: 100.0), ticks: None)],
+        damage: 18.0, poise_damage: 40.0, hit_stop: 0.12,
+        knockback: (300.0, -120.0), launches: false,
+        weight: Heavy, armour: true, step: None,
+        chain: None, air_hang: 0, body: true,
+    ),
+    ),
+    charged: (
+        windup: 54, active: 14, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: 6.0, y: -44.0, w: 58.0, h: 30.0), ticks: None)],
+        damage: 14.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (260.0, -90.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    rising: (
+        windup: 54, active: 14, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: 6.0, y: -44.0, w: 58.0, h: 30.0), ticks: None)],
+        damage: 14.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (260.0, -90.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    air: (
+        (
+        windup: 54, active: 14, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: 6.0, y: -44.0, w: 58.0, h: 30.0), ticks: None)],
+        damage: 14.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (260.0, -90.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+        (
+        windup: 54, active: 14, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: 6.0, y: -44.0, w: 58.0, h: 30.0), ticks: None)],
+        damage: 14.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (260.0, -90.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    ),
+    pogo: (
+        windup: 54, active: 14, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: 6.0, y: -44.0, w: 58.0, h: 30.0), ticks: None)],
+        damage: 14.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (260.0, -90.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+)

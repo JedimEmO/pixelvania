@@ -1383,3 +1383,24 @@ fn light_flinch_slides_a_visible_distance_on_the_floor() {
     assert!(controller.body.x - start >= 15);
     assert!(controller.grounded);
 }
+
+#[test]
+fn a_body_blow_passes_through_a_lunge_and_nothing_else_does() {
+    let mut weapon = sabre();
+    weapon.combo[0].body = true;
+    let hits = |passing: bool, weapon: &Weapon| {
+        let mut a = guest(WeightClass::Heavy);
+        let mut b = guest(WeightClass::Light);
+        b.passing = passing;
+        active(&mut a, weapon, AttackId::Combo1);
+        contact(&mut a, &mut b, ImpactScale::NEUTRAL)
+            .iter()
+            .any(|e| matches!(e, CombatEvent::Hit(_)))
+    };
+    assert!(
+        hits(false, &weapon),
+        "a body blow lands on a body standing still"
+    );
+    assert!(!hits(true, &weapon), "a Lunge passes through a body blow");
+    assert!(hits(true, &sabre()), "a Lunge does not dodge a swing");
+}

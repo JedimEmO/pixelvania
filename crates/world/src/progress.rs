@@ -259,6 +259,8 @@ pub struct Progress {
     pub blackouts: u32,
     /// The slice's end has been seen, so it does not play again.
     pub ended: bool,
+    /// Bosses beaten, by kind, so they stay beaten.
+    pub beaten: BTreeSet<String>,
 }
 
 impl Progress {

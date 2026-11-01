@@ -34,6 +34,11 @@ impl Plugin for ProgressPlugin {
                 .map(|s| s.progress)
                 .unwrap_or_else(Progress::new_game),
         };
+        let mut progress = progress;
+        // Saves from before bosses were recorded: the Plunge means the Dancer fell.
+        if progress.has(world::Ability::Plunge) {
+            progress.beaten.insert("dancer".into());
+        }
         app.insert_resource(PlayerProgress(progress))
             .init_resource::<SpawnedFor>()
             .add_systems(

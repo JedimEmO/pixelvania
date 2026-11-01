@@ -73,7 +73,7 @@ fn travel(
     mut lighting: ResMut<Lighting>,
     mut follow: ResMut<Follow>,
     mut players: Query<(&mut Player, &mut Fighting)>,
-    bosses: Query<&Fighting, (With<crate::boss::Dancer>, Without<Player>)>,
+    bosses: Query<&Fighting, (With<crate::boss::Boss>, Without<Player>)>,
 ) {
     let dt = time.delta_secs();
     match &*state {

@@ -1,14 +1,13 @@
 //! A boss fight as the rest of the game hears and reads it.
 //!
-//! When the player comes within sight of the Dancer, the fight's music takes over from the room's
-//! and builds with each phase, and she speaks a line as each phase begins and one as she falls,
-//! from `assets/story.ron`. When she is beaten the music gives way to silence and then the room.
+//! When the player comes within sight of a boss, the fight's music takes over from the room's
+//! and builds with each phase, and the boss speaks a line as each phase begins and one as it falls,
+//! from `assets/story.ron`. When it is beaten the music gives way to silence and then the room.
 
 use bevy::camera::visibility::RenderLayers;
 use bevy::prelude::*;
-use world::boss::Phase;
 
-use crate::boss::{BossDefeated, Dancer};
+use crate::boss::{Boss, BossDefeated};
 use crate::combat::Fighting;
 use crate::music::Encounter;
 use crate::player::Player;
@@ -24,22 +23,14 @@ impl Plugin for EncounterPlugin {
 /// How close the player must come for the fight to begin, in pixels.
 const ENGAGE: f32 = 240.0;
 
-fn phase_number(p: Phase) -> u8 {
-    match p {
-        Phase::Waltz => 1,
-        Phase::Frenzy => 2,
-        Phase::Burnout => 3,
-    }
-}
-
 /// Starts the fight's music when the player comes near, and follows its phase.
 fn engage(
     mut encounter: ResMut<Encounter>,
-    dancers: Query<(&Dancer, &Fighting, &Transform)>,
+    bosses: Query<(&Boss, &Fighting, &Transform)>,
     players: Query<&Transform, With<Player>>,
     mut engaged: Local<bool>,
 ) {
-    let Some((d, f, t)) = dancers.iter().next() else {
+    let Some((boss, f, t)) = bosses.iter().next() else {
         if *engaged {
             *engaged = false;
             encounter.track = None;
@@ -58,12 +49,10 @@ fn engage(
     if near {
         *engaged = true;
     }
-    if *engaged {
-        let phase = phase_number(d.phase());
-        if encounter.track.as_deref() != Some("dancer") || encounter.phase != phase {
-            encounter.track = Some("dancer".into());
-            encounter.phase = phase;
-        }
+    if *engaged && (encounter.track.as_deref() != Some(boss.music) || encounter.phase != boss.phase)
+    {
+        encounter.track = Some(boss.music.into());
+        encounter.phase = boss.phase;
     }
 }
 
@@ -90,32 +79,34 @@ fn speech(text: &str, at: Vec2) -> impl Bundle {
 /// Seconds a spoken line shows, with its fade.
 const SPEECH_TIME: f32 = 3.0;
 
-/// The Dancer speaks as each phase begins and as she falls.
+/// A boss speaks as each phase begins and as it falls.
 fn speak(
     mut commands: Commands,
     mut defeated: MessageReader<BossDefeated>,
-    dancers: Query<(Entity, &Dancer, &Transform)>,
+    bosses: Query<(Entity, &Boss, &Transform)>,
     players: Query<&Transform, With<Player>>,
-    mut said: Local<Option<(Entity, Phase)>>,
+    mut said: Local<Option<(Entity, u8)>>,
 ) {
-    let lines = &crate::story::words().dancer;
+    let words = &crate::story::words().bosses;
     for d in defeated.read() {
-        commands.spawn(speech(&lines.fall, d.at));
+        if let Some(lines) = words.get(&d.kind) {
+            commands.spawn(speech(&lines.fall, d.at));
+        }
     }
-    for (e, d, t) in &dancers {
+    for (e, boss, t) in &bosses {
         let near = players
             .single()
             .is_ok_and(|p| p.translation.truncate().distance(t.translation.truncate()) < ENGAGE);
-        if !near || *said == Some((e, d.phase())) {
+        if !near || *said == Some((e, boss.phase)) {
             continue;
         }
-        *said = Some((e, d.phase()));
-        let line = match d.phase() {
-            Phase::Waltz => &lines.waltz,
-            Phase::Frenzy => &lines.frenzy,
-            Phase::Burnout => &lines.burning_out,
-        };
-        commands.spawn(speech(line, t.translation.truncate()));
+        *said = Some((e, boss.phase));
+        let line = words
+            .get(boss.kind)
+            .and_then(|l| l.phases.get(usize::from(boss.phase.max(1)) - 1));
+        if let Some(line) = line {
+            commands.spawn(speech(line, t.translation.truncate()));
+        }
     }
 }
 
