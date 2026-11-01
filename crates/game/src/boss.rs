@@ -36,6 +36,9 @@ impl Plugin for BossPlugin {
 /// Favours every boss gives when it falls.
 pub const BOSS_FAVOURS: u32 = 2;
 
+/// The Dancer's kind, as in a room's `boss` entity and the record of bosses beaten.
+pub const DANCER: &str = "dancer";
+
 /// A boss, as the bar, the shut doors, and the fight's music and words know it.
 #[derive(Component)]
 pub struct Boss {
@@ -112,11 +115,11 @@ fn spawn_room(
         return;
     }
     spawned.0 = Some(active.build);
-    if progress.0.has(world::Ability::Plunge) {
+    if progress.0.beaten.contains(DANCER) {
         return;
     }
     for def in room.entities_of("boss") {
-        if def.props.get("kind").is_some_and(|k| k == "dancer") {
+        if def.props.get("kind").is_some_and(|k| k == DANCER) {
             spawn_dancer(&mut commands, def.pixel_pos(), &weapons, &mut images);
         }
     }
@@ -148,7 +151,7 @@ pub fn spawn_dancer(
         RoomPart,
         Boss {
             name: "THE DANCER",
-            kind: "dancer",
+            kind: DANCER,
             music: "dancer",
             max_health: HEALTH,
             phase: 1,
@@ -378,7 +381,7 @@ fn tick(
         if f.combat.reaction() == Reaction::Dead && !d.announced {
             d.announced = true;
             defeated.write(BossDefeated {
-                kind: "dancer".into(),
+                kind: DANCER.into(),
                 at: Vec2::new(d.feet().x, -d.feet().y),
             });
         }

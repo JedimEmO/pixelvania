@@ -66,6 +66,17 @@ pub struct ActiveRoom {
 }
 
 impl ActiveRoom {
+    /// A room already loaded, for tests of systems that read it.
+    #[cfg(test)]
+    pub fn loaded(room: Room) -> ActiveRoom {
+        ActiveRoom {
+            handle: Handle::default(),
+            name: room.name.clone(),
+            room: Some(Arc::new(room)),
+            build: 1,
+        }
+    }
+
     /// Starts loading another room. Its parts are rebuilt once it has loaded.
     pub fn go_to(&mut self, assets: &AssetServer, name: &str) {
         self.handle = assets.load(format!("rooms/{name}.room"));

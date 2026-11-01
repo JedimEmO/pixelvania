@@ -37,7 +37,7 @@ impl Plugin for ProgressPlugin {
         let mut progress = progress;
         // Saves from before bosses were recorded: the Plunge means the Dancer fell.
         if progress.has(world::Ability::Plunge) {
-            progress.beaten.insert("dancer".into());
+            progress.beaten.insert(crate::boss::DANCER.into());
         }
         app.insert_resource(PlayerProgress(progress))
             .init_resource::<SpawnedFor>()

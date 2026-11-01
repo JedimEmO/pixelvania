@@ -125,7 +125,7 @@ fn break_floors(
 /// Seconds between the boss falling and the stage giving way, so the finisher has its moment.
 const GIVE_WAY_AFTER: f32 = 1.6;
 
-/// After the Dancer falls, breaks the room's cracked floor and gives the Plunge.
+/// After the Dancer falls, and no other boss, breaks the room's cracked floor and gives the Plunge.
 fn stage_gives_way(
     mut commands: Commands,
     time: Res<Time<Real>>,
@@ -134,7 +134,13 @@ fn stage_gives_way(
     mut breaker: Breaker,
     device: Res<crate::prompt::Device>,
 ) {
-    if defeated.read().count() > 0 {
+    // Only the Dancer's fall: another boss falling elsewhere must not hand out the Plunge.
+    if defeated
+        .read()
+        .filter(|d| d.kind == crate::boss::DANCER)
+        .count()
+        > 0
+    {
         *waiting = Some(GIVE_WAY_AFTER);
     }
     let Some(left) = *waiting else { return };
@@ -152,4 +158,63 @@ fn stage_gives_way(
         commands.spawn(crate::progress::Banner::bundle(plunge, *device));
     }
     info!("the stage gave way: {n} tiles, and the Plunge is found");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::boss::BossDefeated;
+    use world::{Ability, Progress, Room};
+
+    fn app(room: &str) -> App {
+        let src = format!(
+            "[room]\nname = {room}\n[legend]\n# stone\nx cracked\n[tiles]\n\
+             ......\n\
+             ......\n\
+             ##xx##\n"
+        );
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins)
+            .init_resource::<Assets<Image>>()
+            .init_resource::<crate::camera::Shake>()
+            .init_resource::<crate::prompt::Device>()
+            .insert_resource(crate::rooms::ActiveRoom::loaded(Room::parse(&src).unwrap()))
+            .insert_resource(PlayerProgress(Progress::new_game()))
+            .add_message::<BossDefeated>()
+            .add_message::<SpawnFx>()
+            .add_message::<crate::audio::PlaySfx>()
+            .add_systems(Update, stage_gives_way);
+        app
+    }
+
+    /// Runs the app for long enough that a stage would have given way.
+    fn fall(app: &mut App, kind: &str) {
+        app.world_mut().write_message(BossDefeated {
+            kind: kind.into(),
+            at: Vec2::ZERO,
+        });
+        let start = std::time::Instant::now();
+        while start.elapsed().as_secs_f32() < GIVE_WAY_AFTER + 0.3 {
+            app.update();
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+    }
+
+    #[test]
+    fn only_the_dancer_falling_gives_the_plunge() {
+        let mut doorman = app("doormans_hall");
+        fall(&mut doorman, "doorman");
+        let progress = &doorman.world().resource::<PlayerProgress>().0;
+        assert!(
+            !progress.has(Ability::Plunge),
+            "the Doorman gave the Plunge"
+        );
+        assert!(progress.broken.is_empty());
+
+        let mut dancer = app("stage");
+        fall(&mut dancer, crate::boss::DANCER);
+        let progress = &dancer.world().resource::<PlayerProgress>().0;
+        assert!(progress.has(Ability::Plunge));
+        assert!(!progress.broken.is_empty());
+    }
 }

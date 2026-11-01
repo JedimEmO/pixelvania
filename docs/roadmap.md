@@ -237,6 +237,9 @@ the Lure as stand-ins until the feast and the gardens exist. [The Arrival's page
     stands the player on the floor beside it. The world check reports an arrival that touches a door,
     and the reachability checker counts a way in as a trap unless it leads back to the start
     or on to a new ability, so two rooms handing the player back and forth no longer pass.
+44. **Only the Dancer gives the Plunge.** The stage giving way listened for any boss falling,
+    so beating the Doorman handed out the Plunge in his hall, and the Dancer never appeared.
+    It now listens for the Dancer alone, and the Dancer stays away only once she is beaten.
 
 Still to do for the Arrival: its own music, which the Doorman also borrows from the Dancer for now,
 and a playtest of the Doorman and the coat lift.
