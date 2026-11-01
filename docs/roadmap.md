@@ -145,7 +145,10 @@ Then the slice's content:
     then stands dizzy; the toaster keeps its distance and throws coupes in an arc,
     which a swing destroys in flight.
 22. **The rooms**: about twenty around the ballroom, ending at the stage and the cellar below it.
-23. **The Dancer**, the ballroom's boss, whose fight ends with the stage floor giving way.
+23. **The Dancer.** Done, by Codex: 450 health and 150 poise, in three phases, the waltz, the frenzy
+    and burning out, each change staged; a boss bar with its name; a finisher of its own.
+    A moment after it falls the room's cracked floor gives way and the Plunge is found.
+    `B` or `PIXELVANIA_BOSS=dancer` spawns one for testing.
 24. **The map.** Done. Select opens it and pauses the game: every room visited,
     drawn from its own tiles at its place on the world map, the lounges marked in gold,
     and the player a blinking dot. Rooms visited are kept in the progress record.

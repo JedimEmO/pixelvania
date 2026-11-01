@@ -240,7 +240,7 @@ pub(crate) struct Banner {
 const BANNER_TIME: f32 = 3.0;
 
 impl Banner {
-    fn bundle(item: Item) -> impl Bundle {
+    pub(crate) fn bundle(item: Item) -> impl Bundle {
         let (title, hint) = words(item);
         Self::bundle_text(title, hint)
     }
