@@ -161,7 +161,15 @@ fn the_slice_gives_its_abilities_in_order() {
             ],
             Ability::Swoon,
         ),
-        (&["crystal_gallery:lure", "afters:favour"], Ability::Lure),
+        // The Swoon opens the feast's last Favour, and a Goblet back in the Arrival.
+        (
+            &[
+                "crystal_gallery:lure",
+                "afters:favour",
+                "receiving_line:goblet",
+            ],
+            Ability::Lure,
+        ),
         // The Dancer gives the Plunge, after the candelabrum.
         (&["ballroom:candelabrum"], Ability::Plunge),
     ];

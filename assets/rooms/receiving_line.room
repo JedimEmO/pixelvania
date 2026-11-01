@@ -1,7 +1,7 @@
 // The receiving line: a long hall where a row of guests waits to greet whoever comes in.
 //
 // They greet with their fists. Under the floor in the middle, a stair goes down to the porter's lodge.
-// East is the grand stair.
+// East is the grand stair. High over the east gallery, a shelf with a Goblet waits for the Swoon.
 [room]
 name = receiving_line
 background = foyer a06030
@@ -19,7 +19,7 @@ g gilt
 ==............................................................==
 ==............................................................==
 ==............................................................==
-==............................................................==
+==..................................ggggg.....................==
 ==............................................................==
 ==............................................................==
 ==............................................................==
@@ -46,6 +46,7 @@ guest 16 21 class=light
 guest 34 21 class=light
 guest 46 21 class=medium
 nectar 13 13.5
+pickup 38 5.5 item=goblet
 lantern 31 6
 prop 6 21 kind=statue
 prop 58 21 kind=statue

@@ -266,6 +266,8 @@ The feast is next to the Arrival on the map, up the grand stair, and gives the S
     The feast's rooms use it, tinted red and gold; the stairs, kitchens and larder keep the cellars.
 49. **The feast's music.** Harpsichord over a disco rhythm section, at the ballroom's tempo:
     a baroque circle of fifths over four-on-the-floor, with cutlery and voices as the room's texture.
+50. **The Swoon in the Arrival.** A sixth Goblet on a shelf high in the receiving line,
+    eight tiles over the gallery, so going back with the Swoon finds something, as the design asks.
 
 
 ## For the director
