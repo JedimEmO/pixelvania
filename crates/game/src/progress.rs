@@ -68,7 +68,12 @@ fn give_abilities(
 ) {
     let want = progress.0.movement();
     let health = progress.0.max_health();
+    let poise = progress.0.max_poise();
     for (mut p, mut f) in &mut players {
+        if f.combat.max_poise != poise {
+            f.combat.poise += poise - f.combat.max_poise;
+            f.combat.max_poise = poise;
+        }
         if p.ctrl.abilities != want {
             p.ctrl.abilities = want;
         }

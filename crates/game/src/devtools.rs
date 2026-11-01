@@ -3,7 +3,8 @@
 //! `PIXELVANIA_SCREENSHOT=path.png` saves a screenshot after the game has settled, then exits.
 //! `PIXELVANIA_HOLD=right,jump` holds those inputs from the start, for screenshots of motion;
 //! `attack`, `charge` and `toast` press those at set frames, `indulge` holds the left trigger
-//! from frame 150 to 200, `map` opens the map at frame 120, and `jeroboam` or `candelabrum` switch to that weapon.
+//! from frame 150 to 200, `map` opens the map at frame 120, `rest` presses up at frame 60
+//! (beside a lounge, it rests), `level` presses jump at frames 90 and 100, and `jeroboam` or `candelabrum` switch to that weapon.
 //! `PIXELVANIA_RECORD=path` writes every tick's input to a file;
 //! `PIXELVANIA_REPLAY=path` plays such a file back instead of reading the controller.
 //! `PIXELVANIA_FX=sword-slash` spawns that effect in front of the player once it has landed;
@@ -157,6 +158,12 @@ fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut frame: L
             "down" => input.move_axis.y = -1.0,
             "indulge" => input.indulge_held = (150..200).contains(&*frame),
             "map" => input.map_pressed |= *frame == 120,
+            "rest" => {
+                if (60..64).contains(&*frame) {
+                    input.move_axis.y = 1.0;
+                }
+            }
+            "level" => input.jump_pressed |= *frame == 90 || *frame == 100,
             "jump" => {
                 input.jump_held = true;
                 // Press once the player has had time to spawn and land.

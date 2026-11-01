@@ -99,6 +99,23 @@ pub fn startup_save() -> Option<SaveFile> {
     }
 }
 
+/// Saves the progress, the lounge and the Nectar. Returns false, with a warning, if it failed.
+pub fn save(progress: &Progress, lounge: &LoungeRef, ind: &crate::indulge::Indulgence) -> bool {
+    let file = SaveFile {
+        progress: progress.clone(),
+        lounge: lounge.clone(),
+        nectar: ind.nectar,
+        tolerance: ind.tolerance,
+    };
+    match write_save(&file) {
+        Ok(()) => true,
+        Err(e) => {
+            warn!("saving failed: {e}");
+            false
+        }
+    }
+}
+
 fn write_save(save: &SaveFile) -> Result<(), String> {
     let path = save_path().ok_or("saving is not supported here")?;
     if let Some(dir) = path.parent() {
@@ -248,6 +265,7 @@ fn rest(
     progress: Res<PlayerProgress>,
     mut last: ResMut<LastLounge>,
     mut indulgence: ResMut<crate::indulge::Indulgence>,
+    mut menu: ResMut<crate::levels::LoungeMenu>,
     mut lounges: Query<&mut Lounge>,
     mut players: Query<(&Player, &mut Fighting)>,
     mut was_up: Local<bool>,
@@ -276,20 +294,13 @@ fn rest(
                 id: l.id.clone(),
             };
             last.0 = Some(lounge.clone());
-            let save = SaveFile {
-                progress: progress.0.clone(),
-                lounge,
-                nectar: indulgence.nectar,
-                tolerance: indulgence.tolerance,
-            };
-            let hint = match write_save(&save) {
-                Ok(()) => "The night is saved here",
-                Err(e) => {
-                    warn!("saving failed: {e}");
-                    "The night could not be saved"
-                }
-            };
-            commands.spawn(crate::progress::Banner::bundle_text("RESTED", hint));
+            if !save(&progress.0, &lounge, &indulgence) {
+                commands.spawn(crate::progress::Banner::bundle_text(
+                    "RESTED",
+                    "The night could not be saved",
+                ));
+            }
+            menu.wanted = true;
             sfx.write(crate::audio::PlaySfx {
                 pitch: 0.75,
                 ..crate::audio::PlaySfx::new(crate::audio::Sfx::LureCatch)

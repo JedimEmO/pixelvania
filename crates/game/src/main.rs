@@ -14,6 +14,7 @@ mod hanging;
 mod hud;
 mod indulge;
 mod input;
+mod levels;
 mod lounge;
 mod lure;
 mod map;
@@ -78,6 +79,7 @@ fn main() -> AppExit {
             plunge::PlungePlugin,
             projectiles::ProjectilesPlugin,
             map::MapPlugin,
+            levels::LevelsPlugin,
         ))
         .run()
 }

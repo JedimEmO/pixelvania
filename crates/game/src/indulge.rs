@@ -153,7 +153,7 @@ fn indulge(
         if ind.held >= HOLD && !ind.started && !high && ind.nectar >= HIGH_COST {
             ind.started = true;
             ind.nectar -= HIGH_COST;
-            let left = HIGH_TIME / (1.0 + ind.tolerance);
+            let left = HIGH_TIME * progress.0.stats.high_scale() / (1.0 + ind.tolerance);
             ind.tolerance += TOLERANCE_STEP;
             ind.phase = Phase::High { left };
             let mut burst = SpawnFx::new(EffectId::Poof, at);
@@ -176,7 +176,8 @@ fn indulge(
             let hurt = f.combat.health < f.max_health;
             if hurt {
                 ind.nectar -= HEAL_COST;
-                f.combat.health = (f.combat.health + HEAL).min(f.max_health);
+                let heal = HEAL * progress.0.stats.heal_scale();
+                f.combat.health = (f.combat.health + heal).min(f.max_health);
                 let mut glow = SpawnFx::new(EffectId::Poof, at);
                 glow.options.palette = GOLD.iter().map(|&c| pixelfx::color::hex(c)).collect();
                 fx.write(glow);

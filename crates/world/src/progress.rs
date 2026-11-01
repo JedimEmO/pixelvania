@@ -140,6 +140,101 @@ impl Item {
     }
 }
 
+/// A stat raised at a lounge with Nectar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Stat {
+    /// More health.
+    Vitality,
+    /// More poise, so blows stagger less.
+    Composure,
+    /// Harder blows: more damage and poise damage.
+    Strength,
+    /// Longer Highs and bigger heals.
+    Appetite,
+}
+
+impl Stat {
+    pub const ALL: [Stat; 4] = [
+        Stat::Vitality,
+        Stat::Composure,
+        Stat::Strength,
+        Stat::Appetite,
+    ];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Stat::Vitality => "Vitality",
+            Stat::Composure => "Composure",
+            Stat::Strength => "Strength",
+            Stat::Appetite => "Appetite",
+        }
+    }
+
+    /// What a level of it does, for the lounge's menu.
+    pub fn effect(self) -> &'static str {
+        match self {
+            Stat::Vitality => "+12 health",
+            Stat::Composure => "+8 poise",
+            Stat::Strength => "+6% to every blow",
+            Stat::Appetite => "+8% to a High, +10% to a heal",
+        }
+    }
+}
+
+/// The levels bought in each stat.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Stats {
+    pub vitality: u32,
+    pub composure: u32,
+    pub strength: u32,
+    pub appetite: u32,
+}
+
+impl Stats {
+    pub fn get(&self, s: Stat) -> u32 {
+        match s {
+            Stat::Vitality => self.vitality,
+            Stat::Composure => self.composure,
+            Stat::Strength => self.strength,
+            Stat::Appetite => self.appetite,
+        }
+    }
+
+    fn get_mut(&mut self, s: Stat) -> &mut u32 {
+        match s {
+            Stat::Vitality => &mut self.vitality,
+            Stat::Composure => &mut self.composure,
+            Stat::Strength => &mut self.strength,
+            Stat::Appetite => &mut self.appetite,
+        }
+    }
+
+    /// Every level bought.
+    pub fn level(&self) -> u32 {
+        Stat::ALL.iter().map(|&s| self.get(s)).sum()
+    }
+
+    /// What the next level costs in Nectar: a little more each time.
+    pub fn next_cost(&self) -> f32 {
+        20.0 + 6.0 * self.level() as f32
+    }
+
+    /// Multiplier on outgoing damage and poise damage.
+    pub fn strength_scale(&self) -> f32 {
+        1.0 + 0.06 * self.strength as f32
+    }
+
+    /// Multiplier on a High's length and on a heal.
+    pub fn high_scale(&self) -> f32 {
+        1.0 + 0.08 * self.appetite as f32
+    }
+
+    pub fn heal_scale(&self) -> f32 {
+        1.0 + 0.1 * self.appetite as f32
+    }
+}
+
 /// Everything the player has found.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(default)]
@@ -154,6 +249,8 @@ pub struct Progress {
     pub broken: BTreeSet<String>,
     /// Rooms the player has been in, for the map.
     pub visited: BTreeSet<String>,
+    /// Levels bought with Nectar.
+    pub stats: Stats,
 }
 
 impl Progress {
@@ -204,9 +301,24 @@ impl Progress {
         }
     }
 
-    /// Health with every Carnation found.
+    /// Health with every Carnation found and every level of Vitality.
     pub fn max_health(&self) -> f32 {
-        100.0 + 20.0 * self.carnations as f32
+        100.0 + 20.0 * self.carnations as f32 + 12.0 * self.stats.vitality as f32
+    }
+
+    /// Poise with every level of Composure.
+    pub fn max_poise(&self) -> f32 {
+        60.0 + 8.0 * self.stats.composure as f32
+    }
+
+    /// Buys a level in a stat with Nectar. Returns what it cost, or `None` if there is not enough.
+    pub fn level_up(&mut self, stat: Stat, nectar: f32) -> Option<f32> {
+        let cost = self.stats.next_cost();
+        if nectar < cost {
+            return None;
+        }
+        *self.stats.get_mut(stat) += 1;
+        Some(cost)
     }
 
     /// How much Nectar can be carried, with every Goblet found.
@@ -286,6 +398,17 @@ mod tests {
             Some(Item::Weapon(Weapon::Candelabrum))
         );
         assert_eq!(Item::parse("cake"), None);
+    }
+
+    #[test]
+    fn levels_cost_more_each_time_and_need_the_nectar() {
+        let mut p = Progress::new_game();
+        assert_eq!(p.level_up(Stat::Vitality, 10.0), None);
+        assert_eq!(p.level_up(Stat::Vitality, 100.0), Some(20.0));
+        assert_eq!(p.level_up(Stat::Strength, 100.0), Some(26.0));
+        assert_eq!(p.stats.level(), 2);
+        assert_eq!(p.max_health(), 112.0);
+        assert!((p.stats.strength_scale() - 1.06).abs() < 1e-6);
     }
 
     #[test]

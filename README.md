@@ -47,6 +47,8 @@ Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev
 Hold down while falling to fall faster, and press into a wall while falling to slide down it.
 Press up beside a lounge, a velvet chaise under a standing lamp, to rest:
 it heals, saves, and is where you wake after a blackout.
+Resting opens the lounge's menu, where Nectar buys levels in Vitality, Composure, Strength and Appetite;
+each level costs a little more than the last, so Nectar drunk for a High is a level not bought.
 The save is `save.ron` in your data folder (`~/.local/share/pixelvania` on Linux),
 and the game starts from it; delete it, or set `PIXELVANIA_FRESH=1`, for a new game.
 On the Lure's rope, push the stick the way you want to swing, and up or down to climb or lower.

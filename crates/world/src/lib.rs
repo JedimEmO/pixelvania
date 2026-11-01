@@ -16,5 +16,5 @@ pub mod room;
 pub use body::Body;
 pub use controller::{Abilities, Controller, Controls, Events, MoveTuning, MovementLock, Rope};
 pub use doors::{Door, Side, World, WorldRoom};
-pub use progress::{Ability, Item, Progress};
+pub use progress::{Ability, Item, Progress, Stat, Stats};
 pub use room::{CRACKED, EntityDef, ParseError, Room, TILE, Tile};
