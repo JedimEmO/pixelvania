@@ -44,7 +44,8 @@ door 47 18 h=3 id=east to=afters:west
 boss 30 21 kind=glutton
 pickup 9.5 16.5 item=jeroboam
 prop 18 21 kind=banquet_table
-prop 24 21 kind=cake
+prop 24 21 kind=roast
+prop 14 21 kind=fruit_pyramid
 chandelier 24 5
 light 24 8 radius=200 strength=0.6 color=ff6040 glow=0.3
 light 9 14 radius=80 strength=0.6 color=ffc070 glow=0.3

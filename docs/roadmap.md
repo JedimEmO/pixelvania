@@ -268,6 +268,9 @@ The feast is next to the Arrival on the map, up the grand stair, and gives the S
     a baroque circle of fifths over four-on-the-floor, with cutlery and voices as the room's texture.
 50. **The Swoon in the Arrival.** A sixth Goblet on a shelf high in the receiving line,
     eight tiles over the gallery, so going back with the Swoon finds something, as the design asks.
+51. **The feast's props.** A roast on a platter, a fruit pyramid going soft on one side,
+    a rack of game birds hung by their feet, and an iron range with its firebox glowing,
+    dressed through the banquet hall, the long table, the kitchens, the larder and the Glutton's hall.
 
 
 ## For the director

@@ -40,6 +40,7 @@ pickup 21 6.5 item=favour
 npc 7 15 id=sleeper_at_table
 prop 36 15 kind=sofa
 prop 4 15 kind=fallen_glass
+prop 12 15 kind=fruit_pyramid
 lantern 12 4
 light 30 11 radius=130 strength=0.5 color=ffb060 glow=0.3
 light 21 5 radius=90 strength=0.4 color=ff80a0 glow=0.3

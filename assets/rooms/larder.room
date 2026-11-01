@@ -31,7 +31,8 @@ music = feast
 [entities]
 door 0 10 h=3 id=west to=kitchens:east
 note 12 12 id=larder
-prop 6 13 kind=barrel
+prop 5 13 kind=game_rack
+prop 9 13 kind=game_rack
 prop 15 13 kind=crate
 nectar 13 8.5
 light 9 6 radius=100 strength=0.5 color=a0c0ff glow=0.2

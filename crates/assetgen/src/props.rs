@@ -47,6 +47,10 @@ pub const KINDS: &[&str] = &[
     "candlestand",
     "screen",
     "crate",
+    "roast",
+    "fruit_pyramid",
+    "game_rack",
+    "range",
 ];
 
 /// The light a prop casts.
@@ -280,6 +284,10 @@ pub fn paint(kind: &str, step: u32) -> Option<Piece> {
         "candlestand" => candlestand(step),
         "screen" => screen(),
         "crate" => crate_of_bottles(),
+        "roast" => roast(),
+        "fruit_pyramid" => fruit_pyramid(),
+        "game_rack" => game_rack(),
+        "range" => range(step),
         _ => return None,
     })
 }
@@ -295,6 +303,7 @@ pub fn animated(kind: &str) -> bool {
             | "shoes"
             | "ashtray_stand"
             | "candlestand"
+            | "range"
     )
 }
 
@@ -315,6 +324,7 @@ pub fn light(kind: &str) -> Option<PropLight> {
         "footlight" => l(0.0, 10.0, [255, 190, 120], 70.0, 1.0),
         "mirror" => l(0.0, 30.0, [200, 190, 255], 40.0, 0.4),
         "ashtray_stand" => l(0.0, 22.0, [255, 120, 60], 30.0, 0.4),
+        "range" => l(0.0, 8.0, [255, 120, 50], 80.0, 0.9),
         _ => return None,
     })
 }
@@ -1043,6 +1053,128 @@ fn cake() -> Piece {
     c.px(12, 17, sponge);
     c.px(8, 2, jam);
     c.px(8, 1, icing[2]);
+    c.done()
+}
+
+/// A roast pig on a silver platter, an apple in its mouth, carved into from the back.
+fn roast() -> Piece {
+    let mut c = Canvas::new(34, 16);
+    let crackling: Ramp = [[150, 92, 52], [112, 64, 36], [80, 44, 26], [52, 28, 18]];
+    let meat = [150, 96, 90];
+    // The platter.
+    c.rect(1, 13, 32, 14, [150, 146, 150]);
+    c.rect(0, 13, 33, 13, [180, 178, 182]);
+    c.rect(3, 15, 30, 15, [96, 94, 102]);
+    // The pig: a long body, the head forward, the back carved away.
+    c.disc(16.0, 9.0, 11.0, 4.5, |dx, dy| {
+        if dy < -0.55 {
+            crackling[0]
+        } else if dx < -0.55 && dy < 0.2 {
+            meat
+        } else {
+            crackling[if dy > 0.5 { 2 } else { 1 }]
+        }
+    });
+    c.disc(28.0, 9.5, 3.5, 3.0, |_, dy| crackling[if dy < -0.4 { 0 } else { 1 }]);
+    c.px(31, 9, crackling[2]);
+    c.px(26, 7, crackling[3]);
+    // The apple, and the legs tucked under.
+    c.disc(31.5, 10.5, 1.6, 1.6, |_, _| [150, 36, 40]);
+    for x in [9, 13, 20, 24] {
+        c.px(x, 12, crackling[2]);
+    }
+    c.done()
+}
+
+/// Fruit heaped on a gilt stand; the far side of the heap has gone soft and brown.
+fn fruit_pyramid() -> Piece {
+    let mut c = Canvas::new(18, 26);
+    // The stand.
+    c.block(3, 17, 14, 18, GILT);
+    c.rect(8, 19, 9, 23, GILT[1]);
+    c.block(4, 24, 13, 25, GILT);
+    // Rows of fruit, narrowing to one; the right of each row is spoiling.
+    let fresh = [[176, 52, 58], [190, 140, 60], [120, 140, 60], [150, 60, 120]];
+    let rotten: C = [70, 54, 34];
+    let mut i = 0;
+    for (row, (x0, count)) in [(2, 5), (4, 4), (6, 3), (8, 2), (10, 1)].into_iter().enumerate() {
+        let y = 14.5 - row as f32 * 3.0;
+        for k in 0..count {
+            let x = x0 as f32 - 0.5 + k as f32 * 3.0 + 1.5;
+            let col = if k == count - 1 && count > 1 { rotten } else { fresh[i % 4] };
+            i += 1;
+            c.disc(x, y, 1.7, 1.7, |dx, dy| {
+                if dx < -0.2 && dy < -0.2 {
+                    scale(col, 1.25)
+                } else {
+                    col
+                }
+            });
+        }
+    }
+    // A stalk, and a fly over the soft side.
+    c.px(9, 1, [60, 80, 40]);
+    c.px(15, 4, [30, 30, 34]);
+    c.done()
+}
+
+/// A wooden rack with game birds hung from it by the feet.
+fn game_rack() -> Piece {
+    let mut c = Canvas::new(26, 36);
+    // The frame.
+    c.block(2, 0, 23, 1, WOOD);
+    c.rect(2, 2, 3, 35, WOOD[1]);
+    c.rect(22, 2, 23, 35, WOOD[1]);
+    c.rect(1, 34, 4, 35, WOOD[2]);
+    c.rect(21, 34, 24, 35, WOOD[2]);
+    // Three birds, head down: feet tied at the bar, a fat body, a long neck, a drooping head.
+    let feather: Ramp = [[118, 88, 58], [84, 60, 40], [58, 40, 28], [36, 26, 20]];
+    for (x, len) in [(8, 14), (13, 18), (18, 12)] {
+        c.line((x, 2), (x, 5), [40, 30, 24]);
+        c.disc(x as f32 + 0.5, 9.0, 2.6, 4.2, |dx, dy| {
+            feather[if dx > 0.3 { 2 } else if dy < -0.5 { 0 } else { 1 }]
+        });
+        c.line((x, 13), (x, 13 + len - 10), feather[2]);
+        c.disc(x as f32 + 0.5, (13 + len - 9) as f32, 1.5, 1.5, |_, _| feather[3]);
+        // A tail feather sticking up past the tie.
+        c.px(x + 1, 3, feather[0]);
+    }
+    c.done()
+}
+
+/// An iron range: an oven door, the firebox glowing, and pots on the hob.
+fn range(step: u32) -> Piece {
+    let mut c = Canvas::new(36, 26);
+    let iron: Ramp = [[70, 66, 70], [42, 40, 44], [30, 28, 32], [18, 17, 20]];
+    c.block(0, 10, 35, 25, iron);
+    c.rect(0, 9, 35, 9, iron[0]);
+    // The oven door with its handle.
+    c.rect(3, 13, 16, 22, iron[2]);
+    c.rect(4, 14, 15, 21, iron[1]);
+    c.rect(6, 15, 13, 15, BRASS[1]);
+    // The firebox: a grate with coals glowing behind it.
+    c.rect(20, 14, 32, 22, iron[3]);
+    for x in 21..=31 {
+        for y in 16..=21 {
+            let hot = (x + y + step as i32 / 3) % 4;
+            let g = match hot {
+                0 => [255, 150, 60],
+                1 => [220, 90, 40],
+                _ => [150, 50, 30],
+            };
+            c.both(x, y, scale(g, 0.6), g);
+        }
+    }
+    for x in (21..=31).step_by(3) {
+        c.rect(x, 15, x, 22, iron[3]);
+    }
+    // Pots on the hob, one with its lid rattling.
+    c.block(4, 4, 13, 8, iron);
+    c.rect(3, 4, 14, 4, iron[0]);
+    c.block(19, 2, 30, 8, [[124, 84, 60], [90, 58, 42], [66, 42, 32], [44, 28, 22]]);
+    let lift = if (step / 2).is_multiple_of(4) { 1 } else { 0 };
+    c.rect(18, 1 - lift, 31, 1 - lift, iron[0]);
+    c.px(24, 0, iron[0]);
     c.done()
 }
 

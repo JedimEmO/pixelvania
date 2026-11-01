@@ -49,7 +49,8 @@ pickup 31.5 9.5 item=goblet
 guest 22 25 class=medium
 guest 31 25 class=heavy
 prop 6 25 kind=barrel
-prop 34 25 kind=cask
+prop 32 25 kind=range
+prop 8 25 kind=game_rack
 lantern 20 5
 light 18 20 radius=90 strength=0.8 color=ff7a30 glow=0.5
 light 25 20 radius=90 strength=0.8 color=ff7a30 glow=0.5

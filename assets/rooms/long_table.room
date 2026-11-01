@@ -47,7 +47,8 @@ guest 16 18 class=heavy
 guest 28 18 class=heavy
 guest 34 18 class=toaster
 prop 14 18 kind=banquet_table
-prop 24 18 kind=cake
+prop 24 18 kind=roast
+prop 20 18 kind=fruit_pyramid
 prop 32 18 kind=banquet_table
 prop 60 21 kind=sofa
 chandelier 24 5
