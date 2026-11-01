@@ -4,7 +4,7 @@
 // overhead to hang from when the floor is no place to be. East is the summerhouse.
 [room]
 name = sleepers_bower
-background = ballroom 1a4a40
+background = garden 1a4a40
 music = gardens
 
 [legend]

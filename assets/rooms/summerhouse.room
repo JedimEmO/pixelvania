@@ -3,7 +3,7 @@
 // The gardens' second lounge, a Favour, and a card from the Host.
 [room]
 name = summerhouse
-background = ballroom 3a6a48
+background = garden 3a6a48
 music = gardens
 
 [legend]

@@ -5,7 +5,7 @@
 // Blooms hang low on either side, close enough to swing between. East is the bloom walk.
 [room]
 name = glasshouse
-background = ballroom 2a6a5a
+background = garden 2a6a5a
 music = gardens
 
 [legend]

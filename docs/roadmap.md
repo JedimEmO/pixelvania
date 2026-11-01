@@ -286,6 +286,9 @@ The gardens open off the Arrival too, from the bottom of the coat lift, and give
     He lies down again between phrases, open to blows until three wake him; from 60% he calls vines
     through the whole floor, longer than a jump, so the player hangs from a bloom; under 25% he no longer sleeps.
     He fights to a lullaby that turns, and the gardens have their own exotica.
+55. **The garden backdrop.** The glasshouse's ironwork against a night sky with stars and a moon,
+    palms and round trees in tubs, vines hanging close with glowing buds, and great leaves at the edge.
+    The gardens' rooms use it; the potting shed keeps the cellars.
 
 
 ## For the director

@@ -1,5 +1,5 @@
 //! Seeded backdrop silhouettes: the ballroom's windows, the cellars' vaults, the backstage,
-//! the foyer and the banquet.
+//! the foyer, the banquet and the garden under glass.
 //! Pixels carry their distant lighting, in sRGB.
 //!
 //! Each set is four repeating strips, farthest first, the last drawn in front of the room.
@@ -272,7 +272,14 @@ pub fn ballroom(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
 }
 
 /// The backdrop sets a room can name.
-pub const SETS: [&str; 5] = ["ballroom", "cellars", "backstage", "foyer", "banquet"];
+pub const SETS: [&str; 6] = [
+    "ballroom",
+    "cellars",
+    "backstage",
+    "foyer",
+    "banquet",
+    "garden",
+];
 
 /// The set with this name, or `None` if there is no such set.
 pub fn set(name: &str, seed: u32, light: [u8; 3]) -> Option<Vec<Layer>> {
@@ -282,6 +289,7 @@ pub fn set(name: &str, seed: u32, light: [u8; 3]) -> Option<Vec<Layer>> {
         "backstage" => Some(backstage(seed, light)),
         "foyer" => Some(foyer(seed, light)),
         "banquet" => Some(banquet(seed, light)),
+        "garden" => Some(garden(seed, light)),
         _ => None,
     }
 }
@@ -783,6 +791,116 @@ pub fn banquet(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
         far.layer("still lifes", 0.12, false),
         middle.layer("long table", 0.32, false),
         near.layer("swags", 0.62, false),
+        front.layer("foreground", 1.18, true),
+    ]
+}
+
+/// The garden under glass: the glasshouse's ironwork against a night sky, palms and trees in the
+/// dark, vines hanging close with a few glowing buds, and great leaves at the edge of the screen.
+pub fn garden(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
+    let sky = tint([6, 10, 14], dominant_light, 14);
+    let pane = tint([10, 16, 20], dominant_light, 20);
+    let iron = tint([16, 22, 24], dominant_light, 24);
+    let star = tint([60, 80, 90], dominant_light, 40);
+    let moon = tint([90, 110, 110], dominant_light, 50);
+    let mut far = Canvas::new(sky);
+    // The glasshouse: a curved roof of panes on iron ribs, a bay every 120 pixels.
+    for bay in 0..8 {
+        let x = 60 + bay * 120;
+        for dx in -56..=56 {
+            let rise = 70 - (dx * dx) / 46;
+            far.rect(x + dx, 40 + (70 - rise), 1, 300, pane);
+        }
+        far.rect(x - 1, 40, 3, 360, iron);
+        for row in 0..6 {
+            far.rect(x - 56, 110 + row * 40, 113, 1, iron);
+        }
+    }
+    far.rect(0, 340, WIDTH as i32, 60, iron);
+    // Stars through the glass, and the moon in one pane.
+    for i in 0..60 {
+        let n = noise(seed, 1100 + i);
+        let (x, y) = (20 + (n % 920) as i32, 50 + (n / 920 % 250) as i32);
+        far.pixel(x, y, star);
+    }
+    let mx = 200 + (noise(seed, 1200) % 560) as i32;
+    far.ellipse(mx, 90, 14, 14, moon);
+    far.ellipse(mx + 5, 86, 11, 11, pane);
+
+    // Palms and trees in the dark, between beds.
+    let mut middle = Canvas::new([0; 4]);
+    let dark = [6, 10, 9, 255];
+    let leaf = tint([10, 18, 14], dominant_light, 16);
+    for i in 0..7 {
+        let n = noise(seed, 1300 + i as u32);
+        let x = 70 + i * 135 + (n % 30) as i32;
+        if n.is_multiple_of(2) {
+            // A palm: a leaning trunk and fronds falling from its crown.
+            let lean = (n / 2 % 21) as i32 - 10;
+            let top = 120 + (n / 50 % 40) as i32;
+            middle.line((x, 350), (x + lean, top), 4, dark);
+            for (dx, dy) in [
+                (-50, 30),
+                (-34, 50),
+                (-12, 56),
+                (12, 54),
+                (36, 46),
+                (52, 26),
+            ] {
+                for t in 0..=20 {
+                    let px = x + lean + dx * t / 20;
+                    let py = top + dy * t / 20 - 10 + (t * t) / 12;
+                    let w = 5 - t / 6;
+                    middle.rect(px - w / 2, py, w, 4, if t > 12 { leaf } else { dark });
+                }
+            }
+        } else {
+            // A tree in a tub, round and dense.
+            middle.rect(x - 3, 250, 6, 100, dark);
+            middle.ellipse(x, 226, 34, 36, dark);
+            middle.ellipse(x - 22, 210, 22, 24, dark);
+            middle.ellipse(x + 20, 200, 24, 26, dark);
+            middle.ellipse(x - 26, 200, 10, 9, leaf);
+            middle.ellipse(x + 14, 186, 12, 10, leaf);
+            middle.rect(x - 16, 330, 32, 20, dark);
+        }
+    }
+    middle.rect(0, 350, WIDTH as i32, 10, dark);
+
+    // Vines hanging close, with buds that glow.
+    let mut near = Canvas::new([0; 4]);
+    let vine = [8, 14, 10, 255];
+    let bud = tint([40, 90, 76], dominant_light, 30);
+    for i in 0..9 {
+        let n = noise(seed, 1400 + i as u32);
+        let x = 50 + i * 104 + (n % 20) as i32;
+        let len = 90 + (n / 20 % 140) as i32;
+        for y in 0..len {
+            let sway = ((y as f32 / 30.0).sin() * 4.0) as i32;
+            near.rect(x + sway, y, 2, 1, vine);
+            if y % 26 == 13 {
+                near.rect(x + sway - 4, y, 4, 2, vine);
+            }
+        }
+        let end = ((len as f32 / 30.0).sin() * 4.0) as i32;
+        if n.is_multiple_of(3) {
+            near.ellipse(x + end + 1, len + 2, 3, 3, bud);
+        }
+    }
+
+    // Close, at the edge: great leaves out of focus.
+    let mut front = Canvas::new([0; 4]);
+    let near_black = [2, 4, 3, 255];
+    let rib = [5, 9, 7, 255];
+    for (cx, cy, rx, ry) in [(120, 380, 60, 30), (180, 350, 40, 22), (840, 390, 70, 26)] {
+        front.ellipse(cx, cy, rx, ry, near_black);
+        front.line((cx - rx + 8, cy + 4), (cx + rx - 8, cy - 4), 1, rib);
+    }
+
+    vec![
+        far.layer("glasshouse", 0.12, false),
+        middle.layer("palms", 0.32, false),
+        near.layer("vines", 0.62, false),
         front.layer("foreground", 1.18, true),
     ]
 }

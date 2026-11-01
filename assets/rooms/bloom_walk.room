@@ -4,7 +4,7 @@
 // reached by swinging from bloom to bloom. A fall lands on the path below, and steps climb back.
 [room]
 name = bloom_walk
-background = ballroom 2a5a6a
+background = garden 2a5a6a
 music = gardens
 
 [legend]
