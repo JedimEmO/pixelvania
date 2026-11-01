@@ -123,6 +123,7 @@ pub struct AttackData {
     pub recovery: u32,
     /// First recovery tick that permits a Lunge after connecting.
     pub cancel_window: u32,
+    /// Empty for attacks that release a projectile instead of making body contact.
     pub hitboxes: Vec<Hitbox>,
     pub damage: f32,
     pub poise_damage: f32,
@@ -162,11 +163,10 @@ impl AttackData {
         if self.air_hang > self.total_ticks() {
             return Err("air hang exceeds the move".into());
         }
-        if self.hitboxes.is_empty()
-            || self
-                .hitboxes
-                .iter()
-                .any(|h| !h.rect.valid() || h.ticks.is_some_and(|r| !r.valid(self.active)))
+        if self
+            .hitboxes
+            .iter()
+            .any(|h| !h.rect.valid() || h.ticks.is_some_and(|r| !r.valid(self.active)))
         {
             return Err("hitboxes need finite positive rectangles and valid active ranges".into());
         }

@@ -59,6 +59,13 @@ impl Attacker {
     pub fn elapsed(&self) -> Option<u32> {
         self.swing.as_ref().map(|s| s.tick)
     }
+    /// Turns a scripted attack without restarting its contact history.
+    pub fn redirect(&mut self, facing: i32) {
+        if let Some(s) = &mut self.swing {
+            s.facing = if facing < 0 { -1 } else { 1 };
+        }
+    }
+
     pub fn held_ticks(&self) -> u32 {
         self.hold_ticks
     }

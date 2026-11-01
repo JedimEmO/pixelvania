@@ -1,0 +1,73 @@
+// Phase durations are ticks at 120 Hz.
+(
+    name: "guest-spinner",
+    charge_ticks: 120,
+    combo: (
+        (
+        windup: 36, active: 144, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: -13.0, y: -28.0, w: 26.0, h: 28.0), ticks: None)],
+        damage: 5.0, poise_damage: 6.0, hit_stop: 0.04,
+        knockback: (65.0, -25.0), launches: false,
+        weight: Light, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+        (
+        windup: 36, active: 144, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: -13.0, y: -28.0, w: 26.0, h: 28.0), ticks: None)],
+        damage: 5.0, poise_damage: 6.0, hit_stop: 0.04,
+        knockback: (65.0, -25.0), launches: false,
+        weight: Light, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+        (
+        windup: 36, active: 144, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: -13.0, y: -28.0, w: 26.0, h: 28.0), ticks: None)],
+        damage: 5.0, poise_damage: 6.0, hit_stop: 0.04,
+        knockback: (65.0, -25.0), launches: false,
+        weight: Light, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    ),
+    charged: (
+        windup: 36, active: 144, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: -13.0, y: -28.0, w: 26.0, h: 28.0), ticks: None)],
+        damage: 5.0, poise_damage: 6.0, hit_stop: 0.04,
+        knockback: (65.0, -25.0), launches: false,
+        weight: Light, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    rising: (
+        windup: 36, active: 144, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: -13.0, y: -28.0, w: 26.0, h: 28.0), ticks: None)],
+        damage: 5.0, poise_damage: 6.0, hit_stop: 0.04,
+        knockback: (65.0, -25.0), launches: false,
+        weight: Light, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    air: (
+        (
+        windup: 36, active: 144, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: -13.0, y: -28.0, w: 26.0, h: 28.0), ticks: None)],
+        damage: 5.0, poise_damage: 6.0, hit_stop: 0.04,
+        knockback: (65.0, -25.0), launches: false,
+        weight: Light, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+        (
+        windup: 36, active: 144, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: -13.0, y: -28.0, w: 26.0, h: 28.0), ticks: None)],
+        damage: 5.0, poise_damage: 6.0, hit_stop: 0.04,
+        knockback: (65.0, -25.0), launches: false,
+        weight: Light, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    ),
+    pogo: (
+        windup: 36, active: 144, recovery: 84, cancel_window: 4,
+        hitboxes: [(rect: (x: -13.0, y: -28.0, w: 26.0, h: 28.0), ticks: None)],
+        damage: 5.0, poise_damage: 6.0, hit_stop: 0.04,
+        knockback: (65.0, -25.0), launches: false,
+        weight: Light, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+)
