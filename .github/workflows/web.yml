@@ -39,6 +39,17 @@ jobs:
             | tar -xz -C /usr/local/bin trunk
           trunk --version
 
+      # The music is rendered, not committed. The web plays it as OGG Vorbis,
+      # 8 MB instead of 150 MB of WAV, so the WAVs are encoded and left out of the site.
+      - name: Render the music
+        run: |
+          cargo xtask music
+          for wav in assets/music/*/*.wav; do
+            ffmpeg -loglevel error -y -i "$wav" -c:a libvorbis -q:a 4 "${wav%.wav}.ogg"
+            rm "$wav"
+          done
+          du -sh assets/music
+
       # Trunk fetches the wasm-bindgen that matches Cargo.lock, and wasm-opt.
       # The public URL is relative so the game works under the repository's Pages path.
       - name: Build

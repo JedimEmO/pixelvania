@@ -8,11 +8,9 @@ impl Plugin for MusicPlugin {
             .add_systems(Startup, encounter_from_env)
             .init_resource::<Beat>()
             .add_systems(PreUpdate, advance_beat);
-        #[cfg(not(target_arch = "wasm32"))]
+        stems::build(app);
         app.insert_non_send(native::Music::default())
             .add_systems(PostUpdate, native::update);
-        #[cfg(target_arch = "wasm32")]
-        app.add_systems(Startup, || info!("Music is disabled on wasm"));
     }
 }
 
@@ -61,7 +59,172 @@ fn advance_beat(time: Res<Time<Real>>, mut beat: ResMut<Beat>) {
     beat.seconds += time.delta_secs_f64();
 }
 
+/// Where the stems come from: WAV files read at once on desktop,
+/// OGG files fetched and decoded a stem a frame on the web.
 #[cfg(not(target_arch = "wasm32"))]
+mod stems {
+    use super::*;
+    use kira::sound::static_sound::StaticSoundData;
+    use std::error::Error;
+
+    pub(super) fn build(app: &mut App) {
+        app.init_resource::<Stems>();
+    }
+
+    #[derive(Resource, Default)]
+    pub(super) struct Stems;
+
+    impl Stems {
+        /// A track's stems, or `None` while they are still arriving.
+        pub(super) fn take(
+            &mut self,
+            name: &str,
+        ) -> Result<Option<Vec<StaticSoundData>>, Box<dyn Error>> {
+            let root = bevy::asset::io::file::FileAssetReader::get_base_path()
+                .join("assets/music")
+                .join(name);
+            native::catalog(name)
+                .ok_or("unknown music track")?
+                .0
+                .iter()
+                .map(|stem| {
+                    let bytes = std::fs::read(root.join(format!("{stem}.wav")))?;
+                    Ok(StaticSoundData::from_cursor(std::io::Cursor::new(bytes))?)
+                })
+                .collect::<Result<_, _>>()
+                .map(Some)
+        }
+    }
+}
+
+/// On the web the stems are OGG Vorbis, encoded from the rendered WAVs when the site is built.
+/// All of them are fetched at startup, and one is decoded each frame as it arrives,
+/// so no single frame stalls for long.
+#[cfg(target_arch = "wasm32")]
+mod stems {
+    use super::*;
+    use bevy::asset::{AssetLoader, LoadContext, LoadState, io::Reader};
+    use kira::sound::static_sound::StaticSoundData;
+    use std::error::Error;
+
+    /// Every track, in the order they are decoded: the rooms' music first.
+    const TRACKS: [&str; 2] = ["ballroom", "dancer"];
+
+    pub(super) fn build(app: &mut App) {
+        app.init_asset::<StemBytes>()
+            .register_asset_loader(StemLoader)
+            .init_resource::<Stems>()
+            .add_systems(Startup, request)
+            .add_systems(Update, decode);
+    }
+
+    #[derive(Asset, TypePath)]
+    struct StemBytes(Vec<u8>);
+
+    #[derive(TypePath, Default)]
+    struct StemLoader;
+
+    impl AssetLoader for StemLoader {
+        type Asset = StemBytes;
+        type Settings = ();
+        type Error = std::io::Error;
+
+        async fn load(
+            &self,
+            reader: &mut dyn Reader,
+            _settings: &(),
+            _context: &mut LoadContext<'_>,
+        ) -> Result<StemBytes, std::io::Error> {
+            let mut bytes = Vec::new();
+            reader.read_to_end(&mut bytes).await?;
+            Ok(StemBytes(bytes))
+        }
+
+        fn extensions(&self) -> &[&str] {
+            &["ogg"]
+        }
+    }
+
+    struct Track {
+        name: &'static str,
+        files: Vec<Handle<StemBytes>>,
+        decoded: Vec<Option<StaticSoundData>>,
+        failed: Option<String>,
+    }
+
+    #[derive(Resource, Default)]
+    pub(super) struct Stems(Vec<Track>);
+
+    impl Stems {
+        /// A track's stems, or `None` while they are still arriving.
+        pub(super) fn take(
+            &mut self,
+            name: &str,
+        ) -> Result<Option<Vec<StaticSoundData>>, Box<dyn Error>> {
+            let track = self
+                .0
+                .iter()
+                .find(|t| t.name == name)
+                .ok_or("unknown music track")?;
+            if let Some(error) = &track.failed {
+                return Err(error.clone().into());
+            }
+            Ok(track.decoded.iter().cloned().collect())
+        }
+    }
+
+    fn request(server: Res<AssetServer>, mut stems: ResMut<Stems>) {
+        for name in TRACKS {
+            let Some((parts, _)) = native::catalog(name) else {
+                continue;
+            };
+            stems.0.push(Track {
+                name,
+                files: parts
+                    .iter()
+                    .map(|part| server.load(format!("music/{name}/{part}.ogg")))
+                    .collect(),
+                decoded: vec![None; parts.len()],
+                failed: None,
+            });
+        }
+    }
+
+    fn decode(
+        server: Res<AssetServer>,
+        mut files: ResMut<Assets<StemBytes>>,
+        mut stems: ResMut<Stems>,
+    ) {
+        for track in &mut stems.0 {
+            if track.failed.is_some() {
+                continue;
+            }
+            for (file, decoded) in track.files.iter().zip(&mut track.decoded) {
+                if decoded.is_some() {
+                    continue;
+                }
+                if let LoadState::Failed(error) = server.load_state(file) {
+                    track.failed = Some(error.to_string());
+                    break;
+                }
+                let Some(bytes) = files.remove(file) else {
+                    continue;
+                };
+                match StaticSoundData::from_cursor(std::io::Cursor::new(bytes.0)) {
+                    Ok(data) => {
+                        *decoded = Some(data);
+                        if track.decoded.iter().all(Option::is_some) {
+                            info!("music `{}` is ready", track.name);
+                        }
+                    }
+                    Err(error) => track.failed = Some(error.to_string()),
+                }
+                return;
+            }
+        }
+    }
+}
+
 mod native {
     use super::*;
     use crate::{audio::Audio, combat::Mood, rooms::ActiveRoom};
@@ -84,7 +247,7 @@ mod native {
     const DANCER: [&str; 8] = [
         "drums", "bass", "pads", "arp", "stabs", "lead", "choir", "surge",
     ];
-    fn catalog(name: &str) -> Option<(&'static [&'static str], f64)> {
+    pub(super) fn catalog(name: &str) -> Option<(&'static [&'static str], f64)> {
         match name {
             "ballroom" => Some((&STEMS, 120.0)),
             "dancer" => Some((&DANCER, 132.0)),
@@ -289,21 +452,6 @@ mod native {
         }
     }
 
-    fn load(name: &str) -> Result<Vec<StaticSoundData>, Box<dyn Error>> {
-        let root = bevy::asset::io::file::FileAssetReader::get_base_path()
-            .join("assets/music")
-            .join(name);
-        catalog(name)
-            .ok_or("unknown music track")?
-            .0
-            .iter()
-            .map(|name| {
-                let bytes = std::fs::read(root.join(format!("{name}.wav")))?;
-                Ok(StaticSoundData::from_cursor(std::io::Cursor::new(bytes))?)
-            })
-            .collect()
-    }
-
     pub(super) fn update(
         mut audio: Option<NonSendMut<Audio>>,
         active: Option<Res<ActiveRoom>>,
@@ -312,6 +460,7 @@ mod native {
         encounter: Res<Encounter>,
         mut beat: ResMut<Beat>,
         mut music: NonSendMut<Music>,
+        mut stems: ResMut<super::stems::Stems>,
     ) {
         let room = active
             .as_ref()
@@ -324,13 +473,19 @@ mod native {
             let Some(parent) = audio.as_mut().and_then(|a| a.music_track()) else {
                 return;
             };
-            music.attempted.insert(name.clone());
-            match load(name).and_then(|data| Player::new(parent, data)) {
-                Ok(player) => {
-                    music.players.insert(name.clone(), player);
-                }
-                Err(error) => {
-                    warn!("Music {name} unavailable: {error}; render with `cargo xtask music`")
+            // On the web the stems may still be arriving; ask again next frame.
+            match stems.take(name) {
+                Ok(None) => {}
+                result => {
+                    music.attempted.insert(name.clone());
+                    match result.and_then(|data| Player::new(parent, data.unwrap_or_default())) {
+                        Ok(player) => {
+                            music.players.insert(name.clone(), player);
+                        }
+                        Err(error) => warn!(
+                            "Music {name} unavailable: {error}; render with `cargo xtask music`"
+                        ),
+                    }
                 }
             }
         }

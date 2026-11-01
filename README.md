@@ -114,5 +114,6 @@ The sketch is 64 seconds at 120 BPM in D minor;
 [the audio notes](docs/design/audio.md#ballroom-sketch) describe its form and instruments.
 `music = ballroom` selects it in a room's `[room]` section, including the arena.
 On native builds, F4 changes the stem mix, filter and reverb over 1.5 seconds.
-Music fades out in other rooms and stays silent without an audio device;
-wasm skips music playback.
+Music fades out in other rooms and stays silent without an audio device.
+The web build plays the stems as OGG Vorbis: the web workflow renders them and encodes them with ffmpeg.
+To hear music in a local web build, put `.ogg` files of the stems beside the WAVs first.

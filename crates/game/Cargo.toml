@@ -25,6 +25,10 @@ anim.workspace = true
 pixelfx.workspace = true
 bevy_egui = { workspace = true, optional = true }
 
+# The web build's music is OGG Vorbis, to keep the download small.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+kira = { workspace = true, features = ["ogg", "vorbis"] }
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs.workspace = true
 
