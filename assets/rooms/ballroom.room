@@ -59,6 +59,7 @@ g gilt
 [entities]
 spawn 4 37
 door 0 34 h=3 id=west to=antechamber:east
+pickup 7 7 item=candelabrum
 guest 21 37 class=light
 guest 29 37 class=medium
 guest 39 37 class=heavy

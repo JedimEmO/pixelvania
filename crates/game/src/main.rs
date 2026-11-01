@@ -15,6 +15,7 @@ mod input;
 mod lure;
 mod music;
 mod player;
+mod progress;
 mod render;
 mod rooms;
 mod travel;
@@ -64,6 +65,7 @@ fn main() -> AppExit {
             hanging::HangingPlugin,
             fade::FadePlugin,
             travel::TravelPlugin,
+            progress::ProgressPlugin,
         ))
         .run()
 }

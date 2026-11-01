@@ -141,6 +141,18 @@ pub struct Weapons {
     pub guest_heavy: Handle<WeaponAsset>,
 }
 
+impl Weapons {
+    /// The frame data for a weapon the player carries.
+    pub fn handle(&self, carried: crate::player::Carried) -> Handle<WeaponAsset> {
+        use crate::player::Carried;
+        match carried {
+            Carried::Sabre => self.sabre.clone(),
+            Carried::Jeroboam => self.jeroboam.clone(),
+            Carried::Candelabrum => self.candelabrum.clone(),
+        }
+    }
+}
+
 fn load_weapons(mut commands: Commands, assets: Res<AssetServer>) {
     commands.insert_resource(Weapons {
         sabre: assets.load("combat/sabre.ron"),

@@ -1,0 +1,292 @@
+//! What the player has found, and the pickups in rooms that give it.
+//!
+//! A pickup is a room entity, `pickup 7 7.5 item=candelabrum`, drawn as a small glowing diamond
+//! that bobs on the animation's steps: gold for an ability, pink for a weapon.
+//! Touching it takes it for good, with a burst, a sound, and a banner naming what it gives.
+//! Taken pickups are kept in [`PlayerProgress`] and never come back.
+//!
+//! A new game starts with what the vertical slice assumes the player has found on the way
+//! to the ballroom. `PIXELVANIA_PROGRESS=new` starts with nothing but the sabre,
+//! and `PIXELVANIA_PROGRESS=all` with everything.
+
+use std::sync::Arc;
+
+use bevy::asset::RenderAssetUsages;
+use bevy::camera::visibility::RenderLayers;
+use bevy::prelude::*;
+use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+use pixelfx::effects::EffectId;
+use world::{Item, Progress, Room};
+
+use crate::effects::SpawnFx;
+use crate::player::Player;
+use crate::render::{CameraFocus, GLOW_LAYER, HEIGHT, Light2d};
+use crate::rooms::{ActiveRoom, RoomPart};
+
+pub struct ProgressPlugin;
+
+impl Plugin for ProgressPlugin {
+    fn build(&self, app: &mut App) {
+        let progress = match std::env::var("PIXELVANIA_PROGRESS").as_deref() {
+            Ok("new") => Progress::new_game(),
+            Ok("all") => Progress::everything(),
+            _ => Progress::slice_start(),
+        };
+        app.insert_resource(PlayerProgress(progress))
+            .init_resource::<SpawnedFor>()
+            .add_systems(
+                Update,
+                (give_abilities, spawn_pickups, collect, bob, show_banner),
+            );
+    }
+}
+
+/// Everything the player has found.
+#[derive(Resource, Debug, Clone)]
+pub struct PlayerProgress(pub Progress);
+
+/// A pickup waiting in the room.
+#[derive(Component)]
+struct Pickup {
+    item: Item,
+    room: String,
+    /// Where it rests, in world space; it bobs about this.
+    at: Vec2,
+    phase: f32,
+}
+
+/// The room the pickups were last spawned for.
+#[derive(Resource, Default)]
+struct SpawnedFor(Option<Arc<Room>>);
+
+/// The movement abilities follow what has been found.
+fn give_abilities(progress: Res<PlayerProgress>, mut players: Query<&mut Player>) {
+    let want = progress.0.movement();
+    for mut p in &mut players {
+        if p.ctrl.abilities != want {
+            p.ctrl.abilities = want;
+        }
+    }
+}
+
+/// A small diamond with a bright core, drawn into the glow buffer.
+fn glyph(core: [u8; 3], rim: [u8; 3]) -> Image {
+    const S: i32 = 11;
+    let mut data = vec![0u8; (S * S * 4) as usize];
+    for y in 0..S {
+        for x in 0..S {
+            let d = (x - S / 2).abs() + (y - S / 2).abs();
+            let c = match d {
+                0..=1 => [255, 255, 255],
+                2..=3 => core,
+                4..=5 => rim,
+                _ => continue,
+            };
+            let i = ((y * S + x) * 4) as usize;
+            data[i..i + 4].copy_from_slice(&[c[0], c[1], c[2], 255]);
+        }
+    }
+    Image::new(
+        Extent3d {
+            width: S as u32,
+            height: S as u32,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        data,
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::RENDER_WORLD,
+    )
+}
+
+fn colours(item: Item) -> ([u8; 3], [u8; 3], LinearRgba) {
+    match item {
+        Item::Ability(_) => (
+            [255, 214, 120],
+            [170, 110, 40],
+            LinearRgba::rgb(1.0, 0.8, 0.45),
+        ),
+        Item::Weapon(_) => (
+            [255, 140, 190],
+            [150, 50, 100],
+            LinearRgba::rgb(1.0, 0.45, 0.7),
+        ),
+    }
+}
+
+fn spawn_pickups(
+    mut commands: Commands,
+    active: Res<ActiveRoom>,
+    progress: Res<PlayerProgress>,
+    mut spawned: ResMut<SpawnedFor>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    let Some(room) = &active.room else { return };
+    if spawned.0.as_ref().is_some_and(|r| Arc::ptr_eq(r, room)) {
+        return;
+    }
+    spawned.0 = Some(room.clone());
+    for (i, def) in room.entities_of("pickup").enumerate() {
+        let name = def.props.get("item").map(String::as_str).unwrap_or("");
+        let Some(item) = Item::parse(name) else {
+            error!("room `{}`, line {}: no item `{name}`", room.name, def.line);
+            continue;
+        };
+        if progress.0.taken(&room.name, item) {
+            continue;
+        }
+        let (x, y) = def.pixel_pos();
+        let at = Vec2::new(x, -y);
+        let (core, rim, light) = colours(item);
+        commands.spawn((
+            RoomPart,
+            Name::new(format!("pickup {name}")),
+            Pickup {
+                item,
+                room: room.name.clone(),
+                at,
+                phase: i as f32 * 1.7,
+            },
+            Transform::from_translation(at.extend(2.0)),
+            Visibility::default(),
+            Light2d {
+                color: light,
+                radius: 56.0,
+                strength: 1.2,
+                glow: 0.8,
+            },
+            children![(
+                Sprite::from_image(images.add(glyph(core, rim))),
+                RenderLayers::layer(GLOW_LAYER),
+                Transform::default(),
+            )],
+        ));
+    }
+}
+
+/// Bobs each pickup a pixel or two, on twelve steps a second like the rest of the art.
+fn bob(time: Res<Time>, mut pickups: Query<(&Pickup, &mut Transform)>) {
+    let t = (time.elapsed_secs() * 12.0).floor() / 12.0;
+    for (p, mut transform) in &mut pickups {
+        let dy = (2.0 * (t * 2.2 + p.phase).sin()).round();
+        transform.translation.y = p.at.y + dy;
+    }
+}
+
+/// Takes a pickup the player touches.
+#[allow(clippy::too_many_arguments)]
+fn collect(
+    mut commands: Commands,
+    mut progress: ResMut<PlayerProgress>,
+    weapons: Option<Res<crate::combat::Weapons>>,
+    pickups: Query<(Entity, &Pickup)>,
+    mut players: Query<(&mut Player, &mut crate::combat::Fighting)>,
+    mut fx: MessageWriter<SpawnFx>,
+    mut sfx: MessageWriter<crate::audio::PlaySfx>,
+    mut shake: ResMut<crate::camera::Shake>,
+) {
+    for (mut p, mut f) in &mut players {
+        let b = p.ctrl.body;
+        for (e, pickup) in &pickups {
+            let (x, y) = (pickup.at.x, -pickup.at.y);
+            let reach = 8.0;
+            let touches = (b.x as f32) < x + reach
+                && x - reach < (b.x + b.w) as f32
+                && (b.y as f32) < y + reach
+                && y - reach < (b.y + b.h) as f32;
+            if !touches || !progress.0.take(&pickup.room, pickup.item) {
+                continue;
+            }
+            commands.entity(e).despawn();
+            let mut burst = SpawnFx::new(EffectId::Poof, pickup.at);
+            burst.options.light = 1.8;
+            fx.write(burst);
+            sfx.write(crate::audio::PlaySfx {
+                pitch: 1.5,
+                ..crate::audio::PlaySfx::new(crate::audio::Sfx::LureCatch)
+            });
+            shake.kick(Vec2::NEG_Y, 2.0);
+            if let (world::Item::Weapon(w), Some(weapons)) = (pickup.item, &weapons) {
+                p.carried = w.into();
+                f.weapon = weapons.handle(p.carried);
+            }
+            commands.spawn(Banner::bundle(pickup.item));
+            info!("found the {}", pickup.item.name());
+        }
+    }
+}
+
+/// The name of what was just found, and how to use it, across the top of the screen.
+#[derive(Component)]
+struct Banner {
+    age: f32,
+}
+
+/// Seconds a banner shows, including its fade.
+const BANNER_TIME: f32 = 3.0;
+
+impl Banner {
+    fn bundle(item: Item) -> impl Bundle {
+        let (title, hint) = words(item);
+        (
+            Banner { age: 0.0 },
+            Text2d::new(format!("{title}\n{hint}")),
+            TextFont {
+                font_size: bevy::text::FontSize::Px(10.0),
+                ..default()
+            },
+            TextLayout::justify(Justify::Center),
+            TextColor(Color::srgb(1.0, 0.85, 0.6)),
+            RenderLayers::layer(GLOW_LAYER),
+            Transform::from_xyz(0.0, 0.0, 6.0),
+        )
+    }
+}
+
+/// What a find is called on screen, and a line on how to use it.
+fn words(item: Item) -> (&'static str, &'static str) {
+    use world::progress::{Ability, Weapon};
+    match item {
+        Item::Ability(a) => match a {
+            Ability::Lunge => ("THE LUNGE", "East to dash, through guests too"),
+            Ability::Cling => (
+                "THE CLING",
+                "Press into a wall to hold on, jump to leap off",
+            ),
+            Ability::Swoon => ("THE SWOON", "Jump again in the air"),
+            Ability::Lure => ("THE LURE", "Right trigger takes hold of light"),
+            Ability::Plunge => ("THE PLUNGE", "Dive through what is cracked"),
+            Ability::Submerge => ("SUBMERGE", "Sink into the nectar"),
+            Ability::Drift => ("THE DRIFT", "Ride the warm air"),
+            Ability::Numb => ("NUMB", "Feel nothing"),
+        },
+        Item::Weapon(w) => match w {
+            Weapon::Sabre => ("THE SABRE", "North changes weapon"),
+            Weapon::Jeroboam => ("THE JEROBOAM", "Swung like a maul. North changes weapon"),
+            Weapon::Candelabrum => (
+                "THE CANDELABRUM",
+                "Its swings leave fire. North changes weapon",
+            ),
+        },
+    }
+}
+
+/// Keeps banners at the top of the view, and fades them out.
+fn show_banner(
+    mut commands: Commands,
+    time: Res<Time>,
+    focus: Res<CameraFocus>,
+    mut banners: Query<(Entity, &mut Banner, &mut Transform, &mut TextColor)>,
+) {
+    for (e, mut b, mut t, mut color) in &mut banners {
+        b.age += time.delta_secs();
+        if b.age >= BANNER_TIME {
+            commands.entity(e).despawn();
+            continue;
+        }
+        let top = focus.0.round() + Vec2::new(0.0, HEIGHT as f32 / 2.0 - 40.0);
+        t.translation = top.extend(6.0);
+        let fade = ((BANNER_TIME - b.age) / 0.6).min(1.0);
+        color.0 = Color::srgb(1.0 * fade, 0.85 * fade, 0.6 * fade);
+    }
+}

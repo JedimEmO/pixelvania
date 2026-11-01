@@ -58,7 +58,9 @@ jump is pressed at frame 60 and the Lunge at frame 90.
 `PIXELVANIA_FX=sword-slash` sets off that effect in front of the player at frame 80.
 `PIXELVANIA_ROOM=arena` starts in the combat lab (or `lab`, `ballroom`),
 `PIXELVANIA_MOOD=high` or `comedown` in that mood, `PIXELVANIA_FADE=0.5` with that much progression fade,
-and `PIXELVANIA_SPAWN=34,13` with the player at that tile.
+`PIXELVANIA_SPAWN=34,13` with the player at that tile,
+and `PIXELVANIA_PROGRESS=new` or `all` with nothing found or everything,
+instead of what the vertical slice assumes: the Lunge, Cling, the Swoon, the Lure, the sabre and the Jeroboam.
 `PIXELVANIA_HOLD` also takes `attack` (a three-hit combo), `charge`, `toast`, `finish`,
 `jeroboam` and `candelabrum`, and `PIXELVANIA_GUEST=heavy` spawns a guest in front of the player.
 

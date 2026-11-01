@@ -109,8 +109,11 @@ First the systems it needs, then its rooms.
     and puts the player just inside the matching door with their running speed.
     A test checks that every door leads to a door that leads back, and that nobody arrives inside a wall.
     The antechamber, where a new game starts, opens into the ballroom.
-16. **Progress.** Abilities and weapons as things found in rooms, kept in one record of progress,
-    with the fade following the abilities found.
+16. **Progress.** Done. `world::Progress` records the abilities and weapons found and the pickups taken;
+    the fade follows the abilities by their steps, unless set by hand with F6.
+    Pickups are room entities (`pickup 7 7 item=candelabrum`), a glowing diamond that bobs,
+    taken with a burst, a sound and a banner naming what it gives.
+    North only steps through weapons found. The candelabrum waits in the ballroom's lounge.
 17. **Lounges and saving.** Resting at a lounge saves and heals; a blackout wakes the player at the last one.
 18. **The reachability checker.** The ballroom's route search, grown to walk the whole world.
 

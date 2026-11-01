@@ -503,6 +503,10 @@ mod panel {
                     }
                 });
                 ui.add(egui::Slider::new(&mut fade.level, 0.0..=1.0).text("Progression fade (F6)"));
+                ui.checkbox(
+                    &mut fade.by_hand,
+                    "Fade set by hand, not by abilities found",
+                );
                 let m = &mut edited.movement;
                 ui.collapsing("Running", |ui| {
                     sliders!(ui, m, {

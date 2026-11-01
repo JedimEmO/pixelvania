@@ -62,6 +62,17 @@ pub enum Carried {
     Candelabrum,
 }
 
+impl From<world::progress::Weapon> for Carried {
+    fn from(w: world::progress::Weapon) -> Self {
+        use world::progress::Weapon;
+        match w {
+            Weapon::Sabre => Self::Sabre,
+            Weapon::Jeroboam => Self::Jeroboam,
+            Weapon::Candelabrum => Self::Candelabrum,
+        }
+    }
+}
+
 impl Carried {
     fn next(self) -> Self {
         match self {
@@ -69,6 +80,16 @@ impl Carried {
             Self::Jeroboam => Self::Candelabrum,
             Self::Candelabrum => Self::Sabre,
         }
+    }
+
+    fn found(self, progress: &world::Progress) -> bool {
+        use world::progress::Weapon;
+        let w = match self {
+            Self::Sabre => Weapon::Sabre,
+            Self::Jeroboam => Weapon::Jeroboam,
+            Self::Candelabrum => Weapon::Candelabrum,
+        };
+        progress.weapons.contains(&w)
     }
 
     fn name(self) -> &'static str {
@@ -521,9 +542,11 @@ pub(crate) fn light_rigs(
 }
 
 /// Steps to the next weapon, between swings.
+/// Steps to the next weapon the player has found.
 fn switch_weapon(
     input: Res<TickInput>,
     weapons: Res<Weapons>,
+    progress: Res<crate::progress::PlayerProgress>,
     mut players: Query<(&mut Player, &mut Fighting)>,
 ) {
     if !input.switch_weapon_pressed {
@@ -533,12 +556,15 @@ fn switch_weapon(
         if f.combat.attacker.attack().is_some() || f.combat.helpless() {
             continue;
         }
-        p.carried = p.carried.next();
-        f.weapon = match p.carried {
-            Carried::Sabre => weapons.sabre.clone(),
-            Carried::Jeroboam => weapons.jeroboam.clone(),
-            Carried::Candelabrum => weapons.candelabrum.clone(),
-        };
+        let mut next = p.carried.next();
+        while next != p.carried && !next.found(&progress.0) {
+            next = next.next();
+        }
+        if next == p.carried {
+            continue;
+        }
+        p.carried = next;
+        f.weapon = weapons.handle(p.carried);
         info!("now carrying the {}", p.carried.name());
     }
 }

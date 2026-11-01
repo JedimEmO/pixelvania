@@ -5,9 +5,9 @@
 //! for as long as it lasts, which makes it more tempting just as it grows less effective.
 //! The fade also thins the music's default mix.
 //!
-//! Until the game has abilities to collect, the level is set by hand:
-//! F6 steps it through none, a third, two thirds and all, and `PIXELVANIA_FADE=0.5` starts there.
-//! The ballroom decides whether the idea stays (see `docs/plan.md`).
+//! The level follows the abilities found, by the steps in `world::Ability::fade_step`.
+//! For testing it can be set by hand instead: F6 steps it through none, a third, two thirds
+//! and all, and `PIXELVANIA_FADE=0.5` starts there; either stops it following progress.
 
 use bevy::prelude::*;
 
@@ -18,13 +18,15 @@ pub struct FadePlugin;
 
 impl Plugin for FadePlugin {
     fn build(&self, app: &mut App) {
-        let level = std::env::var("PIXELVANIA_FADE")
+        let by_hand = std::env::var("PIXELVANIA_FADE")
             .ok()
             .and_then(|v| v.parse::<f32>().ok())
-            .unwrap_or(0.0)
-            .clamp(0.0, 1.0);
-        app.insert_resource(ProgressionFade { level })
-            .add_systems(Update, (step_by_hand, grade).chain());
+            .map(|v| v.clamp(0.0, 1.0));
+        app.insert_resource(ProgressionFade {
+            level: by_hand.unwrap_or(0.0),
+            by_hand: by_hand.is_some(),
+        })
+        .add_systems(Update, (follow_progress, step_by_hand, grade).chain());
     }
 }
 
@@ -32,6 +34,8 @@ impl Plugin for FadePlugin {
 #[derive(Resource, Clone, Copy, Debug, PartialEq)]
 pub struct ProgressionFade {
     pub level: f32,
+    /// Set by hand for testing, so it no longer follows the abilities found.
+    pub by_hand: bool,
 }
 
 impl ProgressionFade {
@@ -54,8 +58,20 @@ const HIGH_KEEPS: f32 = 0.2;
 /// so colour returning at a High's onset reads as a bloom.
 const RATE: f32 = 1.2;
 
+/// Sets the fade from the abilities found, unless it has been set by hand.
+fn follow_progress(
+    progress: Res<crate::progress::PlayerProgress>,
+    mut fade: ResMut<ProgressionFade>,
+) {
+    let want = progress.0.fade();
+    if !fade.by_hand && fade.level != want {
+        fade.level = want;
+    }
+}
+
 fn step_by_hand(keys: Res<ButtonInput<KeyCode>>, mut fade: ResMut<ProgressionFade>) {
     if keys.just_pressed(KeyCode::F6) {
+        fade.by_hand = true;
         let steps = ProgressionFade::STEPS;
         let next = steps
             .iter()
@@ -90,7 +106,10 @@ mod tests {
 
     #[test]
     fn the_high_gives_back_most_of_the_colour() {
-        let fade = ProgressionFade { level: 1.0 };
+        let fade = ProgressionFade {
+            level: 1.0,
+            by_hand: true,
+        };
         let [neutral, high, comedown] = Mood::ALL;
         assert_eq!(fade.shown(&neutral), 1.0);
         assert_eq!(fade.shown(&comedown), 1.0);
