@@ -1,39 +1,44 @@
-//! The guests: the party's lost dancers, built on the same rig with their own proportions.
-//!
-//! A guest comes in one of three weight classes, and the class shows in the silhouette:
-//! light guests are slight and quick with a knife, medium guests are the player's size with a
-//! cane-spear, and heavy guests are broad and tall and swing a mallet with both hands.
-//! Their poses are the player's, scaled to their size, plus the ways a body reacts to a hit.
+//! Guest costumes, proportions and poses.
 
 use std::f64::consts::TAU;
 
 use pixelfx::color::hex;
 use pixelfx::rig::{Hair, Hat, Mask, Measurements, Pose, Rig, Weapon};
 
-/// A guest's weight class, which sets its size, weapon and how it takes a hit.
+/// A guest type, with its own proportions and costume.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Class {
     Light,
     Medium,
     Heavy,
+    Spinner,
+    Toaster,
 }
 
 impl Class {
-    pub const ALL: [Self; 3] = [Self::Light, Self::Medium, Self::Heavy];
+    pub const ALL: [Self; 5] = [
+        Self::Light,
+        Self::Medium,
+        Self::Heavy,
+        Self::Spinner,
+        Self::Toaster,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {
             Self::Light => "light",
             Self::Medium => "medium",
             Self::Heavy => "heavy",
+            Self::Spinner => "spinner",
+            Self::Toaster => "toaster",
         }
     }
 
     /// Size relative to the player.
     pub fn scale(self) -> f64 {
         match self {
-            Self::Light => 0.85,
-            Self::Medium => 1.0,
+            Self::Light | Self::Spinner => 0.85,
+            Self::Medium | Self::Toaster => 1.0,
             Self::Heavy => 1.25,
         }
     }
@@ -43,14 +48,16 @@ impl Class {
             Self::Light => Weapon::Dagger,
             Self::Medium => Weapon::Spear,
             Self::Heavy => Weapon::Hammer,
+            Self::Spinner => Weapon::Handle,
+            Self::Toaster => Weapon::Coupe,
         }
     }
 
     /// Hurtbox width and height in pixels, standing.
     pub fn size(self) -> (i32, i32) {
         match self {
-            Self::Light => (10, 29),
-            Self::Medium => (12, 34),
+            Self::Light | Self::Spinner => (10, 29),
+            Self::Medium | Self::Toaster => (12, 34),
             Self::Heavy => (18, 43),
         }
     }
@@ -112,6 +119,14 @@ pub fn rig(class: Class) -> Rig {
         turn: d.turn,
     };
     let (shell, core) = match class {
+        Class::Spinner => (
+            [hex(0xc6a9c8), hex(0x976d99), hex(0x624560), hex(0x36283b)],
+            [hex(0x493249), hex(0x322332), hex(0x221a24), hex(0x221a24)],
+        ),
+        Class::Toaster => (
+            [hex(0xb7c8dd), hex(0x8397b5), hex(0x536580), hex(0x303b53)],
+            [hex(0x354053), hex(0x262e40), hex(0x1b2231), hex(0x1b2231)],
+        ),
         // Faded teal silk.
         Class::Light => (
             [hex(0xa8d8cc), hex(0x6aa89c), hex(0x3e7068), hex(0x24443f)],
@@ -129,12 +144,19 @@ pub fn rig(class: Class) -> Rig {
         ),
     };
     let (hat, mask, hair, costume, trim) = match class {
-        Class::Light => (
+        Class::Light | Class::Spinner => (
             Hat::None,
             Mask::Domino,
             Hair::Bouffant,
             [hex(0x72615a), hex(0x483b3c), hex(0x2c242b), hex(0x19161e)],
             [hex(0xf1e4ca), hex(0xd5c8a9), hex(0xb1a084), hex(0x88755f)],
+        ),
+        Class::Toaster => (
+            Hat::None,
+            Mask::None,
+            Hair::Tower,
+            [hex(0x69798e), hex(0x47566c), hex(0x2c374c), hex(0x1a2334)],
+            [hex(0xe2ded5), hex(0xc0bbb1), hex(0x97938d), hex(0x6c6870)],
         ),
         Class::Medium => (
             Hat::Plume,
@@ -153,6 +175,8 @@ pub fn rig(class: Class) -> Rig {
     };
     Rig {
         measurements,
+        skirt: if class == Class::Spinner { 12.0 } else { 0.0 },
+        tails: if class == Class::Toaster { 14.0 } else { 0.0 },
         hat,
         mask,
         hair,
@@ -188,7 +212,7 @@ pub fn scale(p: &Pose, k: f64) -> Pose {
 /// Puts a class's weapon in a pose's hands, two-handed for the heavy mallet.
 pub fn arm(p: Pose, class: Class) -> Pose {
     Pose {
-        weapon: Some(class.weapon()),
+        weapon: (class != Class::Spinner).then(|| class.weapon()),
         two: p.two || class == Class::Heavy,
         ..p
     }
@@ -288,6 +312,58 @@ pub fn reaction_pose(r: Reaction, t: f64) -> Pose {
     }
 }
 
+/// The dancer's run and the raised glass, at player scale.
+pub fn loop_pose(class: Class, phase: crate::swing::Phase, t: f64) -> Option<Pose> {
+    use crate::swing::Phase;
+    match class {
+        Class::Spinner => Some(match phase {
+            Phase::Windup => Pose {
+                fx: 15.0,
+                fy: -27.0,
+                bx: -14.0,
+                by: -27.0,
+                ffx: 0.0,
+                fbx: -4.0,
+                fby: -7.0,
+                toe_f: true,
+                ..Pose::default()
+            },
+            Phase::Active => Pose {
+                yaw: t * TAU * 3.0,
+                fx: 16.0,
+                fy: -25.0,
+                bx: -16.0,
+                by: -25.0,
+                ffx: 1.0,
+                fbx: -1.0,
+                toe_f: true,
+                ..Pose::default()
+            },
+            Phase::Recovery => reaction_pose(Reaction::Stagger, t),
+        }),
+        Class::Toaster => Some(match phase {
+            Phase::Active => Pose {
+                lean: 4.0,
+                fx: 17.0,
+                fy: -26.0,
+                bx: -6.0,
+                by: -19.0,
+                sa: 0.0,
+                ..Pose::default()
+            },
+            _ => Pose {
+                fx: 7.0,
+                fy: -43.0,
+                bx: -7.0,
+                by: -19.0,
+                sa: -90.0,
+                ..Pose::default()
+            },
+        }),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -302,6 +378,9 @@ mod tests {
                 .flat_map(|r| (0..4).map(move |i| reaction_pose(*r, i as f64 / 12.0)))
                 .collect();
             for phase in [Phase::Windup, Phase::Active, Phase::Recovery] {
+                if let Some(p) = loop_pose(class, phase, 0.2) {
+                    poses.push(p);
+                }
                 poses.push(swing_pose(Swing::Combo1, phase, 1.0));
                 poses.push(swing_pose(Swing::Combo3, phase, 1.0));
             }

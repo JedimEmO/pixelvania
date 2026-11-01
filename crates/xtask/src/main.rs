@@ -266,7 +266,8 @@ fn guests_sheet(out: &Path) -> Result<()> {
         } else {
             Swing::Combo1
         };
-        let idle = anim::pose_for(anim::State::Idle, 0.0, 0.0);
+        let idle = anim::guest::loop_pose(class, Phase::Recovery, 0.0)
+            .unwrap_or_else(|| anim::pose_for(anim::State::Idle, 0.0, 0.0));
         let mut views = vec![
             idle.clone(),
             anim::Pose {
@@ -286,10 +287,13 @@ fn guests_sheet(out: &Path) -> Result<()> {
         }));
         let views = views.iter().map(|p| arm(scale(p, k), class)).collect();
         let mut poses = vec![
-            anim::pose_for(anim::State::Idle, 0.0, 0.0),
-            swing_pose(swing, Phase::Windup, 1.0),
-            swing_pose(swing, Phase::Active, 0.0),
-            swing_pose(swing, Phase::Active, 1.0),
+            idle,
+            anim::guest::loop_pose(class, Phase::Windup, 0.2)
+                .unwrap_or_else(|| swing_pose(swing, Phase::Windup, 1.0)),
+            anim::guest::loop_pose(class, Phase::Active, 0.0)
+                .unwrap_or_else(|| swing_pose(swing, Phase::Active, 0.0)),
+            anim::guest::loop_pose(class, Phase::Active, 0.15)
+                .unwrap_or_else(|| swing_pose(swing, Phase::Active, 1.0)),
         ];
         poses.extend(Reaction::ALL.iter().map(|r| reaction_pose(*r, 0.1)));
         let poses: Vec<anim::Pose> = poses.iter().map(|p| arm(scale(p, k), class)).collect();

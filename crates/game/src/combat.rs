@@ -139,6 +139,8 @@ pub struct Weapons {
     pub guest_light: Handle<WeaponAsset>,
     pub guest_medium: Handle<WeaponAsset>,
     pub guest_heavy: Handle<WeaponAsset>,
+    pub guest_spinner: Handle<WeaponAsset>,
+    pub guest_toaster: Handle<WeaponAsset>,
 }
 
 impl Weapons {
@@ -161,6 +163,8 @@ fn load_weapons(mut commands: Commands, assets: Res<AssetServer>) {
         guest_light: assets.load("combat/guest-light.ron"),
         guest_medium: assets.load("combat/guest-medium.ron"),
         guest_heavy: assets.load("combat/guest-heavy.ron"),
+        guest_spinner: assets.load("combat/guest-spinner.ron"),
+        guest_toaster: assets.load("combat/guest-toaster.ron"),
     });
 }
 
@@ -190,6 +194,11 @@ pub struct Fighting {
 }
 
 impl Fighting {
+    pub(crate) fn struck(&mut self, direction: i32) {
+        self.reaction_time = 0.0;
+        self.hit_from = Some(direction);
+    }
+
     /// Seconds since the current reaction began.
     pub fn reaction_time(&self) -> f32 {
         self.reaction_time
@@ -268,7 +277,7 @@ pub fn combat_id(e: Entity) -> u64 {
     e.to_bits()
 }
 
-fn resolve_contacts(
+pub(crate) fn resolve_contacts(
     mood: Res<Mood>,
     mut log: ResMut<CombatLog>,
     mut fighters: Query<(
@@ -330,8 +339,7 @@ fn resolve_contacts(
             _ => continue,
         };
         if let Some(row) = rows.iter_mut().find(|r| r.0 == target) {
-            row.2.reaction_time = 0.0;
-            row.2.hit_from = Some(dir);
+            row.2.struck(dir);
         }
     }
     log.0.extend(events);
@@ -427,7 +435,12 @@ fn swing_effects(
             && let Some(facing) = f.combat.attacker.facing()
         {
             let k = g.class.scale() as f32;
-            let at = t.translation.truncate() + Vec2::new(facing as f32 * 8.0 * k, 26.0 * k);
+            let (x, y) = match g.class {
+                anim::guest::Class::Spinner => (15.0, 27.0),
+                anim::guest::Class::Toaster => (7.0, 43.0),
+                _ => (8.0, 26.0),
+            };
+            let at = t.translation.truncate() + Vec2::new(facing as f32 * x * k, y * k);
             sfx.write(PlaySfx {
                 volume: 0.7,
                 pitch: 1.15 / k,
@@ -474,6 +487,14 @@ fn swing_effects(
             volume: if guest.is_some() { 0.75 } else { 1.0 },
             ..swing
         });
+        if guest.is_some_and(|g| {
+            matches!(
+                g.class,
+                anim::guest::Class::Spinner | anim::guest::Class::Toaster
+            )
+        }) {
+            continue;
+        }
         let mut req = SpawnFx::new(EffectId::SwordSlash, feet).facing(facing);
         let (radius, angle) = match id {
             AttackId::Combo3 | AttackId::Air2 => (38.0, 0.0),

@@ -1,9 +1,4 @@
-//! The guests: enemies built on the same movement controller and combat rules as the player.
-//!
-//! A guest is spawned for each `guest` entity in the room, with `class=light`, `medium` or
-//! `heavy`. Each tick it decides what to press, as a player would: walk towards the player,
-//! and swing when in reach and rested. Everything after that, from the swing's commitment to
-//! how it reels from a hit, is the same code that runs the player.
+//! Guests with shared combat reactions and distinct movement loops.
 
 use anim::guest::{Class, arm, rig, scale};
 use bevy::prelude::*;
@@ -79,6 +74,22 @@ struct Temper {
 
 fn temper(class: Class) -> Temper {
     match class {
+        Class::Spinner => Temper {
+            reach: 220.0,
+            rest: 0.25,
+            speed: 190.0,
+            notice: 280.0,
+            health: 35.0,
+            poise: 18.0,
+        },
+        Class::Toaster => Temper {
+            reach: 210.0,
+            rest: 1.7,
+            speed: 65.0,
+            notice: 300.0,
+            health: 60.0,
+            poise: 40.0,
+        },
         Class::Light => Temper {
             reach: 26.0,
             rest: 0.9,
@@ -108,8 +119,8 @@ fn temper(class: Class) -> Temper {
 
 fn weight(class: Class) -> WeightClass {
     match class {
-        Class::Light => WeightClass::Light,
-        Class::Medium => WeightClass::Medium,
+        Class::Light | Class::Spinner => WeightClass::Light,
+        Class::Medium | Class::Toaster => WeightClass::Medium,
         Class::Heavy => WeightClass::Heavy,
     }
 }
@@ -136,6 +147,8 @@ fn spawn(
         let class = match def.props.get("class").map(String::as_str) {
             Some("light") => Class::Light,
             Some("heavy") => Class::Heavy,
+            Some("spinner") => Class::Spinner,
+            Some("toaster") => Class::Toaster,
             _ => Class::Medium,
         };
         let (x, y) = def.pixel_pos();
@@ -176,6 +189,8 @@ pub fn spawn_guest(
         Class::Light => weapons.guest_light.clone(),
         Class::Medium => weapons.guest_medium.clone(),
         Class::Heavy => weapons.guest_heavy.clone(),
+        Class::Spinner => weapons.guest_spinner.clone(),
+        Class::Toaster => weapons.guest_toaster.clone(),
     };
     let look = Look::new(rig(class), images);
     let image = look.image.clone();
@@ -224,12 +239,11 @@ fn respawn_on_reset(
     }
 }
 
-/// Decides what a guest presses this tick.
-///
-/// Every class walks up and swings when in reach and rested. The light guest then skips back
-/// out of reach; the medium guest keeps its spear's distance and backs off when crowded;
-/// the heavy guest only ever comes forward.
+/// Chooses approach, retreat and the next attack.
 fn think(g: &mut Guest, f: &Fighting, player: Option<(f32, f32)>, dt: f32) -> Controls {
+    if f.combat.is_frozen() {
+        return Controls::default();
+    }
     g.rest = (g.rest - dt).max(0.0);
     let swinging = f.combat.attacker.attack().is_some();
     if g.was_swinging && !swinging && g.class == Class::Light {
@@ -259,8 +273,8 @@ fn think(g: &mut Guest, f: &Fighting, player: Option<(f32, f32)>, dt: f32) -> Co
         c.x = -dir;
         return c;
     }
-    let crowded = g.class == Class::Medium && gap < t.reach * 0.45;
-    if crowded {
+    let crowded = matches!(g.class, Class::Medium | Class::Toaster) && gap < t.reach * 0.55;
+    if crowded && !(g.class == Class::Toaster && g.rest <= 0.0) {
         c.x = -dir;
     } else if gap <= t.reach && g.rest <= 0.0 && (py - y).abs() < 24.0 {
         c.attack_pressed = true;
@@ -275,6 +289,7 @@ fn think(g: &mut Guest, f: &Fighting, player: Option<(f32, f32)>, dt: f32) -> Co
 }
 
 fn tick(
+    mut commands: Commands,
     active: Res<ActiveRoom>,
     tuning: Res<crate::tuning::Tuning>,
     weapons: Res<Assets<WeaponAsset>>,
@@ -301,11 +316,40 @@ fn tick(
             run_speed: temper(g.class).speed,
             ..tuning.movement.clone()
         };
-        let input = think(g, &f, player, world::combat::DT);
+        let mut input = think(g, &f, player, world::combat::DT);
+        if input.x != 0.0 && matches!(g.class, Class::Spinner | Class::Toaster) {
+            let mut ahead = g.ctrl.body;
+            ahead.x += input.x.signum() as i32 * 6;
+            if g.ctrl.grounded && !ahead.on_ground(room) {
+                input.x = 0.0;
+            }
+        }
+        let before = f.combat.attacker.phase();
         let (_, events) =
             f.combat
                 .tick_controller(combat_id(e), &mut g.ctrl, room, &g.tuning, &w.0, input);
         log.0.extend(events);
+        let phase = f.combat.attacker.phase();
+        if !f.combat.is_frozen() && !f.combat.helpless() {
+            if g.class == Class::Spinner && phase == world::combat::Phase::Active {
+                let mut ahead = g.ctrl.body;
+                ahead.x += g.face * 5;
+                if ahead.collides_at(room, 0, 0) || !ahead.on_ground(room) {
+                    g.face = -g.face;
+                }
+                g.ctrl
+                    .body
+                    .move_x(room, g.face as f32 * g.tuning.run_speed * world::combat::DT);
+                g.ctrl.facing = g.face;
+                f.combat.attacker.redirect(g.face);
+            }
+            if g.class == Class::Toaster
+                && phase == world::combat::Phase::Active
+                && before == world::combat::Phase::Windup
+            {
+                crate::projectiles::throw(&mut commands, g.feet(), player, g.ctrl.facing, &w.0);
+            }
+        }
         crate::combat::fall_dead(&f, &mut g.ctrl, room, &g.tuning);
         // A body taking a blow turns to face where it came from.
         if let Some(d) = f.hit_from.take()
@@ -361,7 +405,10 @@ fn separate(
             continue;
         }
         for (mut g, gf) in &mut guests {
-            if solid(gf) {
+            if solid(gf)
+                && !(g.class == Class::Spinner
+                    && gf.combat.attacker.phase() == world::combat::Phase::Active)
+            {
                 push(&mut p.ctrl.body, &mut g.ctrl.body, room);
             }
         }
@@ -418,7 +465,23 @@ pub(crate) fn animate(
             },
             dt,
         );
-        let pose = combat_pose(&f, u32::MAX, false).unwrap_or_else(|| look.animator.pose());
+        let special = if !f.combat.helpless() {
+            let phase = match f.combat.attacker.phase() {
+                world::combat::Phase::Windup => anim::swing::Phase::Windup,
+                world::combat::Phase::Active => anim::swing::Phase::Active,
+                _ => anim::swing::Phase::Recovery,
+            };
+            anim::guest::loop_pose(
+                g.class,
+                phase,
+                f.combat.attacker.phase_tick() as f64 / 120.0,
+            )
+        } else {
+            None
+        };
+        let pose = special
+            .or_else(|| combat_pose(&f, u32::MAX, false))
+            .unwrap_or_else(|| look.animator.pose());
         let face = if f.combat.helpless() {
             c.facing
         } else {

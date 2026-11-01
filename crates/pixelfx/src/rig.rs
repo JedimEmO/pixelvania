@@ -80,6 +80,7 @@ pub enum Weapon {
     Pistol,
     Launcher,
     Handle,
+    Coupe,
     /// A champagne bottle as long as its wielder is tall, held by the neck: Pixelvania's Jeroboam.
     /// Not in the JavaScript original.
     Bottle,
@@ -517,6 +518,7 @@ pub enum Hair {
     #[default]
     None,
     Bouffant,
+    Tower,
     Long,
 }
 
@@ -530,6 +532,8 @@ pub struct Rig {
     /// Length in pixels of a tailcoat's two tails hanging behind the hips; 0 for none.
     /// Not in the JavaScript original.
     pub tails: f64,
+    /// Flared skirt length; zero omits it.
+    pub skirt: f64,
     // Costume parts are not in the JavaScript original.
     pub hat: Hat,
     pub mask: Mask,
@@ -547,6 +551,7 @@ impl Default for Rig {
             shell: [hex(0xe4e6ec), hex(0xb6b9c3), hex(0x868995), hex(0x5c5e6a)],
             core: [hex(0x6e707c), hex(0x4b4d58), hex(0x34353f), hex(0x34353f)],
             tails: 0.0,
+            skirt: 0.0,
             hat: Hat::None,
             mask: Mask::None,
             hair: Hair::None,
@@ -700,6 +705,16 @@ impl Raster {
         // Parts 1–22 are body, 23–24 weapons and 25 tails. Materials 3–4 are cloth and trim.
         match rig.hair {
             Hair::None => {}
+            Hair::Tower => {
+                self.ellipsoid(at([-2.0, 5.0, 0.0]), head.r, mul([4.0, 7.0, 4.5], k), 26, 4);
+                self.ellipsoid(
+                    at([-2.0, 11.0, 0.0]),
+                    head.r,
+                    mul([3.0, 4.0, 3.5], k),
+                    26,
+                    4,
+                );
+            }
             Hair::Bouffant => {
                 self.ellipsoid(at([-3.0, 5.0, 0.0]), head.r, mul([6.0, 6.0, 5.5], k), 26, 3);
                 self.ellipsoid(at([-3.0, 0.0, 0.0]), head.r, mul([3.5, 3.5, 3.6], k), 26, 3);
@@ -1446,6 +1461,16 @@ impl Handle<'_> {
                     k += 0.4;
                 }
             }
+            Weapon::Coupe => {
+                self.haft(0.0, 5.0, B, D, 0.5);
+                for i in -4i32..=4 {
+                    self.put(6.0, i as f64, B, 0.0);
+                    self.put(5.0 - (i.abs() as f64 * 0.5), i as f64, GOLD, 0.0);
+                }
+                for i in -2..=2 {
+                    self.put(0.0, i as f64, B, 0.0);
+                }
+            }
             Weapon::Handle => {
                 self.haft(-2.6, 6.0, GRIP, GRIP_D, 0.8);
                 let mut k = -1.6;
@@ -1471,6 +1496,20 @@ impl Rig {
         r.clip = clip;
         r.body(&s);
         r.costume(&s, self);
+        if self.skirt > 0.0 {
+            r.frame = 0;
+            let hip = s.b[0];
+            for i in 0..=(self.skirt * 2.0) as usize {
+                let u = i as f64 / (self.skirt * 2.0);
+                r.ellipsoid(
+                    add(hip.t, [0.0, -self.skirt * u, 0.0]),
+                    hip.r,
+                    [3.5 + 9.5 * u, 0.7, 3.0 + 5.0 * u],
+                    30,
+                    3,
+                );
+            }
+        }
         if self.tails > 0.0 {
             r.tails(&s, self.tails);
         }

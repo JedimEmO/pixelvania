@@ -11,8 +11,8 @@
 //! F2 pauses the game and F3, while paused, steps it one gameplay tick.
 //! F4 cycles the mood of combat: neutral, the High and the Comedown.
 //! F6 steps the progression fade (see the `fade` module), and `PIXELVANIA_FADE=0.5` starts there.
-//! The keys 7, 8 and 9 spawn a light, medium or heavy guest in front of the player,
-//! and `PIXELVANIA_GUEST=light`, `medium` or `heavy` spawns one there once the player stands.
+//! Keys 7/8/9/0/minus spawn light/medium/heavy/spinner/toaster guests.
+//! `PIXELVANIA_GUEST` accepts the same class names for a startup spawn.
 //! F5 shows hurtboxes, active hitboxes, and health and poise bars; `PIXELVANIA_BOXES=1` starts with them on.
 //! `PIXELVANIA_MOOD=high` or `comedown` starts in that mood, and `PIXELVANIA_SPAWN=40,13`
 //! starts the player at that tile instead of the room's spawn point.
@@ -181,7 +181,7 @@ fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut frame: L
 #[derive(Resource)]
 struct ShowBoxes(bool);
 
-/// 7, 8 and 9 spawn a light, medium and heavy guest four tiles in front of the player.
+/// Spawns the selected guest four tiles in front of the player.
 fn spawn_guests(
     mut commands: Commands,
     keys: Res<ButtonInput<KeyCode>>,
@@ -200,6 +200,8 @@ fn spawn_guests(
         Ok("light") => Some(Class::Light),
         Ok("medium") => Some(Class::Medium),
         Ok("heavy") => Some(Class::Heavy),
+        Ok("spinner") => Some(Class::Spinner),
+        Ok("toaster") => Some(Class::Toaster),
         _ => None,
     }
     .filter(|_| *frame == 30);
@@ -207,6 +209,8 @@ fn spawn_guests(
         (KeyCode::Digit7, Class::Light),
         (KeyCode::Digit8, Class::Medium),
         (KeyCode::Digit9, Class::Heavy),
+        (KeyCode::Digit0, Class::Spinner),
+        (KeyCode::Minus, Class::Toaster),
     ] {
         if keys.just_pressed(key) || planned == Some(class) {
             let b = &p.ctrl.body;

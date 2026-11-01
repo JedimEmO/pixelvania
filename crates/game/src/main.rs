@@ -19,6 +19,7 @@ mod music;
 mod player;
 mod plunge;
 mod progress;
+mod projectiles;
 mod render;
 mod rooms;
 mod travel;
@@ -72,6 +73,7 @@ fn main() -> AppExit {
             lounge::LoungePlugin,
             indulge::IndulgePlugin,
             plunge::PlungePlugin,
+            projectiles::ProjectilesPlugin,
         ))
         .run()
 }
