@@ -257,6 +257,7 @@ fn player_sheet() -> Result<()> {
 
 /// Guest costumes at 1× and 2×, turning, tilting and reacting to hits.
 fn guests_sheet(out: &Path) -> Result<()> {
+    dancer_sheet(out)?;
     use anim::guest::{Class, Reaction, arm, reaction_pose, rig, scale};
     use anim::swing::{Phase, Swing, swing_pose};
     for class in Class::ALL {
@@ -308,6 +309,43 @@ fn guests_sheet(out: &Path) -> Result<()> {
                 zoom,
             )?;
         }
+    }
+    Ok(())
+}
+
+fn dancer_sheet(out: &Path) -> Result<()> {
+    use anim::boss::{PoseKind::*, pose, rig};
+    let rows = [
+        (
+            "idle / wind-ups",
+            [Idle, SweepWindup, LeapWindup, DashWindup]
+                .map(|k| pose(k, 0.0))
+                .to_vec(),
+        ),
+        (
+            "attacks",
+            [Sweep, Leap, Dash, Exhausted]
+                .map(|k| pose(k, 0.2))
+                .to_vec(),
+        ),
+        (
+            "stagger / falling / held death",
+            vec![
+                pose(Stagger, 0.2),
+                pose(Death, 0.2),
+                pose(Death, 0.45),
+                pose(Death, 1.0),
+            ],
+        ),
+    ];
+    for zoom in [1, 2] {
+        draw_rows_with(
+            &rig(),
+            &rows,
+            &out.join(format!("boss-dancer-{zoom}x.png")),
+            [128, 112],
+            zoom,
+        )?;
     }
     Ok(())
 }

@@ -4,6 +4,7 @@
 //! and the offline tools can use it without starting the engine.
 
 pub mod body;
+pub mod boss;
 pub mod combat;
 pub mod controller;
 pub mod doors;

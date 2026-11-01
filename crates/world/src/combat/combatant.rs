@@ -266,7 +266,8 @@ impl Combatant {
         self.bounce = Some(-super::POGO_SPEED);
     }
 
-    pub(crate) fn stagger(&mut self) {
+    /// Interrupts an attack and opens a 72-tick stagger window.
+    pub fn stagger(&mut self) {
         if self.health <= 0.0 {
             return;
         }
