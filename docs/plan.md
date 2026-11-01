@@ -13,6 +13,7 @@ The [roadmap](roadmap.md) breaks the current milestones into steps.
 | [Game feel](design/game-feel.md) | Controls, movement, camera, how we tune |
 | [Combat](design/combat.md) | Weight, moves, weapons, enemies, bosses |
 | [Progression](design/progression.md) | The order of abilities and areas, upgrades, the fade's steps, the endings |
+| [Story](design/story.md) | The premise, the guests who talk, the Host's cards, the slice's scenes |
 | [Art direction](design/art-direction.md) | Resolution, the three-buffer renderer, rim light, palette, characters, effects |
 | [Audio and music](design/audio.md) | Musical direction, stems and mood mixing, the audio engine |
 | [Production](design/production.md) | The team, assets as code, rooms, music, the content budget |

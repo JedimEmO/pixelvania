@@ -5,8 +5,9 @@
 //! Touching it takes it for good, with a burst, a sound, and a banner naming what it gives.
 //! Taken pickups are kept in [`PlayerProgress`] and never come back.
 //!
-//! A new game starts with what the vertical slice assumes the player has found on the way
-//! to the ballroom. `PIXELVANIA_PROGRESS=new` starts with nothing but the sabre,
+//! A new game starts with nothing but the sabre; the slice gives the rest.
+//! `PIXELVANIA_PROGRESS=slice` starts with what a player has on reaching the ballroom
+//! in the full game (the Lunge, Cling, the Swoon, the Lure, the sabre and the Jeroboam),
 //! and `PIXELVANIA_PROGRESS=all` with everything.
 
 use bevy::asset::RenderAssetUsages;
@@ -28,9 +29,10 @@ impl Plugin for ProgressPlugin {
         let progress = match std::env::var("PIXELVANIA_PROGRESS").as_deref() {
             Ok("new") => Progress::new_game(),
             Ok("all") => Progress::everything(),
+            Ok("slice") => Progress::slice_start(),
             _ => crate::lounge::startup_save()
                 .map(|s| s.progress)
-                .unwrap_or_else(Progress::slice_start),
+                .unwrap_or_else(Progress::new_game),
         };
         app.insert_resource(PlayerProgress(progress))
             .init_resource::<SpawnedFor>()

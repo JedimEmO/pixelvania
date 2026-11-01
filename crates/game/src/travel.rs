@@ -5,6 +5,8 @@
 //! and the camera jumps to them. Then the curtain opens again.
 //! The player keeps their running speed through a side door, so a run carries on.
 //!
+//! While a boss is standing, its room's doors stay shut: the fight is finished, one way or the other.
+//!
 //! A blackout uses the same passage, with a slower curtain:
 //! the defeated player is taken to the last lounge and gets up there.
 
@@ -71,6 +73,7 @@ fn travel(
     mut lighting: ResMut<Lighting>,
     mut follow: ResMut<Follow>,
     mut players: Query<(&mut Player, &mut Fighting)>,
+    bosses: Query<&Fighting, (With<crate::boss::Dancer>, Without<Player>)>,
 ) {
     let dt = time.delta_secs();
     match &*state {
@@ -78,6 +81,9 @@ fn travel(
             let (Some(room), Ok((p, _))) = (&active.room, players.single()) else {
                 return;
             };
+            if bosses.iter().any(|f| f.combat.health > 0.0) {
+                return;
+            }
             let b = &p.ctrl.body;
             let doors = room.doors().unwrap_or_default();
             let through = doors
