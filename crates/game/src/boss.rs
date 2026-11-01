@@ -20,7 +20,12 @@ impl Plugin for BossPlugin {
                     .in_set(SimulateBodies)
                     .after(crate::player::PlayerTick),
             )
-            .add_systems(Update, (spawn_room, draw, draw_wave).chain())
+            .add_systems(
+                Update,
+                (spawn_room, draw, draw_wave)
+                    .chain()
+                    .after(crate::combat::impact),
+            )
             .add_systems(PostUpdate, hud.before(TransformSystems::Propagate));
     }
 }
@@ -117,7 +122,7 @@ pub fn spawn_dancer(
             announced: false,
         },
         Fighting::new(
-            Combatant::new(HEALTH, POISE, WeightClass::Heavy),
+            Combatant::new(HEALTH, POISE * 0.75, WeightClass::Heavy),
             GUEST_TEAM,
             weapons.boss_dancer.clone(),
         ),
@@ -142,6 +147,7 @@ pub fn spawn_dancer(
 }
 
 fn tick(
+    mut commands: Commands,
     active: Res<ActiveRoom>,
     tuning: Res<crate::tuning::Tuning>,
     weapons: Res<Assets<WeaponAsset>>,
@@ -151,6 +157,7 @@ fn tick(
     mut shake: ResMut<crate::camera::Shake>,
     mut fx: MessageWriter<crate::effects::SpawnFx>,
     mut defeated: MessageWriter<BossDefeated>,
+    mut sfx: MessageWriter<crate::audio::PlaySfx>,
 ) {
     let Some(room) = &active.room else { return };
     let target = players
@@ -172,6 +179,14 @@ fn tick(
                 d.pause = 132;
                 f.combat.stagger();
                 f.flash = 0.22;
+                sfx.write(crate::audio::PlaySfx::new(crate::audio::Sfx::DancerPhase));
+                let mut flare = crate::effects::SpawnFx::new(
+                    pixelfx::EffectId::Poof,
+                    Vec2::new(d.feet().x, -d.feet().y + 48.0),
+                );
+                flare.options.radius = 48.0;
+                flare.options.light = 2.5;
+                fx.write(flare);
                 shake.kick(Vec2::new(0.0, 1.0), 3.0);
             }
             d.age += world::combat::DT as f64;
@@ -206,7 +221,48 @@ fn tick(
                 } else {
                     f.combat.attacker.start(&weapon, id, d.ctrl.facing);
                     d.beat += 1;
+                    use crate::audio::{PlaySfx, Sfx};
+                    sfx.write(PlaySfx::new(match id {
+                        AttackId::Combo2 => Sfx::DancerLeap,
+                        AttackId::Combo3 => Sfx::DancerDash,
+                        _ if d.phase == Phase::Burnout => Sfx::DancerFlurry,
+                        _ => Sfx::DancerSweep,
+                    }));
                 }
+            }
+        }
+        if !f.combat.is_frozen()
+            && f.combat.attacker.phase() == AttackPhase::Windup
+            && f.combat.attacker.phase_tick().is_multiple_of(6)
+        {
+            let a = &f.combat.attacker;
+            let feet = Vec2::new(d.feet().x, -d.feet().y);
+            let u = a.phase_tick() as f32 / a.data().map_or(1.0, |a| a.windup as f32);
+            match a.attack() {
+                Some(AttackId::Combo2) => {
+                    fx.write(crate::effects::SpawnFx::dust(
+                        feet,
+                        pixelfx::effects::DustVariant::Jump,
+                    ));
+                }
+                Some(AttackId::Combo1) => {
+                    let flurry = d.phase == Phase::Burnout;
+                    for i in 0..if flurry { 2 } else { 8 } {
+                        let angle = i as f32 * std::f32::consts::TAU / 8.0;
+                        let offset = if flurry {
+                            Vec2::new(if i == 0 { -18.0 } else { 18.0 }, 45.0)
+                        } else {
+                            Vec2::new(angle.cos(), angle.sin() * 0.2) * (12.0 + u * 44.0)
+                        };
+                        crate::combat::glow_glint(
+                            &mut commands,
+                            feet + offset,
+                            Vec2::ZERO,
+                            if flurry { 0.035 } else { 0.08 },
+                        );
+                    }
+                }
+                _ => {}
             }
         }
         let before = f.combat.attacker.phase();
@@ -295,6 +351,8 @@ fn draw(
         let a = &f.combat.attacker;
         let kind = if f.combat.reaction() == Reaction::Dead {
             Death
+        } else if d.pause > 0 && d.phase != Phase::Waltz {
+            PhaseChange
         } else if f.combat.helpless() || d.pause > 0 {
             Stagger
         } else {
@@ -304,6 +362,9 @@ fn draw(
                 (Some(AttackId::Combo2), AttackPhase::Active) => Exhausted,
                 (Some(AttackId::Combo3), AttackPhase::Windup) => DashWindup,
                 (Some(AttackId::Combo3), AttackPhase::Active) => Dash,
+                (Some(AttackId::Combo1), AttackPhase::Windup) if d.phase == Phase::Burnout => {
+                    FlurryWindup
+                }
                 (Some(_), AttackPhase::Windup) => SweepWindup,
                 (Some(_), AttackPhase::Active) => Sweep,
                 (_, AttackPhase::Recovery) => Exhausted,
@@ -319,6 +380,11 @@ fn draw(
         };
         let mut pose = anim::boss::pose(kind, time);
         pose.face = d.ctrl.facing;
+        look.rig.ribbons = if d.pause > 0 && d.phase != Phase::Waltz {
+            52.0
+        } else {
+            30.0
+        };
         look.draw(
             &pose,
             f.flash > 0.0,
@@ -386,7 +452,7 @@ fn hud(
                 .extend(6.0 + bar.0 as f32 * 0.01);
         let k = match bar.0 {
             2 => f.combat.health / HEALTH,
-            3 => f.combat.poise / POISE,
+            3 => f.combat.poise / f.combat.max_poise,
             _ => 1.0,
         };
         t.scale.x = (k.clamp(0.0, 1.0) * 160.0).round() / 160.0;
@@ -396,32 +462,55 @@ fn hud(
 #[derive(Component)]
 struct Shockwave;
 fn draw_wave(
-    dancers: Query<&Fighting, With<Dancer>>,
-    mut waves: Query<(&ChildOf, &mut Visibility, &mut Sprite), With<Shockwave>>,
+    active: Res<ActiveRoom>,
+    dancers: Query<(&Dancer, &Fighting)>,
+    mut waves: Query<(&ChildOf, &mut Visibility, &mut Sprite, &mut Transform), With<Shockwave>>,
 ) {
-    for (parent, mut visible, mut sprite) in &mut waves {
-        let Ok(f) = dancers.get(parent.parent()) else {
+    for (parent, mut visible, mut sprite, mut transform) in &mut waves {
+        let Ok((d, f)) = dancers.get(parent.parent()) else {
             continue;
         };
         let a = &f.combat.attacker;
-        let on = a.attack() == Some(AttackId::Combo2)
-            && a.phase() == AttackPhase::Active
-            && a.phase_tick() >= 72;
+        let leap = a.attack() == Some(AttackId::Combo2);
+        let dash = a.attack() == Some(AttackId::Combo3);
+        let windup = a.phase() == AttackPhase::Windup;
+        let landing = leap && a.phase() == AttackPhase::Active && a.phase_tick() >= 72;
+        let marker = leap && (windup || a.phase() == AttackPhase::Active);
+        let on = landing || marker || (dash && windup);
         *visible = if on {
             Visibility::Inherited
         } else {
             Visibility::Hidden
         };
-        sprite.color = Color::srgba(
-            1.0,
-            0.73,
-            0.25,
-            if on {
-                1.0 - (a.phase_tick() - 72) as f32 / 30.0
-            } else {
-                0.0
-            },
-        );
+        let width = if dash {
+            active
+                .room
+                .as_ref()
+                .map_or(300.0, |r| r.width as f32 * world::TILE as f32)
+        } else if landing {
+            300.0
+        } else {
+            96.0
+        };
+        sprite.custom_size = Some(Vec2::new(width, if landing { 8.0 } else { 2.0 }));
+        transform.translation.x = if dash {
+            d.ctrl.facing as f32 * width / 2.0
+        } else {
+            0.0
+        };
+        let tick = a.phase_tick();
+        let height = if leap && a.phase() == AttackPhase::Active && tick < 72 {
+            -4.0 * 48.0 * (tick as f32 / 72.0) * (1.0 - tick as f32 / 72.0)
+        } else {
+            0.0
+        };
+        transform.translation.y = 2.0 + height;
+        let alpha = if landing {
+            1.0 - (tick - 72) as f32 / 30.0
+        } else {
+            0.4 + 0.6 * (tick as f32 * 0.2).sin().abs()
+        };
+        sprite.color = Color::srgba(1.0, 0.85, 0.55, alpha);
     }
 }
 

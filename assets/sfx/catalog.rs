@@ -18,4 +18,10 @@ sfx_catalog! {
     GuestWindup => "guest_windup",
     LureCatch => "lure_catch",
     LureRelease => "lure_release",
+    PoiseBreak => "poise_break",
+    DancerSweep => "dancer_sweep",
+    DancerLeap => "dancer_leap",
+    DancerDash => "dancer_dash",
+    DancerFlurry => "dancer_flurry",
+    DancerPhase => "dancer_phase",
 }

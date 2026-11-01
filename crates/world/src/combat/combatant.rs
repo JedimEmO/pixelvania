@@ -29,6 +29,12 @@ pub enum Reaction {
 pub struct Combatant {
     pub attacker: Attacker,
     pub health: f32,
+    /// Outgoing health damage.
+    pub damage_scale: f32,
+    /// Outgoing poise damage.
+    pub poise_scale: f32,
+    /// Incoming health damage; lower values resist more.
+    pub defence: f32,
     pub poise: f32,
     pub max_poise: f32,
     pub weight: WeightClass,
@@ -43,6 +49,7 @@ pub struct Combatant {
     parry_ticks: u32,
     velocity: (f32, f32),
     bounce: Option<f32>,
+    floor_bounced: bool,
     pub(crate) body_contacts: BTreeSet<u64>,
 }
 
@@ -52,6 +59,9 @@ impl Combatant {
         Self {
             attacker: Attacker::default(),
             health,
+            damage_scale: 1.0,
+            poise_scale: 1.0,
+            defence: 1.0,
             poise,
             max_poise: poise,
             weight,
@@ -66,6 +76,7 @@ impl Combatant {
             parry_ticks: 0,
             velocity: (0.0, 0.0),
             bounce: None,
+            floor_bounced: false,
             body_contacts: BTreeSet::new(),
         }
     }
@@ -119,14 +130,23 @@ impl Combatant {
         if self.reaction_ticks > 0 {
             self.reaction_ticks -= 1;
             if self.reaction_ticks == 0 {
-                self.reaction = Ready;
+                self.reaction = if self.poise == 0.0 && self.reaction != Stagger {
+                    Stagger
+                } else {
+                    Ready
+                };
+                if self.reaction == Stagger {
+                    self.reaction_ticks = 108;
+                } else if self.poise == 0.0 {
+                    self.poise = self.max_poise;
+                }
                 self.velocity = (0.0, 0.0);
                 self.body_contacts.clear();
             }
         }
         if self.regen_wait > 0 {
             self.regen_wait -= 1;
-        } else {
+        } else if self.poise > 0.0 || self.reaction == Ready {
             self.poise = (self.poise + self.poise_regen_per_second * DT).min(self.max_poise);
         }
         if self.helpless() {
@@ -179,6 +199,13 @@ impl Combatant {
             air_hang: motion.air_hang,
             allow_lunge: self.can_lunge_cancel(),
         });
+        if self.velocity.0.abs() > 0.0 {
+            controller.body.move_x(room, self.velocity.0 * DT);
+            self.velocity.0 *= 0.86;
+            if self.velocity.0.abs() < 1.0 {
+                self.velocity.0 = 0.0;
+            }
+        }
         let moved = controller.tick_with_lock(room, tuning, input, DT, lock);
         if moved.lunged {
             self.attacker.lunge_happened();
@@ -244,6 +271,11 @@ impl Combatant {
         }
         if body.move_y(room, self.velocity.1 * DT) {
             if self.velocity.1 > 0.0 && launched {
+                if !self.floor_bounced && self.velocity.1 > 100.0 {
+                    self.floor_bounced = true;
+                    self.velocity.1 *= -0.35;
+                    return events;
+                }
                 self.reaction = Knockdown;
                 self.reaction_ticks = 48;
                 self.body_contacts.clear();
@@ -252,7 +284,7 @@ impl Combatant {
         }
         if !launched {
             self.velocity.0 =
-                self.velocity.0.signum() * (self.velocity.0.abs() - 800.0 * DT).max(0.0);
+                self.velocity.0.signum() * (self.velocity.0.abs() - 500.0 * DT).max(0.0);
         }
         events
     }
@@ -266,13 +298,13 @@ impl Combatant {
         self.bounce = Some(-super::POGO_SPEED);
     }
 
-    /// Interrupts an attack and opens a 72-tick stagger window.
+    /// Interrupts an attack and opens a 108-tick stagger window.
     pub fn stagger(&mut self) {
         if self.health <= 0.0 {
             return;
         }
         self.reaction = Stagger;
-        self.reaction_ticks = 72;
+        self.reaction_ticks = 108;
         self.velocity = (0.0, 0.0);
         self.parry_ticks = 0;
         self.bounce = None;
@@ -283,11 +315,19 @@ impl Combatant {
         self.health = (self.health - hit.damage).max(0.0);
         self.poise = (self.poise - hit.poise_damage).max(0.0);
         self.regen_wait = self.poise_regen_delay;
+        let push = if self.weight == WeightClass::Heavy {
+            0.18
+        } else {
+            1.0
+        };
+        self.velocity = (hit.knockback.0 * push, hit.knockback.1 * push);
+        self.floor_bounced = false;
         if self.health == 0.0 {
             self.die();
             return;
         }
         if armoured {
+            self.velocity.1 = 0.0;
             return;
         }
         let heavy = hit.weight != Weight::Light || hit.launches;
@@ -295,19 +335,24 @@ impl Combatant {
             WeightClass::Light if heavy => Launched,
             WeightClass::Medium if hit.weight != Weight::Light => Knockdown,
             _ if self.poise == 0.0 => Stagger,
-            WeightClass::Heavy => return,
+            WeightClass::Heavy => {
+                self.velocity.1 = 0.0;
+                return;
+            }
             _ => Flinch,
         };
         self.reaction_ticks = match self.reaction {
-            Flinch => 12,
-            Stagger => 72,
+            Flinch => 18,
+            Stagger => 108,
             Knockdown => 48,
             _ => 0,
         };
         self.velocity = if self.weight == WeightClass::Heavy {
-            (0.0, 0.0)
+            (hit.knockback.0 * 0.18, 0.0)
         } else if self.reaction == Launched {
             (hit.knockback.0, hit.knockback.1.min(-120.0))
+        } else if self.reaction == Knockdown && hit.launches {
+            (hit.knockback.0, hit.knockback.1.min(0.0) * 0.35)
         } else {
             (hit.knockback.0, 0.0)
         };
@@ -321,7 +366,6 @@ impl Combatant {
     fn die(&mut self) {
         self.reaction = Dead;
         self.reaction_ticks = 0;
-        self.velocity = (0.0, 0.0);
         self.parry_ticks = 0;
         self.bounce = None;
         self.attacker.interrupt();

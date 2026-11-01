@@ -80,7 +80,7 @@ fn temper(class: Class) -> Temper {
             speed: 190.0,
             notice: 280.0,
             health: 35.0,
-            poise: 18.0,
+            poise: 14.0,
         },
         Class::Toaster => Temper {
             reach: 210.0,
@@ -88,7 +88,7 @@ fn temper(class: Class) -> Temper {
             speed: 65.0,
             notice: 300.0,
             health: 60.0,
-            poise: 40.0,
+            poise: 30.0,
         },
         Class::Light => Temper {
             reach: 26.0,
@@ -96,7 +96,7 @@ fn temper(class: Class) -> Temper {
             speed: 100.0,
             notice: 200.0,
             health: 40.0,
-            poise: 20.0,
+            poise: 16.0,
         },
         Class::Medium => Temper {
             reach: 50.0,
@@ -104,7 +104,7 @@ fn temper(class: Class) -> Temper {
             speed: 70.0,
             notice: 220.0,
             health: 70.0,
-            poise: 45.0,
+            poise: 32.0,
         },
         Class::Heavy => Temper {
             reach: 44.0,
@@ -112,7 +112,7 @@ fn temper(class: Class) -> Temper {
             speed: 45.0,
             notice: 240.0,
             health: 150.0,
-            poise: 120.0,
+            poise: 85.0,
         },
     }
 }
@@ -479,6 +479,14 @@ pub(crate) fn animate(
         } else {
             None
         };
+        let special = if f.combat.reaction() == Reaction::Dead && !c.grounded {
+            Some(anim::guest::reaction_pose(
+                anim::guest::Reaction::Launched,
+                f.reaction_time() as f64,
+            ))
+        } else {
+            special
+        };
         let pose = special
             .or_else(|| combat_pose(&f, u32::MAX, false))
             .unwrap_or_else(|| look.animator.pose());
@@ -510,7 +518,8 @@ fn clear_dead(
     mut fx: MessageWriter<SpawnFx>,
 ) {
     for (e, g, f, t) in &guests {
-        if f.combat.reaction() == Reaction::Dead && f.reaction_time() > DEAD_TIME {
+        if f.combat.reaction() == Reaction::Dead && g.ctrl.grounded && f.reaction_time() > DEAD_TIME
+        {
             let mut poof = SpawnFx::new(EffectId::Poof, t.translation.truncate());
             poof.options.radius *= g.class.scale();
             fx.write(poof);

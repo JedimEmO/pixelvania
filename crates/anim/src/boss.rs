@@ -7,6 +7,8 @@ use pixelfx::rig::{Hat, Mask};
 pub enum PoseKind {
     Idle,
     SweepWindup,
+    FlurryWindup,
+    PhaseChange,
     Sweep,
     LeapWindup,
     Leap,
@@ -56,12 +58,30 @@ pub fn pose(kind: PoseKind, t: f64) -> Pose {
             toe_f: true,
             ..Pose::default()
         },
+        FlurryWindup => Pose {
+            crouch: 5.0,
+            lean: 5.0,
+            fx: 10.0 + (t * 65.0).sin() * 5.0,
+            fy: -32.0,
+            bx: -10.0 - (t * 65.0).sin() * 5.0,
+            by: -32.0,
+            ..Pose::default()
+        },
+        PhaseChange => Pose {
+            lean: -6.0,
+            fx: 23.0,
+            fy: -45.0,
+            bx: -23.0,
+            by: -45.0,
+            yaw: (t * 30.0).sin() * 0.4,
+            ..Pose::default()
+        },
         SweepWindup => Pose {
             yaw: -0.6 + (t * 1.2).min(0.6),
             crouch: 3.0 * (1.0 - (t * 2.0).min(1.0)),
-            fx: 16.0,
+            fx: 25.0,
             fy: -29.0,
-            bx: -16.0,
+            bx: -25.0,
             by: -29.0,
             ffx: 1.0,
             fbx: -5.0,
@@ -81,7 +101,7 @@ pub fn pose(kind: PoseKind, t: f64) -> Pose {
             ..Pose::default()
         },
         LeapWindup => Pose {
-            crouch: 8.0,
+            crouch: 15.0,
             fx: 4.0,
             fy: -42.0,
             bx: -4.0,

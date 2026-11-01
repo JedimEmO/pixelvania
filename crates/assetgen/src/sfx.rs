@@ -5,7 +5,7 @@ use std::{error::Error, f64::consts::TAU, fs, path::Path};
 pub const SAMPLE_RATE: u32 = 44_100;
 
 /// Recipe order also fixes each sound's noise seed.
-pub const SOUNDS: [(&str, &str, f64, f64); 18] = [
+pub const SOUNDS: [(&str, &str, f64, f64); 24] = [
     ("SwingLight", "swing_light", 0.16, -6.0),
     ("SwingHeavy", "swing_heavy", 0.30, -4.5),
     ("BottleSwing", "bottle_swing", 0.34, -4.5),
@@ -24,6 +24,12 @@ pub const SOUNDS: [(&str, &str, f64, f64); 18] = [
     ("GuestWindup", "guest_windup", 0.26, -9.0),
     ("LureCatch", "lure_catch", 0.55, -7.0),
     ("LureRelease", "lure_release", 0.22, -10.0),
+    ("PoiseBreak", "poise_break", 0.42, -3.0),
+    ("DancerSweep", "dancer_sweep", 0.55, -7.0),
+    ("DancerLeap", "dancer_leap", 0.60, -6.0),
+    ("DancerDash", "dancer_dash", 0.28, -6.0),
+    ("DancerFlurry", "dancer_flurry", 0.42, -6.0),
+    ("DancerPhase", "dancer_phase", 0.85, -4.0),
 ];
 
 struct Noise(u32);
@@ -122,6 +128,20 @@ pub fn render(index: usize) -> Vec<i16> {
             }
             "lure_release" => {
                 0.7 * air * sweep + 0.1 * (TAU * (880.0 * t + 700.0 * t * t)).sin() * sweep
+            }
+            "poise_break" => thump(t, 0.09) + tone(t, 940.0, 0.14) + 0.5 * tone(t, 1510.0, 0.08),
+            "dancer_sweep" => (TAU * (600.0 * t + 1100.0 * t * t)).sin() * sweep,
+            "dancer_leap" => (tone(t, 85.0, 0.5) + 0.3 * tone(t, 127.0, 0.4)) * sweep,
+            "dancer_dash" => (air + 0.3 * dark) * u.powi(2) * (1.0 - u),
+            "dancer_flurry" => {
+                (tone(t, 1760.0, 0.5) + 0.4 * tone(t, 2640.0, 0.4))
+                    * (TAU * 12.0 * t).sin().max(0.0).powi(2)
+            }
+            "dancer_phase" => {
+                (TAU * (400.0 * t + 1300.0 * t * t - 700.0 * t * t * t)).sin()
+                    * sweep
+                    * (0.7 + 0.3 * (TAU * 37.0 * t).sin())
+                    + 0.15 * air * sweep
             }
             _ => unreachable!(),
         };

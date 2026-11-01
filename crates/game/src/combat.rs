@@ -39,9 +39,10 @@ impl Plugin for CombatPlugin {
             .init_resource::<SlowMotion>()
             .add_systems(Startup, load_weapons)
             .add_systems(Update, grade_by_mood)
+            .add_systems(Update, player_hit_tint.after(crate::player::animate))
             .add_systems(
                 FixedUpdate,
-                (resolve_contacts, count_reactions)
+                (plunge_hits, resolve_contacts, count_reactions)
                     .chain()
                     .in_set(TickSet::Simulate)
                     .after(SimulateBodies),
@@ -49,7 +50,15 @@ impl Plugin for CombatPlugin {
             .configure_sets(FixedUpdate, SimulateBodies.in_set(TickSet::Simulate))
             .add_systems(
                 Update,
-                (swing_effects, impact, fade_flash, slow_motion, fade_glints)
+                (
+                    fade_flash,
+                    swing_effects,
+                    impact,
+                    reaction_effects,
+                    slow_motion,
+                    fade_glints,
+                    fade_impact_glows,
+                )
                     .chain()
                     .after(crate::player::place)
                     .before(crate::player::animate)
@@ -134,6 +143,7 @@ pub struct WeaponAsset(pub Weapon);
 #[derive(Resource)]
 pub struct Weapons {
     pub sabre: Handle<WeaponAsset>,
+    pub plunge: Handle<WeaponAsset>,
     pub jeroboam: Handle<WeaponAsset>,
     pub candelabrum: Handle<WeaponAsset>,
     pub guest_light: Handle<WeaponAsset>,
@@ -159,6 +169,7 @@ impl Weapons {
 fn load_weapons(mut commands: Commands, assets: Res<AssetServer>) {
     commands.insert_resource(Weapons {
         sabre: assets.load("combat/sabre.ron"),
+        plunge: assets.load("combat/plunge.ron"),
         jeroboam: assets.load("combat/jeroboam.ron"),
         candelabrum: assets.load("combat/candelabrum.ron"),
         guest_light: assets.load("combat/guest-light.ron"),
@@ -193,6 +204,8 @@ pub struct Fighting {
     pub hit_from: Option<i32>,
     /// The x of the wall a splat happened against, in pixels; the splat pose ends once the body leaves it.
     splat_x: Option<i32>,
+    dust_wait: f32,
+    stagger_cued: bool,
 }
 
 impl Fighting {
@@ -229,6 +242,8 @@ impl Fighting {
             reaction_time: 0.0,
             hit_from: None,
             splat_x: None,
+            dust_wait: 0.0,
+            stagger_cued: false,
         }
     }
 }
@@ -385,14 +400,19 @@ pub fn fall_dead(
     room: &world::Room,
     t: &world::MoveTuning,
 ) {
-    if f.combat.reaction() != world::combat::Reaction::Dead {
+    if f.combat.reaction() != world::combat::Reaction::Dead || f.combat.is_frozen() {
         return;
     }
     let dt = world::combat::DT;
+    if f.reaction_time() == 0.0 {
+        (ctrl.vx, ctrl.vy) = f.combat.velocity();
+    }
     ctrl.vy = (ctrl.vy + t.gravity * dt).min(t.max_fall);
-    ctrl.vx -= ctrl.vx.signum() * ctrl.vx.abs().min(600.0 * dt);
+    if ctrl.body.on_ground(room) {
+        ctrl.vx -= ctrl.vx.signum() * ctrl.vx.abs().min(500.0 * dt);
+    }
     if ctrl.body.move_x(room, ctrl.vx * dt) {
-        ctrl.vx = 0.0;
+        ctrl.vx *= -0.35;
     }
     if ctrl.body.move_y(room, ctrl.vy * dt) {
         ctrl.vy = 0.0;
@@ -450,7 +470,7 @@ fn swing_effects(
         let phase = f.combat.attacker.phase();
         let started = phase == Phase::Active && f.last_phase != Phase::Active;
         // A guest's wind-up opens with a glint at its weapon hand: the warning before the blow.
-        if (guest.is_some() || boss.is_some())
+        if guest.is_some()
             && phase == Phase::Windup
             && f.last_phase != Phase::Windup
             && let Some(facing) = f.combat.attacker.facing()
@@ -596,7 +616,8 @@ fn fade_glints(
 }
 
 /// Turns combat events into sparks, shake, rumble and flashes.
-fn impact(
+pub(crate) fn impact(
+    mut commands: Commands,
     mut log: ResMut<CombatLog>,
     tuning: Res<Tuning>,
     mut fighters: Query<(
@@ -677,13 +698,20 @@ fn impact(
                 }
                 let at = centre(&target) + Vec2::new(-(h.direction as f32) * 3.0, -8.0);
                 let mut spark = SpawnFx::new(EffectId::HitSpark, at).facing(h.direction);
-                spark.options.light = if h.weight == Weight::Light { 0.8 } else { 1.3 };
+                spark.options.light = if h.weight == Weight::Light { 1.0 } else { 2.2 };
+                spark.options.height = 0.0;
+                if h.weight != Weight::Light {
+                    for offset in [-8.0, 8.0] {
+                        let mut extra = spark.clone();
+                        extra.pos += Vec2::new(h.direction as f32 * 8.0, offset);
+                        fx.write(extra);
+                    }
+                }
                 fx.write(spark);
-                // The view jolts the way the blow went, and down with it for heavy blows.
-                let down = if h.weight == Weight::Light { 0.0 } else { -0.5 };
+                let vertical = if h.launches { -h.knockback.1 } else { 0.0 };
                 shake.kick(
-                    Vec2::new(h.direction as f32, down),
-                    shake_pixels(h.weight) * h.shake,
+                    Vec2::new(h.knockback.0, vertical),
+                    shake_pixels(h.weight) * h.shake * if target_is_player { 1.8 } else { 1.0 },
                 );
                 match (h.weight, target_is_player) {
                     (_, true) => pulse(0.7, 0.4, 160),
@@ -691,7 +719,13 @@ fn impact(
                     (Weight::Heavy, _) => pulse(0.55, 0.2, 110),
                     (Weight::Charged, _) => pulse(0.9, 0.3, 180),
                 }
-                flashes.push((h.target, 0.07));
+                flashes.push((h.target, if target_is_player { 0.09 } else { 0.0001 }));
+                if fighters
+                    .get(Entity::from_bits(h.target))
+                    .is_ok_and(|(_, f, _, _, _)| f.combat.health <= 0.0)
+                {
+                    glow_ring(&mut commands, centre(&target), 12.0, 12, 0.16);
+                }
             }
             CombatEvent::Parry {
                 attacker, defender, ..
@@ -913,3 +947,178 @@ impl std::fmt::Display for WeaponError {
 }
 
 impl std::error::Error for WeaponError {}
+
+fn plunge_hits(
+    mut commands: Commands,
+    mut landed: MessageReader<crate::plunge::PlungeLanded>,
+    weapons: Res<Weapons>,
+    assets: Res<Assets<WeaponAsset>>,
+    mood: Res<Mood>,
+    mut players: Query<(Entity, &mut Fighting), With<Player>>,
+    mut targets: Query<
+        (
+            Entity,
+            &mut Fighting,
+            Option<&crate::enemies::Guest>,
+            Option<&crate::boss::Dancer>,
+        ),
+        Without<Player>,
+    >,
+    mut log: ResMut<CombatLog>,
+    mut fx: MessageWriter<SpawnFx>,
+) {
+    for landed in landed.read() {
+        let Some(asset) = assets.get(&weapons.plunge) else {
+            continue;
+        };
+        let Some((source, mut player)) = players.iter_mut().next() else {
+            continue;
+        };
+        let (x, y, w, h) = landed.body;
+        let at = (x as f32 + w as f32 / 2.0, (y + h) as f32);
+        fx.write(SpawnFx::new(EffectId::HeavyLanding, Vec2::new(at.0, -at.1)));
+        glow_ring(&mut commands, Vec2::new(at.0, -at.1), 24.0, 16, 0.18);
+        let data = &asset.0.charged;
+        for (entity, mut target, guest, boss) in &mut targets {
+            let Some(body) = guest.map(HasBody::body).or(boss.map(HasBody::body)) else {
+                continue;
+            };
+            let dx = body.x as f32 + body.w as f32 / 2.0 - at.0;
+            if target.team == player.team
+                || dx.abs() > 48.0
+                || ((body.y + body.h) as f32 - at.1).abs() > 20.0
+            {
+                continue;
+            }
+            let direction = if dx < 0.0 { -1 } else { 1 };
+            let hit = world::combat::Hit {
+                attacker: combat_id(source),
+                target: combat_id(entity),
+                attack: AttackId::Charged,
+                direction,
+                damage: data.damage,
+                poise_damage: data.poise_damage,
+                hit_stop: data.hit_stop,
+                knockback: (data.knockback.0 * direction as f32, data.knockback.1),
+                weight: data.weight,
+                launches: data.launches,
+                shake: 1.0,
+            };
+            if let Some(event) =
+                world::combat::slam_hit(&mut player.combat, &mut target.combat, hit, mood.scale)
+            {
+                target.struck(direction);
+                log.0.push(event);
+            }
+        }
+    }
+}
+
+fn reaction_effects(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut fighters: Query<(
+        &mut Fighting,
+        &Transform,
+        Option<&Player>,
+        Option<&crate::enemies::Guest>,
+        Option<&crate::boss::Dancer>,
+    )>,
+    mut fx: MessageWriter<SpawnFx>,
+    mut sfx: MessageWriter<PlaySfx>,
+) {
+    for (mut f, t, p, g, b) in &mut fighters {
+        let stagger = f.combat.reaction() == world::combat::Reaction::Stagger;
+        if stagger && !f.stagger_cued {
+            glow_ring(
+                &mut commands,
+                t.translation.truncate() + Vec2::Y * 36.0,
+                10.0,
+                10,
+                0.24,
+            );
+            sfx.write(PlaySfx::new(Sfx::PoiseBreak));
+            f.flash = f.flash.max(0.0001);
+        }
+        f.stagger_cued = stagger;
+        f.dust_wait -= time.delta_secs();
+        let grounded = p
+            .map(|p| p.ctrl.grounded)
+            .or(g.map(|g| g.ctrl.grounded))
+            .or(b.map(|b| b.ctrl.grounded))
+            .unwrap_or(false);
+        if grounded
+            && !f.combat.is_frozen()
+            && f.combat.velocity().0.abs() > 35.0
+            && f.dust_wait <= 0.0
+        {
+            fx.write(SpawnFx::dust(
+                t.translation.truncate(),
+                pixelfx::effects::DustVariant::Jump,
+            ));
+            f.dust_wait = 0.045;
+        }
+    }
+}
+
+fn player_hit_tint(
+    players: Query<(&Fighting, &Children), With<Player>>,
+    mut sprites: Query<&mut Sprite>,
+) {
+    for (f, children) in &players {
+        for child in children.iter() {
+            if let Ok(mut sprite) = sprites.get_mut(child) {
+                sprite.color = if f.flash > 0.0 && f.flash < 0.065 {
+                    Color::srgb(1.0, 0.2, 0.25)
+                } else {
+                    Color::WHITE
+                };
+            }
+        }
+    }
+}
+
+#[derive(Component)]
+struct ImpactGlow {
+    velocity: Vec2,
+    left: f32,
+    life: f32,
+}
+
+pub(crate) fn glow_glint(commands: &mut Commands, at: Vec2, velocity: Vec2, life: f32) {
+    commands.spawn((
+        crate::rooms::RoomPart,
+        ImpactGlow {
+            velocity,
+            left: life,
+            life,
+        },
+        Sprite::from_color(Color::srgb(1.0, 0.86, 0.45), Vec2::new(3.0, 2.0)),
+        Transform::from_translation(at.extend(3.0)),
+        bevy::camera::visibility::RenderLayers::layer(crate::render::GLOW_LAYER),
+    ));
+}
+
+fn glow_ring(commands: &mut Commands, at: Vec2, radius: f32, count: usize, life: f32) {
+    for i in 0..count {
+        let angle = i as f32 * std::f32::consts::TAU / count as f32;
+        let direction = Vec2::new(angle.cos(), angle.sin());
+        glow_glint(commands, at + direction * radius, direction * 100.0, life);
+    }
+}
+
+fn fade_impact_glows(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut glows: Query<(Entity, &mut ImpactGlow, &mut Transform, &mut Sprite)>,
+) {
+    for (entity, mut glow, mut transform, mut sprite) in &mut glows {
+        glow.left -= time.delta_secs();
+        if glow.left <= 0.0 {
+            commands.entity(entity).despawn();
+            continue;
+        }
+        transform.translation += (glow.velocity * time.delta_secs()).extend(0.0);
+        sprite.color = Color::srgba(1.0, 0.86, 0.45, glow.left / glow.life);
+    }
+}
