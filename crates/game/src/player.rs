@@ -373,6 +373,7 @@ fn reset(
     last: Res<crate::lounge::LastLounge>,
     mut travel: ResMut<crate::travel::Travel>,
     mut indulgence: ResMut<crate::indulge::Indulgence>,
+    mut progress: ResMut<crate::progress::PlayerProgress>,
     players: Query<(Entity, &Fighting), With<Player>>,
 ) {
     for (p, f) in &players {
@@ -389,6 +390,7 @@ fn reset(
                     "blacked out; waking at `{}` in `{}`",
                     lounge.id, lounge.room
                 );
+                progress.0.blackouts += 1;
                 *travel = crate::travel::Travel::blackout(lounge);
             }
             _ if input.reset_pressed || defeated => {

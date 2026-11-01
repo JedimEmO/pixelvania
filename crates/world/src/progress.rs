@@ -253,6 +253,12 @@ pub struct Progress {
     pub visited: BTreeSet<String>,
     /// Levels bought with Favours.
     pub stats: Stats,
+    /// Seconds played, not counting paused time.
+    pub seconds: f64,
+    /// Times the player blacked out.
+    pub blackouts: u32,
+    /// The slice's end has been seen, so it does not play again.
+    pub ended: bool,
 }
 
 impl Progress {

@@ -126,7 +126,7 @@ fn break_floors(
 const GIVE_WAY_AFTER: f32 = 1.6;
 
 /// Favours the Dancer's fall is worth.
-const DANCER_FAVOURS: u32 = 2;
+pub const DANCER_FAVOURS: u32 = 2;
 
 /// After the Dancer falls, breaks the room's cracked floor and gives the Plunge, and two Favours.
 fn stage_gives_way(

@@ -10,6 +10,7 @@ mod devtools;
 mod edges;
 mod effects;
 mod encounter;
+mod ending;
 mod enemies;
 mod fade;
 mod fire;
@@ -90,6 +91,11 @@ fn main() -> AppExit {
             encounter::EncounterPlugin,
             ambience::AmbiencePlugin,
         ))
-        .add_plugins((props::PropsPlugin, prompt::PromptPlugin, edges::EdgesPlugin))
+        .add_plugins((
+            props::PropsPlugin,
+            prompt::PromptPlugin,
+            edges::EdgesPlugin,
+            ending::EndingPlugin,
+        ))
         .run()
 }

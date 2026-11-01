@@ -6,10 +6,10 @@
 //! and this is where the player wakes after the next blackout.
 //!
 //! A save holds the progress and the last lounge, in `save.ron` in the platform's data folder
-//! (`~/.local/share/pixelvania` on Linux). The game starts from it when it exists,
-//! unless a testing switch picks the start instead (`PIXELVANIA_ROOM`, `PIXELVANIA_SPAWN`
-//! or `PIXELVANIA_PROGRESS`), or `PIXELVANIA_FRESH=1` asks for a new game.
-//! The web build does not save yet.
+//! (`~/.local/share/pixelvania` on Linux), or in the browser's local storage on the web.
+//! The game starts from it when it exists, unless a testing switch picks the start instead
+//! (`PIXELVANIA_ROOM`, `PIXELVANIA_SPAWN` or `PIXELVANIA_PROGRESS`),
+//! or `PIXELVANIA_FRESH=1` asks for a new game.
 
 use bevy::camera::visibility::RenderLayers;
 use bevy::prelude::*;
@@ -62,14 +62,69 @@ pub struct SaveFile {
     pub tolerance: f32,
 }
 
+/// Where the save is kept: a file on the desktop, the browser's local storage on the web.
 #[cfg(not(target_arch = "wasm32"))]
-fn save_path() -> Option<std::path::PathBuf> {
-    Some(dirs::data_dir()?.join("pixelvania").join("save.ron"))
+mod store {
+    fn path() -> Option<std::path::PathBuf> {
+        Some(dirs::data_dir()?.join("pixelvania").join("save.ron"))
+    }
+
+    pub fn place() -> String {
+        path().map_or("nowhere".to_owned(), |p| p.display().to_string())
+    }
+
+    pub fn read() -> Option<String> {
+        std::fs::read_to_string(path()?).ok()
+    }
+
+    pub fn write(text: &str) -> Result<(), String> {
+        let path = path().ok_or("there is no data folder to save in")?;
+        if let Some(dir) = path.parent() {
+            std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+        }
+        std::fs::write(&path, text).map_err(|e| e.to_string())
+    }
+
+    pub fn delete() {
+        if let Some(path) = path() {
+            let _ = std::fs::remove_file(path);
+        }
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
-fn save_path() -> Option<std::path::PathBuf> {
-    None
+mod store {
+    const KEY: &str = "pixelvania.save";
+
+    fn storage() -> Option<web_sys::Storage> {
+        web_sys::window()?.local_storage().ok()?
+    }
+
+    pub fn place() -> String {
+        format!("local storage `{KEY}`")
+    }
+
+    pub fn read() -> Option<String> {
+        storage()?.get_item(KEY).ok()?
+    }
+
+    pub fn write(text: &str) -> Result<(), String> {
+        storage()
+            .ok_or("the browser has no local storage")?
+            .set_item(KEY, text)
+            .map_err(|e| format!("{e:?}"))
+    }
+
+    pub fn delete() {
+        if let Some(s) = storage() {
+            let _ = s.remove_item(KEY);
+        }
+    }
+}
+
+/// Deletes the save, so the next start is a new game.
+pub fn delete_save() {
+    store::delete();
 }
 
 /// Before the player has rested anywhere, a blackout wakes them where the game began:
@@ -110,12 +165,11 @@ pub fn startup_save() -> Option<SaveFile> {
     if testing_start() {
         return None;
     }
-    let path = save_path()?;
-    let text = std::fs::read_to_string(&path).ok()?;
+    let text = store::read()?;
     match ron::from_str(&text) {
         Ok(save) => Some(save),
         Err(e) => {
-            warn!("cannot read the save at {}: {e}", path.display());
+            warn!("cannot read the save in {}: {e}", store::place());
             None
         }
     }
@@ -139,13 +193,9 @@ pub fn save(progress: &Progress, lounge: &LoungeRef, ind: &crate::indulge::Indul
 }
 
 fn write_save(save: &SaveFile) -> Result<(), String> {
-    let path = save_path().ok_or("saving is not supported here")?;
-    if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
-    }
     let text = ron::ser::to_string_pretty(save, ron::ser::PrettyConfig::default())
         .map_err(|e| e.to_string())?;
-    std::fs::write(&path, text).map_err(|e| e.to_string())
+    store::write(&text)
 }
 
 /// A lounge in the current room.

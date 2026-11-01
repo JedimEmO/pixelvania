@@ -29,7 +29,7 @@ impl Plugin for MapPlugin {
 
 /// Every room of the world, loaded so the map can draw rooms the player is not in.
 #[derive(Resource)]
-struct WorldRooms(Vec<(String, Handle<RoomAsset>)>);
+pub struct WorldRooms(pub Vec<(String, Handle<RoomAsset>)>);
 
 fn load_rooms(mut commands: Commands, assets: Res<AssetServer>) {
     let rooms = crate::rooms::world()

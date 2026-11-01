@@ -3021,6 +3021,7 @@ dependencies = [
  "pixelfx",
  "ron",
  "serde",
+ "web-sys",
  "world",
 ]
 

@@ -52,7 +52,10 @@ in Vitality, Composure, Strength or Appetite. Favours hide in the rooms, and the
 The HUD shows health, poise, a pip for each Cordial, the Nectar bar marked at the cost of a High,
 and the Favours you carry; a line under it says what the left trigger would do.
 The save is `save.ron` in your data folder (`~/.local/share/pixelvania` on Linux),
-and the game starts from it; delete it, or set `PIXELVANIA_FRESH=1`, for a new game.
+or the browser's local storage in the web build, and the game starts from it;
+delete it, or set `PIXELVANIA_FRESH=1`, for a new game.
+The slice ends in the cellar under the stage, the first time you land there with the Plunge:
+a card shows the night so far, and lets you keep playing or start a new night.
 On the Lure's rope, push the stick the way you want to swing, and up or down to climb or lower.
 Brackets mark the light the Lure would take hold of.
 A prompt such as `[UP] Talk` shows over anything that can be used, and the prompts, banners and menus

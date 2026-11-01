@@ -8,8 +8,8 @@
 //! The words are in `assets/story.ron`, decided in `docs/design/story.md`.
 //!
 //! The staged moments: a new game opens on black with one line, and fades up slowly;
-//! each room of the world shows its name the first time it is entered;
-//! and reaching the cellar, where the slice ends, closes on its last line.
+//! and each room of the world shows its name the first time it is entered.
+//! The slice's ending, in the cellar, is in `ending.rs`.
 
 use std::collections::BTreeMap;
 
@@ -42,7 +42,6 @@ impl Plugin for StoryPlugin {
             .init_resource::<NearTalk>()
             .insert_resource(Scene {
                 waking: waking.then_some(0.0),
-                ending: None,
             })
             .add_systems(
                 FixedUpdate,
@@ -67,7 +66,7 @@ pub struct Words {
     guests: BTreeMap<String, Guest>,
     cards: BTreeMap<String, String>,
     waking: String,
-    ending: String,
+    pub ending: String,
     pub dancer: DancerLines,
 }
 
@@ -507,8 +506,6 @@ fn advance(
 struct Scene {
     /// Seconds into waking, for a new game.
     waking: Option<f32>,
-    /// Seconds into the ending.
-    ending: Option<f32>,
 }
 
 /// A line of text centred on the screen, for scenes.
@@ -519,7 +516,7 @@ struct SceneLine {
 }
 
 /// Drawn on the screen over everything, so it shows on the closed curtain.
-fn scene_line(text: &str, life: f32, camera: Entity, scale: f32) -> impl Bundle {
+pub(crate) fn scene_line(text: &str, life: f32, camera: Entity, scale: f32) -> impl Bundle {
     (
         SceneLine { age: 0.0, life },
         UiTargetCamera(camera),
@@ -542,21 +539,17 @@ fn scene_line(text: &str, life: f32, camera: Entity, scale: f32) -> impl Bundle 
     )
 }
 
-/// Waking on a new game, and the ending in the cellar.
+/// Waking on a new game, and the scene lines fading in and out.
 #[allow(clippy::too_many_arguments)]
 fn scenes(
     mut commands: Commands,
     real: Res<Time<Real>>,
-    active: Res<ActiveRoom>,
     mut scene: ResMut<Scene>,
     mut lighting: ResMut<crate::render::Lighting>,
-    travel: Res<crate::travel::Travel>,
-    progress: Res<PlayerProgress>,
     mut lines: Query<(Entity, &mut SceneLine, &Children)>,
     mut colors: Query<&mut TextColor>,
     screen: Query<Entity, With<ScreenCamera>>,
     windows: Query<&Window>,
-    mut ended: Local<bool>,
 ) {
     let dt = real.delta_secs();
     let Ok(camera) = screen.single() else { return };
@@ -571,36 +564,6 @@ fn scenes(
         let t = t + dt;
         lighting.curtain = (1.0 - ((t - 2.0) / 3.0)).clamp(0.0, 1.0);
         scene.waking = (t < 5.0).then_some(t);
-    }
-    // The ending: the first time the cellar is reached, a slow dim and the slice's last line.
-    if active.name == "cellar"
-        && active.room.is_some()
-        && !*ended
-        && matches!(*travel, crate::travel::Travel::Idle)
-        && progress.0.has(Ability::Plunge)
-    {
-        *ended = true;
-        scene.ending = Some(0.0);
-    }
-    if let Some(t) = scene.ending {
-        let t = t + dt;
-        if t >= 3.0 && t - dt < 3.0 {
-            commands.spawn(scene_line(&words().ending, 6.0, camera, scale));
-        }
-        let dim = if t < 3.0 {
-            0.0
-        } else if t < 5.0 {
-            (t - 3.0) / 2.0 * 0.8
-        } else if t < 8.0 {
-            0.8
-        } else {
-            (0.8 - (t - 8.0) / 2.0 * 0.8).max(0.0)
-        };
-        lighting.curtain = lighting.curtain.max(dim);
-        if t >= 10.0 {
-            lighting.curtain = 0.0;
-        }
-        scene.ending = (t < 10.0).then_some(t);
     }
     for (e, mut line, children) in &mut lines {
         line.age += dt;

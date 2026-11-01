@@ -199,9 +199,12 @@ the HUD sat under the foreground's drapes; and doors opened onto air.
     and Favours, found in five rooms and two from the Dancer, buy levels.
     The HUD shows Cordial pips, marks the cost of a High, counts Favours, and says what the left trigger would do.
 
+36. **An end to the slice, and saving on the web.** Landing in the cellar with the Plunge closes the curtain
+    on the slice's last line, then a card: the night's length, rooms seen, Favours found, level and blackouts.
+    Jump keeps playing, and the Lunge twice starts a new night. The web build saves in local storage.
+
 Known gaps: there is one backdrop, the ballroom's windows, behind every room (underground rooms have none);
-a lamp's glow is drawn over the player standing in front of it; the web build does not save;
-the slice has no end screen.
+a lamp's glow is drawn over the player standing in front of it.
 
 ## For the director
 

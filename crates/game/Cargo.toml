@@ -28,6 +28,8 @@ bevy_egui = { workspace = true, optional = true }
 # The web build's music is OGG Vorbis, to keep the download small.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 kira = { workspace = true, features = ["ogg", "vorbis"] }
+# The web build saves in the browser's local storage, and reloads the page for a new night.
+web-sys = { version = "0.3", features = ["Window", "Storage", "Location"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs.workspace = true
