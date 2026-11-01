@@ -1,0 +1,80 @@
+// The Sleeper's moves, in ticks at 120 Hz. His brain in crates/game/src/sleeper.rs picks which to
+// start, and wakes him out of his sleep when he is hit enough.
+// Hitboxes are relative to the middle of his feet, facing right, y up negative.
+(
+    name: "boss-sleeper",
+    charge_ticks: 120,
+    combo: (
+        // The thrash: flailing out both ways at once, as from a bad dream.
+        (
+        windup: 44, active: 36, recovery: 70, cancel_window: 4,
+        hitboxes: [(rect: (x: -74.0, y: -50.0, w: 148.0, h: 50.0), ticks: None)],
+        damage: 15.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (220.0, -140.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+        // The vines: up through the whole floor at once, for long enough that jumping will not do.
+        // Hang from a bloom until they sink.
+        (
+        windup: 84, active: 150, recovery: 60, cancel_window: 4,
+        hitboxes: [(rect: (x: -420.0, y: -12.0, w: 840.0, h: 12.0), ticks: Some((start: 6, end: 150)))],
+        damage: 14.0, poise_damage: 24.0, hit_stop: 0.08,
+        knockback: (90.0, -300.0), launches: false,
+        weight: Heavy, armour: true, step: None,
+        chain: None, air_hang: 0,
+    ),
+        // Unused: the third of the combo, kept as the thrash.
+        (
+        windup: 44, active: 36, recovery: 70, cancel_window: 4,
+        hitboxes: [(rect: (x: -74.0, y: -50.0, w: 148.0, h: 50.0), ticks: None)],
+        damage: 15.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (220.0, -140.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    ),
+    // Sleep: lying down in the flowers, open to blows, then getting up.
+    charged: (
+        windup: 60, active: 360, recovery: 50, cancel_window: 0,
+        hitboxes: [],
+        damage: 0.0, poise_damage: 0.0, hit_stop: 0.0,
+        knockback: (0.0, 0.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    rising: (
+        windup: 44, active: 36, recovery: 70, cancel_window: 4,
+        hitboxes: [(rect: (x: -74.0, y: -50.0, w: 148.0, h: 50.0), ticks: None)],
+        damage: 15.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (220.0, -140.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    air: (
+        (
+        windup: 44, active: 36, recovery: 70, cancel_window: 4,
+        hitboxes: [(rect: (x: -74.0, y: -50.0, w: 148.0, h: 50.0), ticks: None)],
+        damage: 15.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (220.0, -140.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+        (
+        windup: 44, active: 36, recovery: 70, cancel_window: 4,
+        hitboxes: [(rect: (x: -74.0, y: -50.0, w: 148.0, h: 50.0), ticks: None)],
+        damage: 15.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (220.0, -140.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    ),
+    pogo: (
+        windup: 44, active: 36, recovery: 70, cancel_window: 4,
+        hitboxes: [(rect: (x: -74.0, y: -50.0, w: 148.0, h: 50.0), ticks: None)],
+        damage: 15.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (220.0, -140.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+)

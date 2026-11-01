@@ -282,6 +282,10 @@ The gardens open off the Arrival too, from the bottom of the coat lift, and give
     the glasshouse with the Lure on its pillar, the bloom walk, the Sleeper's bower and the summerhouse.
     The crystal gallery's Lure became a Favour. The coat lift could not be climbed from the bottom,
     which a playtest found as a trap; its two wall ledges are gone.
+54. **The Sleeper.** The gardens' boss, asleep in his bower until a blow wakes him into a thrash.
+    He lies down again between phrases, open to blows until three wake him; from 60% he calls vines
+    through the whole floor, longer than a jump, so the player hangs from a bloom; under 25% he no longer sleeps.
+    He fights to a lullaby that turns, and the gardens have their own exotica.
 
 
 ## For the director

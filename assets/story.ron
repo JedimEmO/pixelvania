@@ -187,6 +187,10 @@
             phases: ["Name?", "You're not on the list.", "Nobody leaves. Everyone's inside."],
             fall: "Go on through, then. They all do.",
         ),
+        "sleeper": (
+            phases: ["Five more minutes.", "Who's there? Who is that?", "Let me sleep. Let me sleep."],
+            fall: "Is it morning? Don't wake me when it's morning.",
+        ),
         "glutton": (
             phases: ["Hungry? There's plenty.", "More. Bring more.", "I can't stop. I don't know how."],
             fall: "Is that all? Is there no more?",

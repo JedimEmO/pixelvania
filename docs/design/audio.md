@@ -113,6 +113,13 @@ drums with claps and open hats, octave disco bass, a harpsichord continuo in six
 a running harpsichord figure as the lead, and cutlery and voices as the room.
 The service stair hears it through the wall. It still needs a listening pass.
 
+## The gardens
+
+The gardens' room music is exotica at the ballroom's 120 BPM, felt in half time:
+congas and a shaker, an upright bass, vibraphone chords struck soft, and a slow vibraphone tune
+over D♭maj7, Cm7, B♭m7 and A♭maj7, two bars each. Birds, a frog and humid air are the room.
+The potting shed hears it through the wall. It still needs a listening pass.
+
 ## Boss themes
 
 A boss names its theme, and the encounter plays it in place of the room's music,
@@ -133,4 +140,8 @@ Appetite is an oom-pah tuba, galloping drums and a harpsichord's broken chords.
 Seconds adds cutlery that is never quite in time, a brass tune with a can-can's leer,
 and a babble of voices talking over each other.
 Too much adds an organ that will not let go and a low churning drone, with a sour cluster every other bar.
-None of the three themes has had a listening pass.
+The Sleeper's is a lullaby in E minor at 80 BPM that turns as he wakes.
+Light sleep is a music box a little out of true, a soft pad and a slow heartbeat.
+Restless adds a detuned choir on "ooh" and ritual toms that build at the end of each phrase.
+The nightmare adds a drone on the root, sour clusters a semitone either side of it, and breathing.
+None of the four themes has had a listening pass.

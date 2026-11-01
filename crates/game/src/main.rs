@@ -33,6 +33,7 @@ mod prompt;
 mod props;
 mod render;
 mod rooms;
+mod sleeper;
 mod story;
 mod travel;
 mod tuning;
@@ -100,6 +101,7 @@ fn main() -> AppExit {
             ending::EndingPlugin,
             doorman::DoormanPlugin,
             glutton::GluttonPlugin,
+            sleeper::SleeperPlugin,
         ))
         .run()
 }

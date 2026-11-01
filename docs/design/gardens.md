@@ -24,6 +24,29 @@ and the bloom walk's far door, the bower and the summerhouse with the Lure.
 The feast and the gardens can be visited in either order.
 `crates/world/tests/reach.rs` checks this order against the rooms.
 
+## The Sleeper
+
+The Sleeper lay down in the flowers early in the night and has not got up.
+He must not be woken, and everyone wakes him.
+His fight teaches the Lure: the floor becomes no place to be, and a bloom is somewhere else to be.
+
+He starts asleep, and a blow wakes him, startled, into a thrash. Then he fights in three phases.
+
+- *Light sleep*: a thrash, flailing out both ways at once, signalled by twitching with his arms drawn in;
+  then he lies down again. Asleep he is open to blows, until three of them wake him.
+- *Restless*, from 60% health: the vines, signalled by his arms raised and trembling and the floor glowing.
+  They come up through the whole floor for longer than a jump lasts; hang from a bloom until they sink.
+- *Nightmare*, under 25%: he no longer sleeps, and the vines and thrashes come back to back.
+
+He is a guest of his own class in the rig, in a nightgown;
+`crates/game/src/sleeper.rs` is his brain and `assets/combat/boss-sleeper.ron` his frame data.
+He fights to his own lullaby, which [the audio notes](audio.md#boss-themes) describe.
+
+His lines, one per phase and one as he falls:
+"Five more minutes.", "Who's there? Who is that?", "Let me sleep. Let me sleep."
+and "Is it morning? Don't wake me when it's morning."
+Beaten, he gives two Favours, as every boss does.
+
 ## Blooms
 
 A bloom is a glowing flower hanging from a vine, the gardens' Lure point,

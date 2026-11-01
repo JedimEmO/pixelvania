@@ -154,6 +154,7 @@ pub struct Weapons {
     pub boss_dancer: Handle<WeaponAsset>,
     pub boss_doorman: Handle<WeaponAsset>,
     pub boss_glutton: Handle<WeaponAsset>,
+    pub boss_sleeper: Handle<WeaponAsset>,
 }
 
 impl Weapons {
@@ -182,6 +183,7 @@ fn load_weapons(mut commands: Commands, assets: Res<AssetServer>) {
         boss_dancer: assets.load("combat/boss-dancer.ron"),
         boss_doorman: assets.load("combat/boss-doorman.ron"),
         boss_glutton: assets.load("combat/boss-glutton.ron"),
+        boss_sleeper: assets.load("combat/boss-sleeper.ron"),
     });
 }
 

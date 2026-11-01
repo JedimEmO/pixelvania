@@ -17,10 +17,12 @@ pub enum Class {
     Doorman,
     /// The feast's boss: a vast guest in a burst waistcoat, swinging a magnum.
     Glutton,
+    /// The gardens' boss: a guest in a nightgown, asleep in the flowers, who lashes out when woken.
+    Sleeper,
 }
 
 impl Class {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 8] = [
         Self::Light,
         Self::Medium,
         Self::Heavy,
@@ -28,6 +30,7 @@ impl Class {
         Self::Toaster,
         Self::Doorman,
         Self::Glutton,
+        Self::Sleeper,
     ];
 
     pub fn name(self) -> &'static str {
@@ -39,6 +42,7 @@ impl Class {
             Self::Toaster => "toaster",
             Self::Doorman => "doorman",
             Self::Glutton => "glutton",
+            Self::Sleeper => "sleeper",
         }
     }
 
@@ -50,6 +54,7 @@ impl Class {
             Self::Heavy => 1.25,
             Self::Doorman => 1.5,
             Self::Glutton => 1.45,
+            Self::Sleeper => 1.4,
         }
     }
 
@@ -62,6 +67,7 @@ impl Class {
             Self::Toaster => Weapon::Coupe,
             Self::Doorman => Weapon::Spear,
             Self::Glutton => Weapon::Bottle,
+            Self::Sleeper => Weapon::Handle,
         }
     }
 
@@ -73,6 +79,7 @@ impl Class {
             Self::Heavy => (18, 43),
             Self::Doorman => (22, 52),
             Self::Glutton => (32, 50),
+            Self::Sleeper => (20, 46),
         }
     }
 }
@@ -161,6 +168,11 @@ pub fn rig(class: Class) -> Rig {
             [hex(0xd88a7a), hex(0xa04a44), hex(0x6a2a2c), hex(0x3a171c)],
             [hex(0x4a2024), hex(0x34161a), hex(0x240f12), hex(0x240f12)],
         ),
+        // Pale lilac, like skin that has not seen day.
+        Class::Sleeper => (
+            [hex(0xe0d4ec), hex(0xb0a2c4), hex(0x7a6c90), hex(0x463c58)],
+            [hex(0x4c4060), hex(0x382e48), hex(0x261e32), hex(0x261e32)],
+        ),
         // Crimson velvet, stained darker.
         Class::Glutton => (
             [hex(0xe0907a), hex(0xb04838), hex(0x7a2424), hex(0x461218)],
@@ -202,6 +214,14 @@ pub fn rig(class: Class) -> Rig {
             [hex(0x6a3a36), hex(0x4a2426), hex(0x2e1618), hex(0x1c0e10)],
             [hex(0xf2d58c), hex(0xd0aa5c), hex(0xa07c38), hex(0x705424)],
         ),
+        // A nightgown, grass-stained at the hem.
+        Class::Sleeper => (
+            Hat::None,
+            Mask::None,
+            Hair::Long,
+            [hex(0xc8c4d4), hex(0x9a96aa), hex(0x6c6a7e), hex(0x3e3e4c)],
+            [hex(0xb8d8b0), hex(0x88a882), hex(0x5c7a58), hex(0x34482e)],
+        ),
         // A gold waistcoat, its buttons long gone.
         Class::Glutton => (
             Hat::None,
@@ -224,6 +244,7 @@ pub fn rig(class: Class) -> Rig {
         skirt: match class {
             Class::Spinner => 12.0,
             Class::Glutton => 16.0,
+            Class::Sleeper => 14.0,
             _ => 0.0,
         },
         tails: if class == Class::Toaster { 14.0 } else { 0.0 },
@@ -263,7 +284,7 @@ pub fn scale(p: &Pose, k: f64) -> Pose {
 /// Puts a class's weapon in a pose's hands, two-handed for the heavy mallet.
 pub fn arm(p: Pose, class: Class) -> Pose {
     Pose {
-        weapon: (class != Class::Spinner).then(|| class.weapon()),
+        weapon: (!matches!(class, Class::Spinner | Class::Sleeper)).then(|| class.weapon()),
         two: p.two || class == Class::Heavy,
         ..p
     }
@@ -516,6 +537,131 @@ pub fn glutton_pose(m: GluttonMove, phase: crate::swing::Phase, t: f64) -> Pose 
     }
 }
 
+/// The Sleeper's moves, in the order of his frame data: the thrash, the vines, and sleep.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SleeperMove {
+    /// Flailing out both ways at once. Telegraphed by twitching, arms drawn in.
+    Thrash,
+    /// Vines up through the whole floor. Telegraphed by his arms raised, trembling.
+    Vines,
+    /// Lying down to sleep again: open to blows, until enough of them wake him.
+    Sleep,
+}
+
+/// Between standing, hands at the sides, and `down`, by `k` from 0 to 1.
+fn lie_down(down: &Pose, k: f64) -> Pose {
+    let up = Pose {
+        fx: 4.0,
+        fy: -14.0,
+        bx: -4.0,
+        by: -14.0,
+        ffx: 3.0,
+        fbx: -3.0,
+        ..Pose::default()
+    };
+    let mix = |a: f64, b: f64| a + (b - a) * k;
+    Pose {
+        crouch: mix(up.crouch, down.crouch),
+        lean: mix(up.lean, down.lean),
+        fx: mix(up.fx, down.fx),
+        fy: mix(up.fy, down.fy),
+        bx: mix(up.bx, down.bx),
+        by: mix(up.by, down.by),
+        ffx: mix(up.ffx, down.ffx),
+        ffy: mix(up.ffy, down.ffy),
+        fbx: mix(up.fbx, down.fbx),
+        fby: mix(up.fby, down.fby),
+        ..Pose::default()
+    }
+}
+
+/// The Sleeper's pose for a move, `t` seconds into its phase, at the player's size.
+pub fn sleeper_pose(m: SleeperMove, phase: crate::swing::Phase, t: f64) -> Pose {
+    use crate::swing::Phase;
+    let asleep = |breathe: f64| Pose {
+        crouch: 13.0 + breathe,
+        lean: -8.0,
+        fx: -9.0,
+        fy: -5.0,
+        bx: -12.0,
+        by: -5.0,
+        ffx: 12.0,
+        ffy: -4.0,
+        fbx: 8.0,
+        fby: -4.0,
+        ..Pose::default()
+    };
+    match (m, phase) {
+        (SleeperMove::Thrash, Phase::Windup) => {
+            let twitch = (t * 40.0).sin();
+            Pose {
+                crouch: 3.0,
+                lean: -2.0 + twitch,
+                fx: 3.0,
+                fy: -22.0 + twitch,
+                bx: -3.0,
+                by: -22.0 - twitch,
+                ffx: 3.0,
+                fbx: -4.0,
+                ..Pose::default()
+            }
+        }
+        (SleeperMove::Thrash, Phase::Active) => {
+            let swing = (t * TAU * 4.0).sin();
+            Pose {
+                lean: 4.0 * swing,
+                crouch: 2.0,
+                fx: 16.0,
+                fy: -24.0 + 6.0 * swing,
+                bx: -16.0,
+                by: -24.0 - 6.0 * swing,
+                ffx: 6.0,
+                fbx: -6.0,
+                ..Pose::default()
+            }
+        }
+        (SleeperMove::Vines, Phase::Windup) => {
+            let tremble = (t * 50.0).sin();
+            Pose {
+                lean: -3.0,
+                fx: 5.0 + tremble,
+                fy: -42.0,
+                bx: -5.0 - tremble,
+                by: -42.0,
+                ffx: 3.0,
+                fbx: -3.0,
+                ..Pose::default()
+            }
+        }
+        (SleeperMove::Vines, Phase::Active) => Pose {
+            crouch: 4.0,
+            lean: 3.0,
+            fx: 8.0,
+            fy: -13.0,
+            bx: -8.0,
+            by: -13.0,
+            ffx: 5.0,
+            fbx: -5.0,
+            ..Pose::default()
+        },
+        (SleeperMove::Sleep, Phase::Windup) => lie_down(&asleep(0.0), (t / 0.5).min(1.0)),
+        (SleeperMove::Sleep, Phase::Active) => asleep((t * TAU * 0.4).sin()),
+        (SleeperMove::Sleep, Phase::Recovery) => lie_down(&asleep(0.0), 1.0 - (t / 0.4).min(1.0)),
+        (_, Phase::Recovery) => {
+            let sway = (t * TAU * 0.7).sin();
+            Pose {
+                lean: -2.0 + sway,
+                crouch: 2.0,
+                fx: 4.0,
+                fy: -14.0,
+                bx: -4.0,
+                by: -14.0,
+                ..Pose::default()
+            }
+        }
+    }
+}
+
 /// The pose of a reaction `t` seconds in, at the player's size.
 pub fn reaction_pose(r: Reaction, t: f64) -> Pose {
     match r {
@@ -687,6 +833,16 @@ mod tests {
                     for phase in [Phase::Windup, Phase::Active, Phase::Recovery] {
                         for i in 0..4 {
                             poses.push(doorman_pose(m, phase, i as f64 / 6.0));
+                        }
+                    }
+                }
+            }
+            if class == Class::Sleeper {
+                use SleeperMove::*;
+                for m in [Thrash, Vines, Sleep] {
+                    for phase in [Phase::Windup, Phase::Active, Phase::Recovery] {
+                        for i in 0..4 {
+                            poses.push(sleeper_pose(m, phase, i as f64 / 6.0));
                         }
                     }
                 }

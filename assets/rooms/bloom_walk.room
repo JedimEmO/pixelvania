@@ -5,7 +5,7 @@
 [room]
 name = bloom_walk
 background = ballroom 2a5a6a
-music = ballroom muffled
+music = gardens
 
 [legend]
 # stone

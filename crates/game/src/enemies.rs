@@ -115,6 +115,15 @@ fn temper(class: Class) -> Temper {
             health: 560.0,
             poise: 140.0,
         },
+        // And the Sleeper's.
+        Class::Sleeper => Temper {
+            reach: 74.0,
+            rest: 1.0,
+            speed: 55.0,
+            notice: 400.0,
+            health: 600.0,
+            poise: 150.0,
+        },
         // So is the Glutton's.
         Class::Glutton => Temper {
             reach: 70.0,
@@ -139,7 +148,7 @@ fn weight(class: Class) -> WeightClass {
     match class {
         Class::Light | Class::Spinner => WeightClass::Light,
         Class::Medium | Class::Toaster => WeightClass::Medium,
-        Class::Heavy | Class::Doorman | Class::Glutton => WeightClass::Heavy,
+        Class::Heavy | Class::Doorman | Class::Glutton | Class::Sleeper => WeightClass::Heavy,
     }
 }
 
@@ -211,6 +220,7 @@ pub fn spawn_guest(
         Class::Toaster => weapons.guest_toaster.clone(),
         Class::Doorman => weapons.boss_doorman.clone(),
         Class::Glutton => weapons.boss_glutton.clone(),
+        Class::Sleeper => weapons.boss_sleeper.clone(),
     };
     let look = Look::new(rig(class), images);
     let image = look.image.clone();
@@ -326,6 +336,7 @@ fn tick(
             Without<Player>,
             Without<crate::doorman::Doorman>,
             Without<crate::glutton::Glutton>,
+            Without<crate::sleeper::Sleeper>,
         ),
     >,
 ) {
@@ -512,6 +523,9 @@ pub(crate) fn animate(
             ) {
                 (Class::Doorman, Some(m), _) => Some(anim::guest::doorman_pose(m, phase, t)),
                 (Class::Glutton, _, Some(m)) => Some(anim::guest::glutton_pose(m, phase, t)),
+                (Class::Sleeper, _, _) => {
+                    crate::sleeper::move_of(attack).map(|m| anim::guest::sleeper_pose(m, phase, t))
+                }
                 _ => anim::guest::loop_pose(g.class, phase, t),
             }
         } else {

@@ -34,6 +34,19 @@ pub fn render() -> crate::Result<()> {
     let mix = music::mix(&stems);
     music::write_wav(&feast_out.join("full-mix.wav"), &mix)?;
     diagnostics("full-mix", &mix, &feast_out)?;
+    let assets = crate::root().join("assets/music/gardens");
+    let gardens_out = out.join("gardens");
+    fs::create_dir_all(&assets)?;
+    fs::create_dir_all(&gardens_out)?;
+    let stems = music::render_gardens();
+    println!("Gardens: 120 BPM in half time, D-flat, 4/4, 32 bars");
+    for (name, pcm) in music::GARDENS_STEMS.into_iter().zip(&stems) {
+        music::write_wav(&assets.join(format!("{name}.wav")), pcm)?;
+        diagnostics(name, pcm, &gardens_out)?;
+    }
+    let mix = music::mix(&stems);
+    music::write_wav(&gardens_out.join("full-mix.wav"), &mix)?;
+    diagnostics("full-mix", &mix, &gardens_out)?;
     let assets = crate::root().join("assets/music/dancer");
     let out = out.join("dancer");
     fs::create_dir_all(&assets)?;
@@ -91,6 +104,25 @@ pub fn render() -> crate::Result<()> {
         diagnostics(&format!("phase-{}", phase + 1), &mix, &out)?;
     }
     println!("Glutton diagnostics: {}", out.display());
+    let assets = crate::root().join("assets/music/sleeper");
+    let out = crate::root().join("target/music/sleeper");
+    fs::create_dir_all(&assets)?;
+    fs::create_dir_all(&out)?;
+    let stems = music::render_sleeper();
+    println!("Sleeper: 80 BPM, E minor, 4/4, 32 bars");
+    for (name, pcm) in music::SLEEPER_STEMS.into_iter().zip(&stems) {
+        music::write_wav(&assets.join(format!("{name}.wav")), pcm)?;
+        diagnostics(name, pcm, &out)?;
+    }
+    for (phase, count) in music::SLEEPER_LAYERS.into_iter().enumerate() {
+        let layers: [Pcm; 8] = std::array::from_fn(|i| {
+            if i < count { stems[i].clone() } else { vec![[0; 2]; music::SLEEPER_FRAMES] }
+        });
+        let mix = music::mix(&layers);
+        music::write_wav(&out.join(format!("phase-{}.wav", phase + 1)), &mix)?;
+        diagnostics(&format!("phase-{}", phase + 1), &mix, &out)?;
+    }
+    println!("Sleeper diagnostics: {}", out.display());
     Ok(())
 }
 

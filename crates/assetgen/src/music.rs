@@ -678,6 +678,7 @@ pub fn render_doorman() -> [Pcm; 8] {
 }
 
 pub const FEAST_STEMS: [&str; 5] = STEMS;
+pub const GARDENS_STEMS: [&str; 5] = STEMS;
 
 /// The feast: 32 bars of harpsichord over a disco rhythm section in G minor, at the ballroom's
 /// tempo so the rooms' lights keep the beat. A baroque circle of fifths turns under a
@@ -802,6 +803,327 @@ pub fn render_feast() -> [Pcm; 5] {
         [6500.0, 1000.0, 7000.0, 7500.0, 8000.0],
         [25.0, 25.0, 140.0, 220.0, 160.0],
         [0.06, 0.02, 0.18, 0.2, 0.3],
+    )
+}
+
+/// A vibraphone bar: a pure fundamental with its fourth partial, the motor's tremolo, a long ring.
+fn vibe(note: u8, t: f64) -> f64 {
+    let f = hz(note);
+    let motor = 1.0 + 0.35 * (TAU * 5.5 * t).sin();
+    motor
+        * ((TAU * f * t).sin() + 0.18 * (TAU * f * 4.0 * t).sin() * (-t / 0.15).exp())
+        * (-t / 1.4).exp()
+}
+
+/// The gardens: exotica at the ballroom's tempo, felt in half time so it hangs in the damp.
+/// Congas and a shaker, an upright bass, vibraphone chords and a slow vibraphone tune
+/// over D-flat major sevenths, with birds, frogs and the hiss of humid air for the room.
+pub fn render_gardens() -> [Pcm; 5] {
+    let mut stems: [Signal; 5] = std::array::from_fn(|_| vec![[0.0; 2]; FRAMES]);
+    // Two bars a chord: D-flat major seventh, C minor seventh, B-flat minor seventh, A-flat major seventh.
+    let chords: [(u8, [u8; 4]); 4] = [
+        (37, [61, 65, 68, 72]),
+        (36, [60, 63, 67, 70]),
+        (34, [58, 61, 65, 68]),
+        (32, [56, 60, 63, 67]),
+    ];
+    // The tune over each pair of bars: beat, length, note.
+    let tune: [[(f64, f64, u8); 4]; 4] = [
+        [
+            (0.0, 1.5, 77),
+            (1.5, 2.5, 80),
+            (4.0, 3.0, 84),
+            (7.0, 1.0, 82),
+        ],
+        [
+            (0.0, 1.5, 79),
+            (1.5, 2.5, 75),
+            (4.0, 3.0, 79),
+            (7.0, 1.0, 82),
+        ],
+        [
+            (0.0, 1.5, 80),
+            (1.5, 2.5, 77),
+            (4.0, 3.0, 73),
+            (7.0, 1.0, 75),
+        ],
+        [
+            (0.0, 1.5, 72),
+            (1.5, 2.5, 75),
+            (4.0, 4.0, 79),
+            (8.0, 0.0, 79),
+        ],
+    ];
+    let mut noise = Noise(0x6a4d_e115);
+    for pair in 0..BARS / 2 {
+        let (root, chord) = chords[pair % 4];
+        let at = |b: f64| pair as f64 * 8.0 + b;
+
+        // Drums: congas in half time, a low and a high, and a soft shaker on the eighths.
+        for (b, high) in [
+            (0.0, false),
+            (1.5, true),
+            (2.0, false),
+            (3.5, true),
+            (4.0, false),
+            (5.5, true),
+            (6.0, true),
+            (7.0, false),
+        ] {
+            let f = if high { 330.0 } else { 210.0 };
+            event(
+                &mut stems[0],
+                at(b),
+                0.35,
+                if high { 0.3 } else { -0.2 },
+                |t| 0.3 * (TAU * f * t * (1.0 + 0.3 * (-t / 0.02).exp())).sin() * (-t / 0.09).exp(),
+            );
+        }
+        for step in 0..16 {
+            event(&mut stems[0], at(step as f64 / 2.0), 0.1, 0.5, |t| {
+                0.025 * noise.next() * (t / 0.02).min(1.0) * (-t / 0.05).exp()
+            });
+        }
+
+        // Bass: an upright, root then fifth, a beat each, with room around them.
+        for (b, note) in [(0.0, root), (3.0, root + 7), (4.0, root), (6.5, root + 5)] {
+            event(&mut stems[1], at(b), 0.9, 0.0, |t| {
+                let p = TAU * hz(note) * t;
+                0.24 * (p.sin() + 0.3 * (2.0 * p).sin()) * (t / 0.01).min(1.0) * (-t / 0.45).exp()
+            });
+        }
+
+        // Harmony: the vibraphone's chord, struck soft on one and again on the and of three.
+        for b in [0.0, 2.5, 4.0, 6.5] {
+            for (v, note) in chord.into_iter().enumerate() {
+                let pan = (v as f64 - 1.5) * 0.35;
+                event(&mut stems[2], at(b + v as f64 * 0.02), 2.5, pan, |t| {
+                    0.045 * vibe(note, t)
+                });
+            }
+        }
+
+        // Lead: the slow tune on vibraphone, doubled an octave down the second time through.
+        let low = pair % 8 >= 4;
+        for (b, len, note) in tune[pair % 4] {
+            if len <= 0.0 {
+                continue;
+            }
+            event(&mut stems[3], at(b), len * BEAT + 1.0, 0.15, |t| {
+                0.09 * vibe(note, t)
+            });
+            if low {
+                event(&mut stems[3], at(b), len * BEAT + 1.0, -0.2, |t| {
+                    0.05 * vibe(note - 12, t)
+                });
+            }
+        }
+
+        // Texture: humid air, birds calling and a frog answering.
+        event(&mut stems[4], at(0.0), 8.0 * BEAT, 0.0, |t| {
+            0.035 * noise.next() * (0.6 + 0.4 * (TAU * t / (8.0 * BEAT)).sin())
+        });
+        for _ in 0..3 {
+            if noise.next() < 0.0 {
+                continue;
+            }
+            let b = 4.0 * (noise.next() + 1.0);
+            let pan = noise.next() * 0.9;
+            let base = 2600.0 + 900.0 * noise.next();
+            let notes = 2 + (noise.next().abs() * 4.0) as usize;
+            for n in 0..notes {
+                event(&mut stems[4], at(b + n as f64 * 0.18), 0.09, pan, |t| {
+                    let sweep = 1.0 + 0.4 * (t / 0.09);
+                    0.09 * (TAU * base * sweep * t).sin() * (t / 0.005).min(1.0) * (-t / 0.04).exp()
+                });
+            }
+        }
+        if pair % 2 == 1 {
+            let b = 6.0 + noise.next();
+            event(&mut stems[4], at(b), 0.25, -0.6, |t| {
+                let pulse = ((TAU * 28.0 * t).sin()).max(0.0);
+                0.08 * pulse * (TAU * 310.0 * t).sin() * (-t / 0.12).exp()
+            });
+        }
+    }
+    finish(
+        stems,
+        [5000.0, 900.0, 6000.0, 6500.0, 9000.0],
+        [40.0, 25.0, 150.0, 200.0, 300.0],
+        [0.1, 0.03, 0.3, 0.32, 0.25],
+    )
+}
+
+pub const SLEEPER_STEMS: [&str; 8] = [
+    "musicbox",
+    "pad",
+    "heartbeat",
+    "choir",
+    "drums",
+    "bass",
+    "cluster",
+    "breath",
+];
+/// How many of the Sleeper's stems play in each of his phases: light sleep, restless, nightmare.
+pub const SLEEPER_LAYERS: [usize; 3] = [3, 5, 8];
+pub const SLEEPER_BPM: f64 = 80.0;
+pub const SLEEPER_FRAMES: usize = (44100.0 * 60.0 / SLEEPER_BPM * 128.0 + 0.5) as usize;
+
+/// Thirty-two bars of a lullaby in E minor that turns as he wakes.
+/// Light sleep is a music box, a soft pad and a heartbeat; restless brings a detuned choir
+/// and slow ritual drums; the nightmare a drone under everything, sour clusters, and breathing.
+pub fn render_sleeper() -> [Pcm; 8] {
+    let mut stems: [Signal; 8] = std::array::from_fn(|_| vec![[0.0; 2]; SLEEPER_FRAMES]);
+    let beat = 60.0 / SLEEPER_BPM;
+    let chords: [(u8, [u8; 3]); 4] = [
+        (40, [64, 67, 71]),
+        (36, [64, 67, 72]),
+        (45, [64, 69, 72]),
+        (47, [63, 66, 71]),
+    ];
+    let tune: [[(f64, f64, u8); 6]; 4] = [
+        [
+            (0.0, 1.0, 83),
+            (1.0, 1.0, 79),
+            (2.0, 1.0, 76),
+            (3.0, 1.0, 79),
+            (4.0, 2.0, 83),
+            (6.0, 2.0, 81),
+        ],
+        [
+            (0.0, 1.0, 84),
+            (1.0, 1.0, 79),
+            (2.0, 1.0, 76),
+            (3.0, 1.0, 79),
+            (4.0, 2.0, 84),
+            (6.0, 2.0, 83),
+        ],
+        [
+            (0.0, 1.0, 81),
+            (1.0, 1.0, 76),
+            (2.0, 1.0, 72),
+            (3.0, 1.0, 76),
+            (4.0, 2.0, 81),
+            (6.0, 2.0, 79),
+        ],
+        [
+            (0.0, 1.0, 78),
+            (1.0, 1.0, 75),
+            (2.0, 1.0, 71),
+            (3.0, 1.0, 75),
+            (4.0, 3.0, 78),
+            (7.0, 1.0, 71),
+        ],
+    ];
+    let mut noise = Noise(0x51ee_9e75);
+    for pair in 0..16 {
+        let (root, chord) = chords[pair % 4];
+        let at = |b: f64| (pair as f64 * 8.0 + b) * beat;
+
+        // The music box: a little out of true, and slowing a hair at the end of each phrase.
+        for (b, len, note) in tune[pair % 4] {
+            let wow = 1.0 + 0.004 * (TAU * 0.7 * b).sin();
+            event_seconds(&mut stems[0], at(b), len * beat + 1.2, 0.2, |t| {
+                let f = hz(note) * wow;
+                0.14 * ((TAU * f * t).sin()
+                    + 0.25 * (TAU * f * 3.0 * t).sin()
+                    + 0.08 * (TAU * f * 5.2 * t).sin())
+                    * (-t / 0.9).exp()
+            });
+        }
+
+        // The pad: the chord, held soft across both bars.
+        let len = 8.0 * beat;
+        for (v, note) in chord.into_iter().enumerate() {
+            event_seconds(&mut stems[1], at(0.0), len, (v as f64 - 1.0) * 0.5, |t| {
+                let p = TAU * hz(note - 12) * t;
+                let env = (t / 1.2).min(1.0) * ((len - t) / 0.8).clamp(0.0, 1.0);
+                0.05 * env * (p.sin() + 0.5 * (p * 1.004).sin() + 0.2 * (2.0 * p).sin())
+            });
+        }
+
+        // The heartbeat: lub-dub, once a bar, slow.
+        for bar in 0..2 {
+            for (off, gain) in [(0.0, 0.5), (0.28, 0.35)] {
+                event_seconds(&mut stems[2], at(bar as f64 * 4.0) + off, 0.3, 0.0, |t| {
+                    gain * (TAU * 48.0 * t).sin() * (t / 0.01).min(1.0) * (-t / 0.09).exp()
+                });
+            }
+        }
+
+        // The choir: the chord sung on "ooh", each voice a little flat or sharp.
+        for (v, note) in chord.into_iter().enumerate() {
+            let detune = 1.0 + 0.008 * (v as f64 - 1.0);
+            event_seconds(&mut stems[3], at(0.0), len, (1.0 - v as f64) * 0.5, |t| {
+                let f = hz(note) * detune * (1.0 + 0.006 * (TAU * 5.0 * t).sin());
+                let env = (t / 1.5).min(1.0) * ((len - t) / 1.0).clamp(0.0, 1.0);
+                0.035
+                    * env
+                    * (1..=6)
+                        .map(|n| {
+                            let h = f * f64::from(n);
+                            let formant = (-((h - 400.0) / 250.0).powi(2)).exp() + 0.1;
+                            formant * (TAU * h * t).sin()
+                        })
+                        .sum::<f64>()
+            });
+        }
+
+        // Drums: slow ritual toms, building at the end of each pair.
+        for (b, f, gain) in [
+            (0.0, 90.0, 0.4),
+            (3.0, 120.0, 0.25),
+            (4.0, 90.0, 0.4),
+            (6.0, 110.0, 0.3),
+            (6.5, 120.0, 0.3),
+            (7.0, 140.0, 0.35),
+            (7.5, 160.0, 0.4),
+        ] {
+            event_seconds(&mut stems[4], at(b), 0.5, (f - 125.0) / 100.0, |t| {
+                gain * (TAU * f * t * (1.0 + 0.4 * (-t / 0.03).exp())).sin() * (-t / 0.18).exp()
+            });
+        }
+
+        // Bass: a drone on the root, swelling.
+        event_seconds(&mut stems[5], at(0.0), len, 0.0, |t| {
+            let p = TAU * hz(root - 12) * t;
+            let env = (t / 0.5).min(1.0) * ((len - t) / 0.3).clamp(0.0, 1.0);
+            0.25 * env * (p.sin() + 0.25 * (2.0 * p).sin()) * (0.8 + 0.2 * (TAU * 0.5 * t).sin())
+        });
+
+        // Cluster: a sour chord every other bar, a semitone either side of the root.
+        for bar in [1.0, 5.0] {
+            for (v, note) in [root + 24, root + 25, root + 23].into_iter().enumerate() {
+                event_seconds(
+                    &mut stems[6],
+                    at(bar + 2.0),
+                    1.6,
+                    (v as f64 - 1.0) * 0.6,
+                    |t| {
+                        let p = TAU * hz(note) * t;
+                        0.05 * (t / 0.4).min(1.0)
+                            * (-t / 0.9).exp()
+                            * (p.sin() + 0.4 * (2.0 * p).sin() + 0.2 * (3.0 * p).sin())
+                    },
+                );
+            }
+        }
+
+        // Breath: in and out, close, under the music.
+        for bar in 0..2 {
+            let start = at(bar as f64 * 4.0);
+            let len = 4.0 * beat;
+            event_seconds(&mut stems[7], start, len, 0.1, |t| {
+                let shape = (std::f64::consts::PI * t / len).sin().powi(2);
+                0.15 * shape * noise.next()
+            });
+        }
+    }
+    finish(
+        stems,
+        [8000.0, 3000.0, 400.0, 4000.0, 3000.0, 900.0, 3500.0, 2500.0],
+        [300.0, 80.0, 20.0, 150.0, 40.0, 20.0, 150.0, 300.0],
+        [0.35, 0.3, 0.05, 0.4, 0.15, 0.05, 0.3, 0.1],
     )
 }
 
@@ -1158,6 +1480,37 @@ mod tests {
                     seam <= nearby + 2,
                     "feast seam {seam}, nearby slope {nearby}"
                 );
+            }
+        }
+    }
+
+    #[test]
+    fn the_gardens_and_the_sleeper_have_headroom() {
+        let gardens = render_gardens();
+        assert!(levels(&mix(&gardens)).1 <= -5.99);
+        assert!(gardens.iter().all(|pcm| pcm.len() == FRAMES));
+        let sleeper = render_sleeper();
+        for count in SLEEPER_LAYERS {
+            let layers: [Pcm; 8] = std::array::from_fn(|i| {
+                if i < count {
+                    sleeper[i].clone()
+                } else {
+                    vec![[0; 2]; SLEEPER_FRAMES]
+                }
+            });
+            assert!(levels(&mix(&layers)).1 <= -5.99);
+        }
+        for pcm in gardens.iter().chain(&sleeper) {
+            for c in 0..2 {
+                let n = pcm.len();
+                let seam = (i32::from(pcm[0][c]) - i32::from(pcm[n - 1][c])).abs();
+                let nearby = pcm[..441]
+                    .windows(2)
+                    .chain(pcm[n - 441..].windows(2))
+                    .map(|w| (i32::from(w[1][c]) - i32::from(w[0][c])).abs())
+                    .max()
+                    .unwrap();
+                assert!(seam <= nearby + 2, "seam {seam}, nearby slope {nearby}");
             }
         }
     }

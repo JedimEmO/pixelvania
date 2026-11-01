@@ -112,7 +112,9 @@ mod stems {
     use std::error::Error;
 
     /// Every track, in the order they are decoded: the rooms' music first.
-    const TRACKS: [&str; 5] = ["ballroom", "feast", "dancer", "doorman", "glutton"];
+    const TRACKS: [&str; 7] = [
+        "ballroom", "feast", "gardens", "dancer", "doorman", "glutton", "sleeper",
+    ];
 
     pub(super) fn build(app: &mut App) {
         app.init_asset::<StemBytes>()
@@ -254,6 +256,16 @@ mod native {
     const DOORMAN: [&str; 8] = [
         "drums", "bass", "bells", "organ", "stabs", "march", "lead", "clock",
     ];
+    const SLEEPER: [&str; 8] = [
+        "musicbox",
+        "pad",
+        "heartbeat",
+        "choir",
+        "drums",
+        "bass",
+        "cluster",
+        "breath",
+    ];
     const GLUTTON: [&str; 8] = [
         "drums",
         "bass",
@@ -266,10 +278,11 @@ mod native {
     ];
     pub(super) fn catalog(name: &str) -> Option<(&'static [&'static str], f64)> {
         match name {
-            "ballroom" | "feast" => Some((&STEMS, 120.0)),
+            "ballroom" | "feast" | "gardens" => Some((&STEMS, 120.0)),
             "dancer" => Some((&DANCER, 132.0)),
             "doorman" => Some((&DOORMAN, 104.0)),
             "glutton" => Some((&GLUTTON, 144.0)),
+            "sleeper" => Some((&SLEEPER, 80.0)),
             _ => None,
         }
     }
@@ -281,6 +294,7 @@ mod native {
             "dancer" => Some((&[0, 1, 2, 2, 2, 3, 4, 0], [3, 5, 8])),
             "doorman" => Some((&[0, 1, 2, 2, 2, 0, 3, 4], [3, 6, 8])),
             "glutton" => Some((&[0, 1, 2, 4, 3, 4, 2, 4], [3, 6, 8])),
+            "sleeper" => Some((&[3, 2, 0, 4, 0, 1, 2, 4], [3, 5, 8])),
             _ => None,
         }
     }
