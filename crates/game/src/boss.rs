@@ -136,10 +136,11 @@ pub fn spawn_dancer(
         Visibility::default(),
         children![
             (
-                Sprite::from_image(image),
+                Sprite::from_image(image.clone()),
                 look_anchor(),
                 Transform::default()
             ),
+            crate::player::glow_mask(image),
             (
                 Shockwave,
                 Sprite::from_color(Color::srgb(1.0, 0.73, 0.25), Vec2::new(300.0, 8.0)),

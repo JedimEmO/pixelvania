@@ -183,10 +183,11 @@ fn spawn(
             Visibility::default(),
             children![
                 (
-                    Sprite::from_image(image),
+                    Sprite::from_image(image.clone()),
                     crate::player::look_anchor(),
                     Transform::default(),
                 ),
+                crate::player::glow_mask(image),
                 (
                     Mark,
                     Prompt::bundle(Control::Up, "Talk", Vec2::new(0.0, 50.0)),

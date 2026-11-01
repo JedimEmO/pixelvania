@@ -216,11 +216,14 @@ pub fn spawn_guest(
         look,
         Transform::from_xyz(x, -y, 0.9),
         Visibility::default(),
-        children![(
-            Sprite::from_image(image),
-            look_anchor(),
-            Transform::default()
-        )],
+        children![
+            (
+                Sprite::from_image(image.clone()),
+                look_anchor(),
+                Transform::default()
+            ),
+            crate::player::glow_mask(image),
+        ],
     ));
 }
 

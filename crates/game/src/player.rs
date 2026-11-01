@@ -264,6 +264,23 @@ pub(crate) fn look_image() -> Image {
     )
 }
 
+/// A black copy of a rig's frame in the glow buffer, just in front of the body.
+/// Glows are added over everything in the composite, so without it a lamp's glow
+/// would shine through anyone standing before the lamp. Effects meant to show in front
+/// of a body sit further forward and are drawn after it.
+pub(crate) fn glow_mask(image: Handle<Image>) -> impl Bundle {
+    (
+        Sprite {
+            image,
+            color: Color::BLACK,
+            ..default()
+        },
+        look_anchor(),
+        Transform::from_xyz(0.0, 0.0, 0.001),
+        RenderLayers::layer(GLOW_LAYER),
+    )
+}
+
 /// Puts the image's feet point on the entity's position.
 pub(crate) fn look_anchor() -> Anchor {
     Anchor(Vec2::new(
@@ -345,9 +362,10 @@ fn spawn(
         children![
             (
                 Shape { scale: Vec2::ONE },
-                Sprite::from_image(image),
+                Sprite::from_image(image.clone()),
                 look_anchor(),
                 Transform::default(),
+                children![glow_mask(image)],
             ),
             (
                 // A faint light of the player's own, so they never vanish in the dark.

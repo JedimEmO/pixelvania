@@ -203,8 +203,10 @@ the HUD sat under the foreground's drapes; and doors opened onto air.
     on the slice's last line, then a card: the night's length, rooms seen, Favours found, level and blackouts.
     Jump keeps playing, and the Lunge twice starts a new night. The web build saves in local storage.
 
-Known gaps: there is one backdrop, the ballroom's windows, behind every room (underground rooms have none);
-a lamp's glow is drawn over the player standing in front of it.
+37. **Bodies in front of glows.** The player, the guests and the Dancer draw a black silhouette into the glow buffer,
+    so a lamp behind them no longer shines through them.
+
+Known gaps: there is one backdrop, the ballroom's windows, behind every room (underground rooms have none).
 
 ## For the director
 
