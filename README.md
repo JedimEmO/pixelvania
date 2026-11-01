@@ -37,6 +37,7 @@ Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev
 | Attack; hold to charge, with up to rise, with down in the air to pogo | West (X, Square) | J |
 | Toast, the parry | Left bumper (LB, L1) | K |
 | Lure: take hold of the light the stick aims at; hold to swing, release to let go | Right trigger (RT, R2) | I |
+| Indulge: tap to heal with Nectar, hold to start a High | Left trigger (LT, L2) | N |
 | Next weapon: the sabre, the Jeroboam, the candelabrum | North (Y, Triangle) | L |
 | Next room, for testing: each room of the world, the feel lab, the combat lab | Start | Tab |
 | Back to the spawn point, and the guests back to theirs | Select | R |

@@ -1,4 +1,4 @@
-//! The player's health and poise, as two thin bars in the top-left corner.
+//! The player's health, poise and Nectar, as thin bars in the top-left corner.
 //!
 //! The bars are drawn into the glow buffer, so the room's lighting never hides them,
 //! and follow the view each frame. They are placeholders until the game has a real HUD.
@@ -28,12 +28,14 @@ const MARGIN: f32 = 10.0;
 enum Bar {
     Health,
     Poise,
+    Nectar,
 }
 
 fn spawn(mut commands: Commands) {
     let bars = [
         (Bar::Health, Color::srgb(0.75, 0.22, 0.32), 0.0, 2.0),
-        (Bar::Poise, Color::srgb(0.8, 0.68, 0.3), 4.0, 1.0),
+        (Bar::Poise, Color::srgb(0.55, 0.5, 0.62), 4.0, 1.0),
+        (Bar::Nectar, Color::srgb(1.0, 0.78, 0.32), 7.0, 2.0),
     ];
     for (bar, color, dy, h) in bars {
         // A dim track under each bar, so an empty bar is still visible.
@@ -62,6 +64,8 @@ struct Track(f32);
 fn follow(
     focus: Res<CameraFocus>,
     players: Query<&Fighting, With<Player>>,
+    indulgence: Res<crate::indulge::Indulgence>,
+    progress: Res<crate::progress::PlayerProgress>,
     mut bars: Query<(&Track, &mut Transform, Option<&Bar>)>,
 ) {
     let corner = focus.0.round() + Vec2::new(-(WIDTH as f32) / 2.0, HEIGHT as f32 / 2.0);
@@ -74,6 +78,7 @@ fn follow(
         let k = fighting.map_or(0.0, |f| match bar {
             Bar::Health => f.combat.health / f.max_health,
             Bar::Poise => f.combat.poise / f.combat.max_poise,
+            Bar::Nectar => indulgence.nectar / progress.0.nectar_capacity(),
         });
         // Whole pixels, so the bar's end does not shimmer.
         t.scale.x = (LENGTH * k.clamp(0.0, 1.0)).round() / LENGTH;

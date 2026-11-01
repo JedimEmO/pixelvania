@@ -67,6 +67,16 @@ pub struct Toast;
 #[action_output(bool)]
 pub struct Lure;
 
+/// Indulge: tap to heal with Nectar, hold to start a High.
+#[derive(InputAction)]
+#[action_output(bool)]
+pub struct Indulge;
+
+/// The Plunge: a dive straight down that breaks cracked floors.
+#[derive(InputAction)]
+#[action_output(bool)]
+pub struct Plunge;
+
 /// Switches between the weapons.
 #[derive(InputAction)]
 #[action_output(bool)]
@@ -96,6 +106,9 @@ pub struct TickInput {
     pub toast_pressed: bool,
     pub lure_held: bool,
     pub lure_pressed: bool,
+    pub plunge_pressed: bool,
+    /// Held this frame. Read in `Update`, not by the tick.
+    pub indulge_held: bool,
     /// These were pressed this frame. Read in `Update`, not by the tick.
     pub reset_pressed: bool,
     pub switch_weapon_pressed: bool,
@@ -157,6 +170,20 @@ fn spawn_controls(mut commands: Commands) {
                 Binding(KeyCode::KeyI)
             ]
             --
+            Action::<Indulge>::new()
+            Bindings [
+                Binding(GamepadButton::LeftTrigger2)
+                --
+                Binding(KeyCode::KeyN)
+            ]
+            --
+            Action::<Plunge>::new()
+            Bindings [
+                Binding(GamepadButton::RightTrigger)
+                --
+                Binding(KeyCode::KeyM)
+            ]
+            --
             Action::<SwitchWeapon>::new()
             Bindings [
                 Binding(GamepadButton::North)
@@ -190,6 +217,8 @@ pub fn collect(
     attack: Single<(&Action<Attack>, &ActionEvents)>,
     toast: Single<&ActionEvents, With<Action<Toast>>>,
     lure: Single<(&Action<Lure>, &ActionEvents)>,
+    indulge: Single<&Action<Indulge>>,
+    plunge: Single<&ActionEvents, With<Action<Plunge>>>,
     switch: Single<&ActionEvents, With<Action<SwitchWeapon>>>,
     next_room: Single<&ActionEvents, With<Action<NextRoom>>>,
 ) {
@@ -206,6 +235,8 @@ pub fn collect(
     let (held, events) = *lure;
     input.lure_held = **held;
     input.lure_pressed |= events.contains(ActionEvents::START);
+    input.indulge_held = ***indulge;
+    input.plunge_pressed |= plunge.contains(ActionEvents::START);
     input.switch_weapon_pressed = switch.contains(ActionEvents::START);
     input.next_room_pressed = next_room.contains(ActionEvents::START);
 }

@@ -127,8 +127,20 @@ First the systems it needs, then its rooms.
     reaches every room and pickup, traps nobody, and keeps the ballroom's alcove for the Lure.
     The map image `cargo xtask map` is not built yet.
 
-Next: the slice's content. Its rooms around the ballroom, five enemy types, Nectar and the High,
-the Dancer and Plunge, and the map.
+Then the slice's content:
+
+19. **Nectar and the High.** Done. Guests drop golden Nectar as they fall, more from heavier ones,
+    and leftovers lie about the rooms (`nectar x y`); it drifts to the player when they come near.
+    The left trigger spends it: a tap heals 30 for 20 Nectar, a half-second hold starts a High for 50.
+    A High lasts 14 seconds divided by one plus tolerance, which grows 0.4 with each;
+    a 9-second Comedown follows. The High quickens movement by a tenth and the Comedown slows it.
+    Resting lowers tolerance, never to nothing once it has started, and lifts a hangover.
+    Carnations raise health by 20 and Goblets the Nectar carried by 25. The HUD has a Nectar bar.
+20. **The Plunge and cracked floors.**
+21. **Two more guests**: a spinning dancer and a guest who throws glasses.
+22. **The rooms**: about twenty around the ballroom, ending at the stage and the cellar below it.
+23. **The Dancer**, the ballroom's boss, whose fight ends with the stage floor giving way.
+24. **The map.**
 
 ## For the director
 

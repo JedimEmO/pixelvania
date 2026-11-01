@@ -61,12 +61,21 @@ struct Pickup {
 #[derive(Resource, Default)]
 struct SpawnedFor(Option<Arc<Room>>);
 
-/// The movement abilities follow what has been found.
-fn give_abilities(progress: Res<PlayerProgress>, mut players: Query<&mut Player>) {
+/// The movement abilities and the most health follow what has been found.
+fn give_abilities(
+    progress: Res<PlayerProgress>,
+    mut players: Query<(&mut Player, &mut crate::combat::Fighting)>,
+) {
     let want = progress.0.movement();
-    for mut p in &mut players {
+    let health = progress.0.max_health();
+    for (mut p, mut f) in &mut players {
         if p.ctrl.abilities != want {
             p.ctrl.abilities = want;
+        }
+        if f.max_health != health {
+            // A Carnation fills the new health too.
+            f.combat.health += health - f.max_health;
+            f.max_health = health;
         }
     }
 }
@@ -112,6 +121,11 @@ fn colours(item: Item) -> ([u8; 3], [u8; 3], LinearRgba) {
             [255, 140, 190],
             [150, 50, 100],
             LinearRgba::rgb(1.0, 0.45, 0.7),
+        ),
+        Item::Upgrade(_) => (
+            [255, 236, 236],
+            [200, 60, 80],
+            LinearRgba::rgb(1.0, 0.7, 0.7),
         ),
     }
 }
@@ -252,7 +266,7 @@ impl Banner {
 
 /// What a find is called on screen, and a line on how to use it.
 fn words(item: Item) -> (&'static str, &'static str) {
-    use world::progress::{Ability, Weapon};
+    use world::progress::{Ability, Upgrade, Weapon};
     match item {
         Item::Ability(a) => match a {
             Ability::Lunge => ("THE LUNGE", "East to dash, through guests too"),
@@ -266,6 +280,10 @@ fn words(item: Item) -> (&'static str, &'static str) {
             Ability::Submerge => ("SUBMERGE", "Sink into the nectar"),
             Ability::Drift => ("THE DRIFT", "Ride the warm air"),
             Ability::Numb => ("NUMB", "Feel nothing"),
+        },
+        Item::Upgrade(u) => match u {
+            Upgrade::Carnation => ("A CARNATION", "Pinned to the lapel. More health"),
+            Upgrade::Goblet => ("A GOBLET", "Room for more Nectar"),
         },
         Item::Weapon(w) => match w {
             Weapon::Sabre => ("THE SABRE", "North changes weapon"),

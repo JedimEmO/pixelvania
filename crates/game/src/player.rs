@@ -363,7 +363,7 @@ fn reset(
     input: Res<TickInput>,
     last: Res<crate::lounge::LastLounge>,
     mut travel: ResMut<crate::travel::Travel>,
-    mut mood: ResMut<crate::combat::Mood>,
+    mut indulgence: ResMut<crate::indulge::Indulgence>,
     players: Query<(Entity, &Fighting), With<Player>>,
 ) {
     for (p, f) in &players {
@@ -372,7 +372,7 @@ fn reset(
             continue;
         }
         if defeated {
-            *mood = crate::combat::Mood::ALL[2];
+            indulgence.hangover();
         }
         match (&last.0, defeated) {
             (Some(lounge), true) => {
@@ -408,10 +408,17 @@ fn tick(
     weapons: Res<Assets<WeaponAsset>>,
     mut log: ResMut<crate::combat::CombatLog>,
     mut players: Query<(Entity, &mut Player, &mut Fighting)>,
+    indulgence: Option<Res<crate::indulge::Indulgence>>,
 ) {
     let Some(room) = &active.room else { return };
     // The tick's own length, so a tick stepped by hand while paused is a whole tick.
     let dt = fixed.timestep().as_secs_f32();
+    // The High quickens the player and the Comedown slows them.
+    let pace = indulgence.as_ref().map_or(1.0, |i| i.pace());
+    let mut moving = tuning.movement.clone();
+    moving.run_speed *= pace;
+    moving.lunge_speed *= pace;
+    moving.air_accel *= pace;
     for (e, mut p, mut f) in &mut players {
         let p = &mut *p;
         p.prev = p.feet();
@@ -422,14 +429,14 @@ fn tick(
                     combat_id(e),
                     &mut p.ctrl,
                     room,
-                    &tuning.movement,
+                    &moving,
                     &w.0,
                     controls.0,
                 );
                 log.0.extend(combat_events);
                 ev
             }
-            None => p.ctrl.tick(room, &tuning.movement, controls.0, dt),
+            None => p.ctrl.tick(room, &moving, controls.0, dt),
         };
         crate::combat::fall_dead(&f, &mut p.ctrl, room, &tuning.movement);
         // A body taking a blow turns to face where it came from.

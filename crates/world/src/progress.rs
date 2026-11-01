@@ -84,11 +84,30 @@ impl Weapon {
     }
 }
 
+/// An upgrade hidden in the rooms.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Upgrade {
+    /// Raises health.
+    Carnation,
+    /// Raises how much Nectar can be carried.
+    Goblet,
+}
+
+impl Upgrade {
+    pub fn name(self) -> &'static str {
+        match self {
+            Upgrade::Carnation => "carnation",
+            Upgrade::Goblet => "goblet",
+        }
+    }
+}
+
 /// Something a pickup gives.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Item {
     Ability(Ability),
     Weapon(Weapon),
+    Upgrade(Upgrade),
 }
 
 impl Item {
@@ -104,12 +123,19 @@ impl Item {
                     .find(|w| w.name() == name)
                     .map(Item::Weapon)
             })
+            .or_else(|| {
+                [Upgrade::Carnation, Upgrade::Goblet]
+                    .into_iter()
+                    .find(|u| u.name() == name)
+                    .map(Item::Upgrade)
+            })
     }
 
     pub fn name(self) -> &'static str {
         match self {
             Item::Ability(a) => a.name(),
             Item::Weapon(w) => w.name(),
+            Item::Upgrade(u) => u.name(),
         }
     }
 }
@@ -122,6 +148,8 @@ pub struct Progress {
     pub weapons: BTreeSet<Weapon>,
     /// Pickups taken, as `room:item`, so they do not come back.
     pub taken: BTreeSet<String>,
+    pub carnations: u32,
+    pub goblets: u32,
 }
 
 impl Progress {
@@ -144,7 +172,7 @@ impl Progress {
             ]
             .into(),
             weapons: [Weapon::Sabre, Weapon::Jeroboam].into(),
-            taken: BTreeSet::new(),
+            ..Progress::default()
         }
     }
 
@@ -153,7 +181,7 @@ impl Progress {
         Progress {
             abilities: Ability::ALL.into(),
             weapons: Weapon::ALL.into(),
-            taken: BTreeSet::new(),
+            ..Progress::default()
         }
     }
 
@@ -169,6 +197,16 @@ impl Progress {
             cling: self.has(Ability::Cling),
             lure: self.has(Ability::Lure),
         }
+    }
+
+    /// Health with every Carnation found.
+    pub fn max_health(&self) -> f32 {
+        100.0 + 20.0 * self.carnations as f32
+    }
+
+    /// How much Nectar can be carried, with every Goblet found.
+    pub fn nectar_capacity(&self) -> f32 {
+        100.0 + 25.0 * self.goblets as f32
     }
 
     /// How much colour the abilities found have taken from the world, 0 to 1.
@@ -188,6 +226,14 @@ impl Progress {
         match item {
             Item::Ability(a) => self.abilities.insert(a),
             Item::Weapon(w) => self.weapons.insert(w),
+            Item::Upgrade(Upgrade::Carnation) => {
+                self.carnations += 1;
+                true
+            }
+            Item::Upgrade(Upgrade::Goblet) => {
+                self.goblets += 1;
+                true
+            }
         };
         true
     }

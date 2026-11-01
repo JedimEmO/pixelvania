@@ -197,8 +197,16 @@ impl World {
                     ));
                 }
                 // On the map the two openings must meet: side by side, along the same tiles.
-                let here = self.rooms.iter().find(|r| r.name == *name).and_then(|r| r.pos);
-                let there = self.rooms.iter().find(|r| r.name == d.to_room).and_then(|r| r.pos);
+                let here = self
+                    .rooms
+                    .iter()
+                    .find(|r| r.name == *name)
+                    .and_then(|r| r.pos);
+                let there = self
+                    .rooms
+                    .iter()
+                    .find(|r| r.name == d.to_room)
+                    .and_then(|r| r.pos);
                 if let (Some(a), Some(b)) = (here, there)
                     && !meets(d, a, room, &back, b, other)
                 {
@@ -228,7 +236,12 @@ fn on_map(d: &Door, pos: (i32, i32)) -> (i32, i32, i32, i32) {
     let t = TILE as f32;
     let x0 = pos.0 + (d.x / t).round() as i32;
     let y0 = pos.1 + (d.y / t).round() as i32;
-    (x0, y0, x0 + (d.w / t).round() as i32, y0 + (d.h / t).round() as i32)
+    (
+        x0,
+        y0,
+        x0 + (d.w / t).round() as i32,
+        y0 + (d.h / t).round() as i32,
+    )
 }
 
 /// Whether two doors meet on the map: openings on facing sides, touching, along the same tiles.

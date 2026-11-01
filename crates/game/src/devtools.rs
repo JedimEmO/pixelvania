@@ -2,7 +2,8 @@
 //!
 //! `PIXELVANIA_SCREENSHOT=path.png` saves a screenshot after the game has settled, then exits.
 //! `PIXELVANIA_HOLD=right,jump` holds those inputs from the start, for screenshots of motion;
-//! `attack`, `charge` and `toast` press those at set frames, and `jeroboam` or `candelabrum` switch to that weapon.
+//! `attack`, `charge` and `toast` press those at set frames, `indulge` holds the left trigger
+//! from frame 150 to 200, and `jeroboam` or `candelabrum` switch to that weapon.
 //! `PIXELVANIA_RECORD=path` writes every tick's input to a file;
 //! `PIXELVANIA_REPLAY=path` plays such a file back instead of reading the controller.
 //! `PIXELVANIA_FX=sword-slash` spawns that effect in front of the player once it has landed;
@@ -87,8 +88,14 @@ impl Plugin for DevToolsPlugin {
         .insert_resource(ShowBoxes(std::env::var("PIXELVANIA_BOXES").is_ok()))
         .add_systems(Startup, boxes_in_glow);
         match std::env::var("PIXELVANIA_MOOD").as_deref() {
-            Ok("high") => app.insert_resource(crate::combat::Mood::ALL[1]),
-            Ok("comedown") => app.insert_resource(crate::combat::Mood::ALL[2]),
+            Ok("high") => {
+                set_mood_by_hand();
+                app.insert_resource(crate::combat::Mood::ALL[1])
+            }
+            Ok("comedown") => {
+                set_mood_by_hand();
+                app.insert_resource(crate::combat::Mood::ALL[2])
+            }
             _ => app,
         };
         app.insert_resource(PlannedFx(planned))
@@ -147,6 +154,7 @@ fn hold_inputs(held: Res<HeldInputs>, mut input: ResMut<TickInput>, mut frame: L
             "left" => input.move_axis.x = -1.0,
             "right" => input.move_axis.x = 1.0,
             "down" => input.move_axis.y = -1.0,
+            "indulge" => input.indulge_held = (150..200).contains(&*frame),
             "jump" => {
                 input.jump_held = true;
                 // Press once the player has had time to spawn and land.
@@ -300,9 +308,22 @@ fn draw_boxes(
     }
 }
 
+/// The mood was set by F4, the panel or `PIXELVANIA_MOOD`, so play no longer sets it.
+static MOOD_BY_HAND: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Whether the mood has been set by hand for testing, instead of by the High and the Comedown.
+pub fn mood_set_by_hand() -> bool {
+    MOOD_BY_HAND.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+fn set_mood_by_hand() {
+    MOOD_BY_HAND.store(true, std::sync::atomic::Ordering::Relaxed);
+}
+
 /// F4 moves combat to the next mood.
 fn cycle_mood(keys: Res<ButtonInput<KeyCode>>, mut mood: ResMut<crate::combat::Mood>) {
     if keys.just_pressed(KeyCode::F4) {
+        set_mood_by_hand();
         *mood = mood.next();
         info!("combat mood: {}", mood.name);
     }
@@ -498,6 +519,7 @@ mod panel {
                     ui.label("Combat mood (F4)");
                     for m in crate::combat::Mood::ALL {
                         if ui.selectable_label(mood.name == m.name, m.name).clicked() {
+                            super::set_mood_by_hand();
                             *mood = m;
                         }
                     }

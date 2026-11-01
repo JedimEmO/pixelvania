@@ -17,7 +17,7 @@ use bevy::sprite::Anchor;
 use serde::{Deserialize, Serialize};
 use world::Progress;
 
-use crate::combat::{Fighting, Mood};
+use crate::combat::Fighting;
 use crate::input::TickControls;
 use crate::player::Player;
 use crate::progress::PlayerProgress;
@@ -55,6 +55,10 @@ pub struct LastLounge(pub Option<LoungeRef>);
 pub struct SaveFile {
     pub progress: Progress,
     pub lounge: LoungeRef,
+    #[serde(default)]
+    pub nectar: f32,
+    #[serde(default)]
+    pub tolerance: f32,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -247,7 +251,7 @@ fn rest(
     active: Res<ActiveRoom>,
     progress: Res<PlayerProgress>,
     mut last: ResMut<LastLounge>,
-    mut mood: ResMut<Mood>,
+    mut indulgence: ResMut<crate::indulge::Indulgence>,
     mut lounges: Query<&mut Lounge>,
     mut players: Query<(&Player, &mut Fighting)>,
     mut was_up: Local<bool>,
@@ -269,9 +273,7 @@ fn rest(
             }
             f.combat.health = f.max_health;
             f.combat.poise = f.combat.max_poise;
-            if mood.name == "the Comedown" {
-                *mood = Mood::ALL[0];
-            }
+            indulgence.rest();
             l.flare = 1.0;
             let lounge = LoungeRef {
                 room: active.name.clone(),
@@ -281,6 +283,8 @@ fn rest(
             let save = SaveFile {
                 progress: progress.0.clone(),
                 lounge,
+                nectar: indulgence.nectar,
+                tolerance: indulgence.tolerance,
             };
             let hint = match write_save(&save) {
                 Ok(()) => "The night is saved here",
