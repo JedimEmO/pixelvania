@@ -1,8 +1,8 @@
 // The upper gallery: portraits above the antechamber.
 //
-// Enter from the balcony at the bottom left. The door at the bottom right opens into the ballroom's alcove.
-// Climb the portrait ledges, or swing from the chandelier, to the walkways at the top:
-// west to the card room, east to the crystal gallery.
+// Enter from the balcony at the bottom left, or from the crystal gallery's walkway at the top right.
+// Climb the portrait ledges to that walkway. The card room's walkway, top left, is a Swoon up
+// from the lowest ledge, and the chandelier swings to both.
 [room]
 name = upper_gallery
 background = ballroom
@@ -10,6 +10,7 @@ music = ballroom
 
 [legend]
 # stone
+v velvet
 g gilt
 
 [tiles]
@@ -19,19 +20,19 @@ g gilt
 ............................................
 ............................................
 ggggggggggg......................ggggggggggg
-##........................................##
-##........................................##
-##............ggggg.......................##
-##........................................##
-##........................................##
-##......................gggggg............##
-##........................................##
-##..........................................
-##..........................................
-##...........gggggg.........................
-....................................########
-....................................########
-....................................########
+vv........................................vv
+vv........................................vv
+vv.....................ggggg..............vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv..........................ggggg.........vv
+vv.........gggggggg.......................vv
+vv........................................vv
+vv........................................vv
+.....................ggggg................vv
+..........................................vv
+..........................................vv
 ############################################
 ############################################
 ############################################
@@ -42,10 +43,25 @@ ggggggggggg......................ggggggggggg
 door 0 16 h=3 id=west to=balcony:east_high
 door 0 2 h=3 id=northwest to=card_room:east
 door 43 2 h=3 id=east to=crystal_gallery:west
-door 43 13 h=3 id=east_low to=ballroom:alcove
-chandelier 23 3
 guest 28 19 class=medium
 guest 38 5 class=light
-light 8 16 radius=100 strength=0.8 color=ffc070 glow=0.6
-light 39 13 radius=110 strength=0.9 color=ff5aa0 glow=0.6
-light 5 3 radius=80 strength=0.7 color=b070ff glow=0.6
+chandelier 23 3
+prop 5 17 kind=portrait
+prop 8.5 17 kind=portrait
+prop 33 17 kind=portrait
+prop 36.5 17 kind=portrait
+prop 40 17 kind=portrait
+prop 5 11 kind=portrait
+prop 8.5 11 kind=portrait
+prop 36 4 kind=portrait
+prop 39.5 4 kind=portrait
+prop 3 4 kind=portrait
+prop 6.5 4 kind=portrait
+prop 22 19 kind=sofa
+prop 14 19 kind=statue
+prop 30 19 kind=urn
+light 7 15 radius=90 strength=0.8 color=ffc070 glow=0.6
+light 36 15 radius=90 strength=0.8 color=ffc070 glow=0.6
+light 5 3 radius=80 strength=0.7 color=ffc070 glow=0.6
+light 38 2.5 radius=80 strength=0.7 color=ffc070 glow=0.6
+light 22 10 radius=150 strength=0.45 color=ffc070 glow=0.2

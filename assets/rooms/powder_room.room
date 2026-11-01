@@ -1,6 +1,6 @@
 // The powder room: mirrors, a vanity, and Nectar left on the shelves.
 //
-// A dead end off the balcony. Climb the vanity to reach the high shelf.
+// A dead end off the balcony, its door high on the east wall. Climb the vanity and the shelf to get back up.
 [room]
 name = powder_room
 background = ballroom
@@ -9,36 +9,43 @@ music = ballroom
 [legend]
 # stone
 = wood
+v velvet
 g gilt
 
 [tiles]
-####################################
-####################################
-##................................##
-##................................##
-##................................##
-##................................##
-##gg..............................##
-##gg..............................##
-##gg======........................##
-##gg..............................##
-##gg..............................##
-##gg..............gggggg..........##
-##gg..............................##
-##gg..............................##
-##gg..............................##
-##gg....ggggggg...................##
-##......g.....g.....................
-##......g.....g.....................
-##......g.....g.....................
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vv................................vv
+vv................................vv
+vv................................vv
+vv................................vv
+vvgg................................
+vvgg................................
+vvgg................................
+vvgg.......................=========
+vvgg..............................vv
+vvgg..............................vv
+vvgg..............gggggg..........vv
+vvgg..............................vv
+vvgg..............................vv
+vv......ggggggg...................vv
+vv......g.....g...................vv
+vv......g.....g...................vv
+vv......g.....g...................vv
 ####################################
 ####################################
 ####################################
 ####################################
 
 [entities]
-door 35 16 h=3 id=east to=balcony:west
-nectar 6 7.5
+door 35 6 h=3 id=east to=balcony:west
+nectar 20.5 11.5
 chandelier 24 5
+prop 22 19 kind=vanity
+prop 27 19 kind=mirror
+prop 31 19 kind=screen
+prop 5 19 kind=potted_palm
+prop 11 15 kind=urn
+prop 17 19 kind=shoes
 light 11 12 radius=110 strength=1.0 color=ff5aa0 glow=0.7
-light 29 15 radius=90 strength=0.7 color=ffc070 glow=0.6
+light 29 7 radius=90 strength=0.7 color=ffc070 glow=0.6

@@ -25,6 +25,7 @@ mod player;
 mod plunge;
 mod progress;
 mod projectiles;
+mod props;
 mod render;
 mod rooms;
 mod story;
@@ -87,5 +88,6 @@ fn main() -> AppExit {
             encounter::EncounterPlugin,
             ambience::AmbiencePlugin,
         ))
+        .add_plugins((props::PropsPlugin,))
         .run()
 }

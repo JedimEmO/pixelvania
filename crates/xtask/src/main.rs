@@ -502,6 +502,51 @@ fn hanging() -> Result<()> {
     Ok(())
 }
 
+/// Every prop kind on one sheet, lit roughly as in the game: the surface under a warm light,
+/// the glow added on top, each standing on a floor line. Written at 1x and at 4x.
+fn props() -> Result<()> {
+    use assetgen::props::{KINDS, paint};
+    let out = root().join("target/props");
+    std::fs::create_dir_all(&out)?;
+    let (cell_w, cell_h, cols) = (68u32, 70u32, 9u32);
+    let rows = (KINDS.len() as u32).div_ceil(cols);
+    let bg = image::Rgba([14, 12, 18, 255]);
+    let floor = image::Rgba([40, 36, 46, 255]);
+    let mut img = image::RgbaImage::from_pixel(cols * cell_w, rows * cell_h, bg);
+    for (i, kind) in KINDS.iter().enumerate() {
+        let piece = paint(kind, 0).ok_or("a kind does not paint")?;
+        let (w, h) = piece.color.dimensions();
+        let (cx, cy) = (i as u32 % cols * cell_w, i as u32 / cols * cell_h);
+        let base = cy + cell_h - 4;
+        for x in cx + 2..cx + cell_w - 2 {
+            img.put_pixel(x, base, floor);
+        }
+        let (ox, oy) = (cx + (cell_w - w) / 2, base - h);
+        for (x, y, c) in piece.color.enumerate_pixels() {
+            let g = piece.glow.get_pixel(x, y);
+            if c[3] == 0 && g[3] == 0 {
+                continue;
+            }
+            let lit = |k: usize| {
+                let warm = [1.25, 1.1, 0.9][k];
+                let base = if c[3] > 0 { c[k] as f32 * warm } else { 14.0 };
+                (base + g[k] as f32).min(255.0) as u8
+            };
+            img.put_pixel(ox + x, oy + y, image::Rgba([lit(0), lit(1), lit(2), 255]));
+        }
+    }
+    img.save(out.join("props-1x.png"))?;
+    let big = image::imageops::resize(
+        &img,
+        img.width() * 4,
+        img.height() * 4,
+        image::imageops::FilterType::Nearest,
+    );
+    big.save(out.join("props.png"))?;
+    println!("wrote {} ({} kinds)", out.display(), KINDS.len());
+    Ok(())
+}
+
 /// Draws the whole world map, every room shown, to `target/map.png`.
 fn map() -> Result<()> {
     let assets = root().join("assets");
@@ -596,6 +641,7 @@ fn main() -> Result<()> {
         Some("sfx") if args.len() == 1 => assetgen::sfx::render_all(&root().join("assets/sfx"), &root().join("target/sfx")),
         Some("tiles") if args.len() == 1 => tiles::render(),
         Some("hanging") if args.len() == 1 => hanging(),
+        Some("props") if args.len() == 1 => props(),
         Some("reach") if args.len() == 1 => reach(),
         Some("map") if args.len() == 1 => map(),
         Some("backgrounds") if args.len() == 1 => {
@@ -621,7 +667,7 @@ fn main() -> Result<()> {
             fx(id, seed, &out)
         }
         _ => Err(
-            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player|guests] | tiles | hanging | reach | map | sfx | golden"
+            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player|guests] | tiles | hanging | props | reach | map | sfx | golden"
                 .into(),
         ),
     }

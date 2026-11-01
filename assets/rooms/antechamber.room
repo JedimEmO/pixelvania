@@ -1,8 +1,9 @@
-// The antechamber: a quiet room between the gardens and the ballroom.
+// The antechamber: a quiet waiting room between the gardens and the ballroom.
 //
-// The vertical slice starts here. Music comes through the wall from the ballroom,
-// whose door is at the right end of the floor. A lounge waits at the left end.
-// Two doors in the left wall lead west: to the cloakroom from the floor, and to the balcony from the ledge.
+// A new game wakes here, on the chaise, with the Host's first card beside it.
+// Music comes through the wall from the ballroom, whose door is at the right end of the floor.
+// Two doors in the left wall lead west: to the cloakroom from the floor, and to the balcony
+// from the ledge, which only a Cling reaches.
 [room]
 name = antechamber
 background = ballroom
@@ -15,24 +16,24 @@ v velvet
 g gilt
 
 [tiles]
-############################################
-############################################
-#..........................................#
-#..........................................#
-#..........................................#
-#..........................................#
-#..........................................#
-#..........................................#
-#..........................................#
-#.............gggggggggggggggg.............#
-#..........................................#
-...........................................#
-...........................................#
-...........................................#
-#######....................................#
-#..........................................#
-#..........................................#
-#..........................................#
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+v..........................................v
+v..........................................v
+v..........................................v
+v..........................................v
+v..........................................v
+v..........................................v
+v..........................................v
+v.............gggggggggggggggg.............v
+v..........................................v
+...........................................v
+...........................................v
+...........................................v
+vvvvvvv....................................v
+v..........................................v
+v..........................................v
+v..........................................v
 ............................................
 ............................................
 ............................................
@@ -41,13 +42,26 @@ g gilt
 ############################################
 
 [entities]
-spawn 4 21
+spawn 10 21
 door 43 18 h=3 id=east to=ballroom:west
 door 0 18 h=3 id=west to=cloakroom:east_high
 door 0 11 h=3 id=west_high to=balcony:east_low
+lounge 10 21 id=bench
+note 11.5 20 id=antechamber
+nectar 25 8.5
 chandelier 22 13
 lantern 36 5
 lantern 4 16.5
-lounge 10 21 id=bench
-nectar 18 20
+prop 3 21 kind=clock
+prop 16 21 kind=urn
+prop 19 18 kind=portrait
+prop 25 18 kind=portrait
+prop 22 21 kind=sofa
+prop 29 21 kind=chair
+prop 32 21 kind=chair flip=1
+prop 35.5 21 kind=mirror
+prop 40 21 kind=potted_palm z=front
+prop 3.5 14 kind=coat_rack
 light 40 19.5 radius=110 strength=1.0 color=ff5aa0 glow=0.7 pulse=0.6
+light 3 12 radius=90 strength=0.7 color=7080ff glow=0.4
+light 22 11 radius=150 strength=0.45 color=b070ff glow=0.2

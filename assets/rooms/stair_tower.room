@@ -1,8 +1,9 @@
-// The stair tower: landings stacked up a tall well beside the ballroom.
+// The stair tower: landings up a tall well beside the bandstand, under a cold window.
 //
-// Enter from the bandstand at the bottom right or the crystal gallery on the left.
-// Climb the landings, swing from the lanterns, or cling to the walls,
-// up to the mirrored corridor at the top right.
+// Enter from the bandstand at the bottom right. Two landings climb to the banister where a pair of
+// long silk gloves hang: they give the Cling. Above them the well is sheer:
+// cling up the west wall to the crystal gallery's door, then climb the landings
+// to the mirrored corridor at the top right.
 [room]
 name = stair_tower
 background = ballroom
@@ -26,7 +27,7 @@ music = ballroom
 ##............................##
 ##............................##
 ##............................##
-##........========............##
+##.......========.............##
 ##............................##
 ##............................##
 ##..............................
@@ -36,32 +37,32 @@ music = ballroom
 ##....................##########
 ##............................##
 ##............................##
-##......=======...............##
+##.............======.........##
 ##............................##
 ##............................##
 ##............................##
-##................=======.....##
+##......======................##
 ..............................##
 ..............................##
 ..............................##
-#########.....................##
-#########.....................##
+####..........................##
+####..........................##
+####..........................##
+####..........................##
+####..........................##
+####..........................##
+####..........................##
+####..........................##
+####..........................##
+####..........................##
+####..........................##
+####..........................##
+####..........................##
+##..==========................##
 ##............................##
 ##............................##
-##.....=======................##
 ##............................##
-##............................##
-##............................##
-##............................##
-##...................========.##
-##............................##
-##............................##
-##............................##
-##..........=====.............##
-##............................##
-##............................##
-#########.....................##
-#########.........========....##
+##................========....##
 ##..............................
 ##..............................
 ##..............................
@@ -74,12 +75,24 @@ music = ballroom
 door 0 28 h=3 id=west_high to=crystal_gallery:east
 door 31 16 h=3 id=east_top to=mirror_corridor:west
 door 31 49 h=3 id=east_low to=bandstand:west
+pickup 9 42 item=cling
+guest 22 52 class=light
+guest 11 27 class=toaster
 lantern 16 30
 lantern 17 17
-nectar 13.5 12.5
-guest 24 40 class=toaster
-guest 11 35 class=light
-light 6 44 radius=110 strength=0.9 color=ff5aa0 glow=0.6
-light 26 49 radius=110 strength=0.9 color=ffc070 glow=0.6
-light 5 29 radius=90 strength=0.8 color=b070ff glow=0.6
-light 26 17 radius=100 strength=0.8 color=ffc070 glow=0.6
+prop 9 44 kind=gloves_on_banister
+prop 21.5 48 kind=balustrade z=front
+prop 27.5 52 kind=clock
+prop 5 52 kind=potted_palm
+prop 14 52 kind=urn
+prop 11 27 kind=balustrade
+prop 17.5 23 kind=urn
+prop 12.5 13 kind=birdcage
+prop 26 16 kind=portrait
+prop 6 39 kind=portrait
+light 9 40 radius=90 strength=0.9 color=ffc070 glow=0.6
+light 26 49 radius=110 strength=0.8 color=7080ff glow=0.5
+light 16 34 radius=160 strength=0.5 color=60d0ff glow=0.25
+light 3 29 radius=90 strength=0.7 color=d8e4ff glow=0.5
+light 26 17 radius=100 strength=0.8 color=60d0ff glow=0.6
+light 15 6 radius=140 strength=0.5 color=d8e4ff glow=0.3

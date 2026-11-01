@@ -1,4 +1,4 @@
-// The smoking room: a low, hazy room of booths off the cloakroom.
+// The smoking room: a low, hazy room of booths off the cloakroom, green with absinthe.
 //
 // A Carnation waits on a gilt shelf hung high in the middle of the room, out of reach of every wall.
 // Swing to it from either lantern. The floor under the shelf is cracked.
@@ -14,26 +14,26 @@ g gilt
 x cracked
 
 [tiles]
-############################################
-############################################
-##........................................##
-##........................................##
-##........................................##
-##........................................##
-##...............ggggggg..................##
-##........................................##
-##........................................##
-##........................................##
-##........................................##
-##........................................##
-##........................................##
-##........................................##
-##..........................................
-##..........................................
-##..........................................
-##..............................############
-##...vvv....vvv..........vvv....############
-##...vvv....vvv..........vvv....############
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv...............ggggggg..................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv..........................................
+vv..........................................
+vv..........................................
+vv..............................vvvvvvvvvvvv
+vv...vvv....vvv..........vvv....vvvvvvvvvvvv
+vv...vvv....vvv..........vvv....vvvvvvvvvvvv
 ##################xxxxx#####################
 ##################.....#####################
 ##################.....#####################
@@ -42,14 +42,27 @@ x cracked
 
 [entities]
 door 43 14 h=3 id=east to=cloakroom:west
-nectar 20 22.5
-lantern 9 5
-lantern 31 5
 pickup 21.5 5 item=carnation
 guest 10 20 class=heavy
 guest 36 17 class=light
 guest 18.5 6 class=toaster
-light 21.5 4.5 radius=90 strength=1.1 color=ff5aa0 glow=0.8
-light 20 16 radius=130 strength=0.6 color=ffa050 glow=0.6
-light 37 14 radius=90 strength=0.8 color=ffc070 glow=0.6
-light 4 16 radius=90 strength=0.6 color=b070ff glow=0.6
+nectar 20 22.5
+lantern 9 5
+lantern 31 5
+prop 9.5 20 kind=ashtray_stand
+prop 16.5 20 kind=ashtray_stand
+prop 22.5 20 kind=ashtray_stand
+prop 29.5 20 kind=ashtray_stand
+prop 4 20 kind=chair
+prop 16 20 kind=chair flip=1
+prop 20 20 kind=card_table
+prop 24 20 kind=chair flip=1
+prop 35 17 kind=birdcage
+prop 40.5 17 kind=clock
+prop 9 13 kind=portrait
+prop 30 13 kind=portrait
+light 20 12 radius=170 strength=0.55 color=8cff70 glow=0.25
+light 21.5 4.5 radius=90 strength=1.0 color=ff5aa0 glow=0.8
+light 9 17 radius=70 strength=0.8 color=ffa050 glow=0.6
+light 29 17 radius=70 strength=0.8 color=ffa050 glow=0.6
+light 38 14 radius=90 strength=0.8 color=ffc070 glow=0.6

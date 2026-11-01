@@ -1,7 +1,8 @@
 // The crystal gallery: a long room of chandeliers above the ballroom.
 //
-// Swing from chandelier to chandelier to the stair tower door at the top right,
-// or walk the floor and climb the wall at the far end.
+// Enter from the stair tower at the top right. A moth circles the chandeliers, and on a gilt perch
+// eight tiles above the floor waits the Lure: Swoon up to it. Walk on to the upper gallery's door
+// at the bottom left, or swing from chandelier to chandelier.
 [room]
 name = crystal_gallery
 background = ballroom
@@ -25,12 +26,12 @@ g gilt
 #..............................................................#
 #..............................................................#
 #...............................................................
-#...................ggggggggggg.................................
+#...............gggggg..............gggggg......................
 #...............................................................
 #......................................................#########
 #......................................................#########
 #......................................................#########
-..............................................ggggg....#########
+.......................................................#########
 .......................................................#########
 .......................................................#########
 ################################################################
@@ -40,11 +41,21 @@ g gilt
 [entities]
 door 0 18 h=3 id=west to=upper_gallery:east
 door 63 12 h=3 id=east to=stair_tower:west_high
+pickup 38.5 12 item=lure
+nectar 25 12.5
 chandelier 12 5
 chandelier 24 5
 chandelier 36 5
 chandelier 48 5
-nectar 25 12.5
-light 24 10 radius=140 strength=0.8 color=ff5aa0 glow=0.5
-light 32 20 radius=110 strength=1.0 color=ffc070 glow=0.6 pulse=0.4
+prop 6 21 kind=statue
+prop 24.5 21 kind=statue
+prop 30.5 21 kind=statue
+prop 48 21 kind=statue
+prop 13 21 kind=urn
+prop 44 21 kind=urn
+prop 18 21 kind=mirror
+prop 36 21 kind=mirror
+light 38.5 10 radius=120 strength=0.9 color=d8e4ff glow=0.6
+light 24 9 radius=160 strength=0.6 color=60d0ff glow=0.4
+light 8 18 radius=120 strength=0.6 color=60d0ff glow=0.4
 light 58 12 radius=100 strength=0.8 color=b070ff glow=0.6

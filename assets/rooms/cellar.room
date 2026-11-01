@@ -1,10 +1,9 @@
 // The cellar under the stage, where the slice ends.
 //
-// The fall through the stage lands here at the foot of a narrow shaft.
-// Cling up the shaft to climb back. The flooded basin waits for later.
+// The fall through the stage lands here at the foot of a narrow shaft, in the dark and the quiet.
+// One card glows on the floor. Cling up the shaft to climb back. The flooded basin waits for later.
 [room]
 name = cellar
-background = ballroom
 music = ballroom
 
 [legend]
@@ -38,6 +37,8 @@ music = ballroom
 
 [entities]
 door 14 0 w=3 id=top to=stage:bottom
+note 21 20 id=cellar
 nectar 4 20.5
-light 15 18 radius=130 strength=0.8 color=7080ff glow=0.4
-light 32 20 radius=110 strength=0.6 color=60d0ff glow=0.4
+light 15 16 radius=110 strength=0.35 color=7080ff glow=0.2
+light 21 20 radius=50 strength=0.6 color=ffc070 glow=0.3
+light 32 21 radius=80 strength=0.25 color=60d0ff glow=0.2
