@@ -261,6 +261,9 @@ The feast is next to the Arrival on the map, up the grand stair, and gives the S
 47. **The Glutton.** The feast's boss: a swipe of a magnum, a hop whose landing shakes the floor,
     and from 60% a gorge that heals him until three blows make him choke. Under 25% he cannot eat
     and hops back to back. The rig gained a belly for him, and he fights to his own galop.
+48. **The banquet backdrop.** Damask walls hung with still lifes, a long table receding with its diners
+    and candelabra, swags and game birds close by, and spoiled fruit and a spilled goblet at the edge.
+    The feast's rooms use it, tinted red and gold; the stairs, kitchens and larder keep the cellars.
 
 
 ## For the director

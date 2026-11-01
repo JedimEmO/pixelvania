@@ -4,7 +4,7 @@
 // West is the pastry room; east, past the sideboard's lounge, the Glutton's hall.
 [room]
 name = long_table
-background = ballroom 8a2020
+background = banquet a03028
 music = ballroom muffled
 
 [legend]

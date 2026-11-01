@@ -3,7 +3,7 @@
 // The gourmand has eaten here every night. He can't remember a single dish.
 [room]
 name = supper_room
-background = ballroom 8a2020
+background = banquet 8a4a30
 music = ballroom muffled
 
 [legend]

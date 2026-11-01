@@ -4,7 +4,7 @@
 // Landings zigzag up to the banquet hall's door, high on the east.
 [room]
 name = service_stair
-background = ballroom 8a3020
+background = cellars 8a4a30
 music = ballroom muffled
 
 [legend]

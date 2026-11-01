@@ -6,7 +6,7 @@
 // A Favour waits on a shelf over the high table, for a good Lunge.
 [room]
 name = banquet_hall
-background = ballroom 8a2020
+background = banquet a03028
 music = ballroom muffled
 
 [legend]

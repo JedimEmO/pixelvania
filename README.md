@@ -111,7 +111,7 @@ The game uses the same painter when a room loads or reloads.
 ## Backgrounds
 
 `background = ballroom` in a room's `[room]` section selects generated parallax scenery:
-`ballroom`, `cellars`, `backstage` or `foyer`. A colour after the name tints its distance,
+`ballroom`, `cellars`, `backstage`, `foyer` or `banquet`. A colour after the name tints its distance,
 as in `background = ballroom 345a32`; without one it is a dim wine-rose.
 `cargo xtask backgrounds` writes each set's strips and three camera offsets to `target/backgrounds/<set>/`,
 with native and nearest-neighbour 2x previews.

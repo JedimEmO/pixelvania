@@ -4,7 +4,7 @@
 // The Jeroboam waits on the platform by the door. East is the room after.
 [room]
 name = gluttons_hall
-background = ballroom 6a1418
+background = banquet 7a1418
 music = ballroom muffled
 
 [legend]

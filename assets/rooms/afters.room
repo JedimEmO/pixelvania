@@ -5,7 +5,7 @@
 // The way out is back through the Glutton's hall.
 [room]
 name = afters
-background = ballroom 5a2a30
+background = banquet 5a2a30
 music = ballroom muffled
 
 [legend]

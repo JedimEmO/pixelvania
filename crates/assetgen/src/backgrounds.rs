@@ -1,4 +1,5 @@
-//! Seeded backdrop silhouettes: the ballroom's windows, the cellars' vaults and the backstage.
+//! Seeded backdrop silhouettes: the ballroom's windows, the cellars' vaults, the backstage,
+//! the foyer and the banquet.
 //! Pixels carry their distant lighting, in sRGB.
 //!
 //! Each set is four repeating strips, farthest first, the last drawn in front of the room.
@@ -271,7 +272,7 @@ pub fn ballroom(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
 }
 
 /// The backdrop sets a room can name.
-pub const SETS: [&str; 4] = ["ballroom", "cellars", "backstage", "foyer"];
+pub const SETS: [&str; 5] = ["ballroom", "cellars", "backstage", "foyer", "banquet"];
 
 /// The set with this name, or `None` if there is no such set.
 pub fn set(name: &str, seed: u32, light: [u8; 3]) -> Option<Vec<Layer>> {
@@ -280,6 +281,7 @@ pub fn set(name: &str, seed: u32, light: [u8; 3]) -> Option<Vec<Layer>> {
         "cellars" => Some(cellars(seed, light)),
         "backstage" => Some(backstage(seed, light)),
         "foyer" => Some(foyer(seed, light)),
+        "banquet" => Some(banquet(seed, light)),
         _ => None,
     }
 }
@@ -636,6 +638,151 @@ pub fn backstage(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
         far.layer("flats", 0.12, false),
         middle.layer("fly lines", 0.32, false),
         near.layer("catwalk", 0.62, false),
+        front.layer("foreground", 1.18, true),
+    ]
+}
+
+/// The banquet: damask walls hung with still lifes, a long table receding with its diners,
+/// swags and game birds close by, and the feast going off at the edge of the screen.
+pub fn banquet(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
+    let wall = tint([16, 8, 9], dominant_light, 18);
+    let damask = tint([22, 11, 11], dominant_light, 24);
+    let gilt = tint([34, 24, 12], dominant_light, 30);
+    let shadow = tint([9, 5, 6], dominant_light, 8);
+    let canvas = tint([12, 9, 7], dominant_light, 14);
+    let fruit = tint([30, 14, 12], dominant_light, 40);
+    let mut far = Canvas::new(wall);
+    // Damask: a small diamond every 24 pixels, staggered by row.
+    for row in 0..14 {
+        let y = 40 + row * 20;
+        let shift = if row % 2 == 0 { 12 } else { 0 };
+        for x in (shift + 12..WIDTH as i32 - 12).step_by(24) {
+            for d in 0..3 {
+                far.rect(x - d, y - 3 + d, 1 + d * 2, 1, damask);
+                far.rect(x - d, y + 3 - d, 1 + d * 2, 1, damask);
+            }
+        }
+    }
+    // A picture rail and a dark dado.
+    far.rect(0, 30, WIDTH as i32, 3, gilt);
+    far.rect(0, 33, WIDTH as i32, 2, shadow);
+    far.rect(0, 320, WIDTH as i32, 80, shadow);
+    far.rect(0, 318, WIDTH as i32, 2, gilt);
+    // Still lifes in heavy frames: a dish, fruit heaped on it, something hanging over it.
+    for bay in 0..4 {
+        let n = noise(seed, 900 + bay as u32);
+        let x = 120 + bay * 240;
+        let (w, h) = (96 + (n % 3) as i32 * 12, 76 + (n / 3 % 3) as i32 * 10);
+        let top = 70 + (n / 9 % 40) as i32;
+        far.rect(x - w / 2 - 6, top - 6, w + 12, h + 12, gilt);
+        far.rect(x - w / 2, top, w, h, canvas);
+        let table = top + h - 18;
+        far.rect(x - w / 2, table, w, 18, shadow);
+        far.ellipse(x, table, w / 3, 5, damask);
+        for i in 0..5 {
+            let fx = x - 20 + i * 10;
+            let fy = table - 6 - (i % 2) * 6;
+            far.ellipse(fx, fy, 5, 5, fruit);
+        }
+        if n % 2 == 0 {
+            // A pheasant hung by its feet.
+            far.line((x + w / 3, top + 4), (x + w / 3, top + 18), 1, shadow);
+            far.ellipse(x + w / 3, top + 28, 5, 11, shadow);
+        }
+    }
+
+    // The long table, receding, with diners and candelabra along it.
+    let mut middle = Canvas::new([0; 4]);
+    let dark = [10, 6, 7, 255];
+    let cloth = tint([20, 14, 14], dominant_light, 20);
+    let flame = tint([70, 44, 20], dominant_light, 90);
+    middle.rect(0, 300, WIDTH as i32, 10, cloth);
+    middle.rect(0, 310, WIDTH as i32, 50, dark);
+    for i in 0..20 {
+        let n = noise(seed, 700 + i as u32);
+        let x = 24 + i * 48 + (n % 9) as i32;
+        // A diner: shoulders and a head, some leaning in, some slumped.
+        let slump = (n / 9 % 3) as i32 * 4;
+        middle.ellipse(x, 288 + slump / 2, 14, 12, dark);
+        middle.ellipse(x + slump / 2, 266 + slump, 7, 8, dark);
+        if n.is_multiple_of(4) {
+            // A raised glass.
+            middle.rect(x + 10, 246 + slump, 2, 20, dark);
+            middle.rect(x + 7, 242 + slump, 8, 5, dark);
+        }
+        if i % 4 == 2 {
+            // A candelabrum between diners.
+            let cx = x + 24;
+            middle.rect(cx - 1, 248, 3, 52, dark);
+            middle.rect(cx - 12, 250, 25, 2, dark);
+            for c in [-12, 0, 12] {
+                middle.rect(cx + c - 1, 238, 3, 12, dark);
+                middle.pixel(cx + c, 236, flame);
+                middle.pixel(cx + c, 235, flame);
+            }
+        } else if i % 4 == 0 {
+            // A covered dish.
+            middle.ellipse(x + 24, 298, 12, 9, dark);
+            middle.rect(x + 23, 287, 3, 3, dark);
+        }
+    }
+
+    // Swags of curtain from the top, and game hung from a rail.
+    let mut near = Canvas::new([0; 4]);
+    let drape = [8, 4, 6, 255];
+    let fold = [14, 7, 9, 255];
+    let rope = tint([30, 22, 12], dominant_light, 24);
+    for x in [180, 660] {
+        // A swag: a heavy curve between two tails.
+        for dx in -110..=110 {
+            let sag = 34 - (dx * dx) / 360;
+            near.rect(x + dx, 0, 1, 20 + sag.max(0), drape);
+        }
+        for side in [-1, 1] {
+            near.rect(x + side * 110 - 9, 0, 18, 220, drape);
+            near.rect(x + side * 110 - 2, 10, 2, 200, fold);
+        }
+        near.rect(x - 2, 40, 4, 6, rope);
+    }
+    for x in [420, 900] {
+        // A brace of birds hung by their feet from a hook.
+        near.rect(x - 1, 0, 2, 90, rope);
+        for (dx, len) in [(-8, 38), (0, 46), (8, 34)] {
+            near.line((x, 90), (x + dx, 98), 1, rope);
+            near.ellipse(x + dx, 98 + len / 2, 6, len / 2, drape);
+            near.rect(x + dx - 1, 98 + len, 2, 10, drape);
+        }
+    }
+
+    // Close, at the edge: the feast going off. A spilled goblet, fruit gone soft, a bone.
+    let mut front = Canvas::new([0; 4]);
+    let near_black = [4, 2, 3, 255];
+    let soft = [9, 4, 6, 255];
+    let (px, py) = (110, 368);
+    front.ellipse(px, py + 20, 70, 26, near_black);
+    for (dx, dy, r) in [
+        (-40, -6, 12),
+        (-18, -14, 14),
+        (8, -10, 13),
+        (30, -4, 11),
+        (-4, -26, 10),
+    ] {
+        front.ellipse(px + dx, py + dy, r, r, soft);
+        front.ellipse(px + dx - 2, py + dy - 2, r - 3, r - 3, near_black);
+    }
+    // The goblet on its side.
+    front.rect(px + 40, py - 18, 26, 14, near_black);
+    front.rect(px + 66, py - 14, 10, 6, near_black);
+    front.rect(px + 76, py - 20, 3, 18, near_black);
+    // A bone across the heap.
+    front.line((px - 60, py - 30), (px - 20, py - 40), 4, soft);
+    front.ellipse(px - 62, py - 30, 5, 5, soft);
+    front.ellipse(px - 18, py - 41, 5, 5, soft);
+
+    vec![
+        far.layer("still lifes", 0.12, false),
+        middle.layer("long table", 0.32, false),
+        near.layer("swags", 0.62, false),
         front.layer("foreground", 1.18, true),
     ]
 }

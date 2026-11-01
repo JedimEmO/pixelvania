@@ -4,7 +4,7 @@
 // Landings zigzag back up to the door; the Favour is a Lunge west from the highest of them.
 [room]
 name = pastry_room
-background = ballroom 8a4a60
+background = banquet 8a4a60
 music = ballroom muffled
 
 [legend]
