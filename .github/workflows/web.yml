@@ -1,9 +1,4 @@
-# Builds the web version with trunk and publishes it to https://jedimemo.github.io/pixelvania-play/.
-#
-# This repository is private, and the plan has no Pages for private repositories,
-# so the built files go to the public repository JedimEmO/pixelvania-play, which serves them.
-# Only the build is pushed there, never the source. The push uses a deploy key:
-# its public half is a write deploy key on pixelvania-play, its private half the secret PLAY_DEPLOY_KEY here.
+# Builds the web version with trunk and publishes it to this repository's GitHub Pages.
 name: Web
 
 on:
@@ -13,17 +8,19 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 # One deploy at a time; a newer push replaces a waiting one.
 concurrency:
-  group: web
+  group: pages
   cancel-in-progress: true
 
 env:
   TRUNK_VERSION: v0.21.14
 
 jobs:
-  web:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,18 +40,23 @@ jobs:
           trunk --version
 
       # Trunk fetches the wasm-bindgen that matches Cargo.lock, and wasm-opt.
-      # The public URL is relative so the game works under the Pages path.
+      # The public URL is relative so the game works under the repository's Pages path.
       - name: Build
         working-directory: web
         run: trunk build --release --public-url ./
 
-      # Each deploy replaces the build repository's history, so it never grows.
-      - name: Publish
-        uses: peaceiris/actions-gh-pages@v4
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
         with:
-          deploy_key: ${{ secrets.PLAY_DEPLOY_KEY }}
-          external_repository: JedimEmO/pixelvania-play
-          publish_branch: main
-          publish_dir: dist
-          force_orphan: true
-          full_commit_message: Build ${{ github.sha }}
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
