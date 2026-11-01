@@ -1,16 +1,15 @@
 // The champagne cellar: racks of bottles under the ballroom, with a lounge among them.
 //
-// Run it between the champagne stair and the wine vault. The racks carry a way above the floor.
-// One patch of the floor is cracked.
+// From the champagne stair, the way in stops at a trench where a rack gave way: Lunge across it.
+// Beyond are the racks, climbable to the largest bottle of all, the Jeroboam,
+// and the wine vault's door at the west end. A step in the trench lets a fall climb back out.
 [room]
 name = champagne_cellar
-background = ballroom
 music = ballroom
 
 [legend]
 # stone
 = wood
-x cracked
 
 [tiles]
 ################################################################
@@ -24,29 +23,65 @@ x cracked
 #..............................................................#
 #..............................................................#
 #..............................................................#
-#.........=========...........................=======..........#
+#..............................................................#
+#.........=========............................................#
 #..............................................................#
 #..............................................................#
 #..............................................................#
-#.....=========.............................===========........#
-#..............................................................#
+#....=========..........=======................................#
 ................................................................
 ................................................................
 ................................................................
-################################################xxxx############
-################################################....############
-################################################....############
+############################################.........###########
+############################################.........###########
+############################################.........###########
+############################################.........###########
+############################################......===###########
+############################################.........###########
+############################################.........###########
+############################################.........###########
+################################################################
 ################################################################
 
 [entities]
 door 63 17 h=3 id=east to=champagne_stair:west_bottom
 door 0 17 h=3 id=west to=wine_vault:east
-nectar 49.5 22.5
 lounge 31 20 id=racks
-chandelier 31 10
+pickup 14 11 item=jeroboam
+note 21 19 id=champagne_cellar
 guest 12 20 class=heavy
-guest 56 20 class=medium
-guest 49 15 class=toaster
-light 31 17 radius=130 strength=0.9 color=ffc070 glow=0.6
-light 8 17 radius=100 strength=0.7 color=ffa050 glow=0.6
-light 56 17 radius=100 strength=0.8 color=ff5aa0 glow=0.6
+guest 38 20 class=medium
+guest 58 20 class=light
+nectar 47 27.5
+prop 3 20 kind=bottle_rack
+prop 5 20 kind=bottle_rack
+prop 9 20 kind=bottle_rack
+prop 11 20 kind=bottle_rack
+prop 13 20 kind=bottle_rack
+prop 15 20 kind=bottle_rack
+prop 22 20 kind=bottle_rack
+prop 24 20 kind=bottle_rack
+prop 26 20 kind=bottle_rack
+prop 3 17.875 kind=bottle_rack
+prop 15 17.875 kind=bottle_rack
+prop 22 17.875 kind=bottle_rack
+prop 7 16 kind=bottle_rack
+prop 11 16 kind=bottle_rack
+prop 17 12 kind=bottle_rack
+prop 11 12 kind=crate
+prop 26 16 kind=bottle_rack
+prop 19 20 kind=cask
+prop 36.5 20 kind=champagne_tower
+prop 41.5 20 kind=cask
+prop 55 20 kind=crate
+prop 57 20 kind=crate
+prop 56 19 kind=crate
+prop 61 20 kind=bottle_rack
+prop 46 28 kind=crate
+prop 49.5 28 kind=fallen_glass
+light 14 9 radius=120 strength=1.0 color=ffc070 glow=0.2
+light 25 15 radius=140 strength=0.8 color=ffc070 glow=0.1
+light 31 17 radius=120 strength=0.8 color=ffc070 glow=0.15
+light 6 15 radius=110 strength=0.8 color=ffa050 glow=0.15
+light 58 16 radius=120 strength=0.9 color=ffc070 glow=0.15
+light 48 25 radius=90 strength=0.6 color=ffa050 glow=0.1

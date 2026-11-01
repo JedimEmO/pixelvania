@@ -23,6 +23,25 @@ fn load() -> (World, BTreeMap<String, Room>) {
     (world, rooms)
 }
 
+/// The movement abilities found in the slice before the Dancer: Lunge, Cling, Swoon and Lure.
+fn before_the_dancer() -> BTreeSet<Ability> {
+    [
+        Ability::Lunge,
+        Ability::Cling,
+        Ability::Swoon,
+        Ability::Lure,
+    ]
+    .into()
+}
+
+/// A new game, with these abilities found.
+fn with(abilities: &BTreeSet<Ability>) -> Progress {
+    Progress {
+        abilities: abilities.clone(),
+        ..Progress::new_game()
+    }
+}
+
 #[test]
 fn the_ballroom_is_explored_from_its_door() {
     let (_, rooms) = load();
@@ -31,7 +50,7 @@ fn the_ballroom_is_explored_from_its_door() {
     let reach = explore(
         room,
         &MoveTuning::default(),
-        Progress::slice_start().movement(),
+        with(&before_the_dancer()).movement(),
         (3.0 * TILE as f32, 37.0 * TILE as f32),
     );
     println!("{reach:?} in {:?}", t.elapsed());
@@ -66,7 +85,7 @@ fn below_cracked_floors(rooms: &BTreeMap<String, Room>) -> BTreeSet<String> {
 #[test]
 fn the_slice_reaches_everything_and_traps_nobody() {
     let (world, rooms) = load();
-    let abilities = Progress::slice_start().abilities;
+    let abilities = before_the_dancer();
     let r = check_world(&world, &rooms, &MoveTuning::default(), &abilities);
     println!("{r:?}");
     // The Plunge breaks cracked floors, and the checker treats them as solid until it exists,
@@ -99,7 +118,7 @@ fn the_slice_reaches_everything_and_traps_nobody() {
 #[test]
 fn the_alcove_needs_the_lure() {
     let (world, rooms) = load();
-    let mut abilities = Progress::slice_start().abilities;
+    let mut abilities = before_the_dancer();
     abilities.remove(&Ability::Lure);
     let r = check_world(&world, &rooms, &MoveTuning::default(), &abilities);
     assert!(!r.pickups.contains("ballroom:candelabrum"), "{r:?}");
@@ -111,9 +130,74 @@ fn the_alcove_needs_the_lure() {
 #[test]
 fn with_the_plunge_every_room_is_reached() {
     let (world, rooms) = load();
-    let mut abilities = Progress::slice_start().abilities;
+    let mut abilities = before_the_dancer();
     abilities.insert(Ability::Plunge);
     let r = check_world(&world, &rooms, &MoveTuning::default(), &abilities);
     assert_eq!(r.rooms.len(), world.rooms.len(), "{r:?}");
     assert!(r.traps.is_empty(), "{r:?}");
+}
+
+/// A new game starts with nothing, and the slice hands out its abilities in order:
+/// each step's pickups are reached with what was found before them and not sooner,
+/// every step opens more rooms, and no step leaves a way in without a way out.
+#[test]
+fn the_slice_gives_its_abilities_in_order() {
+    let (world, rooms) = load();
+    let t = MoveTuning::default();
+    // What is found with the abilities so far, and the ability found next.
+    let order: [(&[&str], Ability); 5] = [
+        (&["cloakroom:lunge"], Ability::Lunge),
+        (
+            &["champagne_cellar:jeroboam", "stair_tower:cling"],
+            Ability::Cling,
+        ),
+        (&["balcony:swoon"], Ability::Swoon),
+        (&["crystal_gallery:lure"], Ability::Lure),
+        // The Dancer gives the Plunge, after the candelabrum.
+        (&["ballroom:candelabrum"], Ability::Plunge),
+    ];
+    let mut found = Progress::new_game().abilities;
+    assert!(found.is_empty(), "a new game starts with no abilities");
+    let mut rooms_before = 0;
+    for (i, (pickups, next)) in order.iter().enumerate() {
+        let r = check_world(&world, &rooms, &t, &found);
+        println!("with {found:?}: {} rooms; {:?}", r.rooms.len(), r.pickups);
+        assert!(r.traps.is_empty(), "with {found:?}: {:?}", r.traps);
+        assert!(
+            r.rooms.len() > rooms_before,
+            "with {found:?} no new rooms open: {:?}",
+            r.rooms
+        );
+        rooms_before = r.rooms.len();
+        for p in *pickups {
+            assert!(r.pickups.contains(*p), "with {found:?}, {p} is not reached");
+        }
+        if let Some((later, _)) = order.get(i + 1) {
+            for p in *later {
+                assert!(
+                    !r.pickups.contains(*p),
+                    "with {found:?}, {p} is reached too soon"
+                );
+            }
+        }
+        found.insert(*next);
+    }
+    // With the Plunge, the floor under the stage gives way and every room is reached.
+    let r = check_world(&world, &rooms, &t, &found);
+    assert!(r.traps.is_empty(), "{:?}", r.traps);
+    assert_eq!(r.rooms.len(), world.rooms.len(), "{:?}", r.rooms);
+}
+
+/// With the Lure, everything is open but the cellar under the stage.
+#[test]
+fn the_lure_opens_everything_but_the_cellar() {
+    let (world, rooms) = load();
+    let r = check_world(&world, &rooms, &MoveTuning::default(), &before_the_dancer());
+    let missed: Vec<&str> = world
+        .rooms
+        .iter()
+        .map(|w| w.name.as_str())
+        .filter(|n| !r.rooms.contains(*n))
+        .collect();
+    assert_eq!(missed, ["cellar"], "{r:?}");
 }

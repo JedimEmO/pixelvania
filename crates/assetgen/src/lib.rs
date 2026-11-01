@@ -9,6 +9,7 @@ pub mod hanging;
 pub mod map;
 #[cfg(feature = "sfx")]
 pub mod music;
+pub mod props;
 #[cfg(feature = "sfx")]
 pub mod sfx;
 

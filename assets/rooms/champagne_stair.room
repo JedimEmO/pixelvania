@@ -1,7 +1,7 @@
-// The champagne stair: a landing over a stairwell that winds down to the cellars.
+// The champagne stair: two landings over a stairwell that winds down to the cellars.
 //
-// Cross the landing from the ballroom to the side hall, over the gap or by the chandelier,
-// or go down the flights to the champagne cellar door at the bottom left.
+// From the ballroom's landing the side hall's is nine tiles away over the stairwell: Lunge across.
+// The flights wind down the west side to the champagne cellar's door, and back up.
 [room]
 name = champagne_stair
 background = ballroom
@@ -10,7 +10,6 @@ music = ballroom
 [legend]
 # stone
 = wood
-g gilt
 
 [tiles]
 ########################################
@@ -34,26 +33,26 @@ g gilt
 ........................................
 ........................................
 ........................................
-############................############
-############......gggg......############
+======.........=========================
+======.........=========================
+##....................................##
+##....................................##
+##....===.............................##
 ##....................................##
 ##....................................##
 ##....................................##
-##.......................=========....##
+##.........====.......................##
 ##....................................##
 ##....................................##
 ##....................................##
-##......=========.....................##
+##.======.............................##
 ##....................................##
 ##....................................##
 ##....................................##
-##......................=========.....##
+##........======......................##
 ##....................................##
 ##....................................##
-##....................................##
-##......=========.....................##
-##....................................##
-##........................========....##
+##..=====.............................##
 ......................................##
 ......................................##
 ......................................##
@@ -66,10 +65,22 @@ g gilt
 door 0 18 h=3 id=west_top to=ballroom:east
 door 39 18 h=3 id=east to=side_hall:west
 door 0 41 h=3 id=west_bottom to=champagne_cellar:east
+guest 12.5 29 class=medium
+guest 24 44 class=light
 chandelier 20 10
 lantern 20 28
-guest 12 30 class=medium
-guest 20 44 class=light
-light 20 18 radius=130 strength=0.9 color=ffc070 glow=0.5
-light 6 41 radius=110 strength=0.8 color=ffa050 glow=0.6
-light 34 18 radius=90 strength=0.8 color=ff5aa0 glow=0.6 pulse=0.6
+prop 17 21 kind=balustrade z=front
+prop 19 21 kind=balustrade z=front
+prop 3 21 kind=urn
+prop 35 21 kind=potted_palm
+prop 27 21 kind=candlestand
+prop 7 25 kind=fallen_glass
+prop 5.5 33 kind=fallen_glass
+prop 30 44 kind=champagne_tower
+prop 34.5 44 kind=crate
+prop 35 43 kind=crate
+prop 18 44 kind=cask
+light 20 17 radius=140 strength=0.8 color=ffc070 glow=0.4
+light 4 41 radius=110 strength=0.8 color=ffa050 glow=0.6
+light 36 18 radius=90 strength=0.8 color=ff5aa0 glow=0.6 pulse=0.6
+light 12 31 radius=100 strength=0.5 color=ffa050 glow=0.3

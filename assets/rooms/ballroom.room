@@ -3,7 +3,7 @@
 // A hall built for the Lure, entered from the antechamber through the door at the dance floor's left end. The dance floor runs along the bottom, with a sunken orchestra pit
 // to its right and a tall shaft beyond. Chandeliers lead from the floor up to a gilt gallery,
 // lanterns light the way up the shaft, and one last chandelier swings to a lounge in the upper left.
-// The alcove's back door opens into the upper gallery, and the dance floor's right end into the champagne stair.
+// The dance floor's right end opens into the champagne stair. The alcove is the Lure's alone.
 [room]
 name = ballroom
 background = ballroom
@@ -21,9 +21,9 @@ g gilt
 #.##....##....##....##....##....##....##....##....##....##.....#
 #..............................................................#
 #..............................................................#
-...............................................................#
-...............................................................#
-...............................................................#
+#..............................................................#
+#..............................................................#
+#..............................................................#
 ############...................................................#
 #..............................................................#
 #..............................................................#
@@ -60,7 +60,6 @@ g gilt
 [entities]
 spawn 4 37
 door 0 34 h=3 id=west to=antechamber:east
-door 0 5 h=3 id=alcove to=upper_gallery:east_low
 door 63 34 h=3 id=east to=champagne_stair:west_top
 lounge 5 8 id=alcove
 pickup 10 7 item=candelabrum
@@ -82,6 +81,15 @@ lantern 57.5 30
 lantern 61.5 22
 lantern 59.5 13
 lantern 58.5 5
+prop 12 37 kind=sofa
+prop 6 37 kind=potted_palm
+prop 31 37 kind=fallen_glass
+prop 42.5 37 kind=urn
+prop 61 37 kind=potted_palm
+prop 33 13 kind=statue
+prop 53 13 kind=urn
+prop 2.5 8 kind=candlestand
+prop 8 6.5 kind=portrait
 light 9 36 radius=120 strength=1.2 color=ff5aa0 glow=0.7 pulse=0.7
 light 22 36 radius=120 strength=1.2 color=60d0ff glow=0.7 pulse=0.7
 light 35 36 radius=120 strength=1.2 color=ff5aa0 glow=0.7 pulse=0.7

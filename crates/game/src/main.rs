@@ -22,6 +22,7 @@ mod player;
 mod plunge;
 mod progress;
 mod projectiles;
+mod props;
 mod render;
 mod rooms;
 mod travel;
@@ -78,6 +79,7 @@ fn main() -> AppExit {
             plunge::PlungePlugin,
             projectiles::ProjectilesPlugin,
             map::MapPlugin,
+            props::PropsPlugin,
         ))
         .run()
 }

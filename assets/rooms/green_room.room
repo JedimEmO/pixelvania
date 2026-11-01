@@ -1,69 +1,85 @@
 // The green room: dressing rooms stacked behind the stage, with a lounge by the mirrors.
 //
-// Enter from the bandstand at the top left. Rest at the lounge, then go down to the stage door
-// at the bottom right. The door halfway down drops to the side hall.
+// Enter from the bandstand at the top left, or from the side hall below it. Steps climb between them
+// and up from the costume store at the bottom, where the Dancer's partner sits at a mirror.
+// The way to the stage is a passage over the store's ceiling, through a hole in it
+// that nothing reaches but the Lure: swing up from the chandeliers.
 [room]
 name = green_room
-background = ballroom
 music = ballroom
 
 [legend]
-# stone
 = wood
 v velvet
-g gilt
 
 [tiles]
-########################################
-########################################
-##....................................##
-##....................................##
-##....................................##
-##....................................##
-##..gggggg....gggggg..................##
-##....................................##
-##....................................##
-......................................##
-......................................##
-......................................##
-#########################.............##
-#########################.............##
-##....................................##
-##....................................##
-##..........................========..##
-##....................................##
-##....................................##
-##....................................##
-..................=======.............##
-......................................##
-......................................##
-############..........................##
-############...............========...##
-##....................................##
-##.................................vvv##
-##.................................vvv##
-##.................................vvv##
-##..............=======............vvv##
-##.................................vvv##
-##.................................vvv##
-##....................................##
-##........................======......##
-##......................................
-##......................................
-##......................................
-########################################
-########################################
-########################################
+========================================
+========================================
+==..........vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+==..........vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+==..........vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+==..........vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+==..........vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+==..........vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+==..........vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+............vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+............vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+............vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+=======.....vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+=======.....vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+==..........vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+==..........vvvvvvvvvvvvvvvvvvvvvvvvvvvv
+==......====vvvvvvvvvv..................
+==..........vvvvvvvvvv..................
+==..........vvvvvvvvvv..................
+=====.......vvvvvvvvvvvvvvvv....vvvvvvvv
+......................................==
+......................................==
+......................................==
+======................................==
+======................................==
+==....................................==
+==....................................==
+==.....====...........................==
+==....................................==
+==....................................==
+==....................................==
+=======...............................==
+==....................................==
+==....................................==
+==......====..........................==
+==....................................==
+==....................................==
+========================================
+========================================
+========================================
 
 [entities]
 door 0 9 h=3 id=west_high to=bandstand:east_low
 door 0 20 h=3 id=west_low to=side_hall:east
-door 39 34 h=3 id=east to=stage:west
-lounge 12 12 id=green
-light 5 5 radius=40 strength=0.6 color=ffc070 glow=0.9
-light 8 5 radius=40 strength=0.6 color=ffc070 glow=0.9
-light 15 5 radius=40 strength=0.6 color=ffc070 glow=0.9
-light 18 5 radius=40 strength=0.6 color=ffc070 glow=0.9
-light 20 9 radius=110 strength=0.6 color=ffa050 glow=0.6
-light 6 22 radius=90 strength=0.6 color=b070ff glow=0.6
-light 33 35 radius=110 strength=1.0 color=ff5aa0 glow=0.6 pulse=0.8
+door 39 16 h=3 id=east to=stage:west
+lounge 4 12 id=green
+note 15 36 id=green_room
+npc 22 37 id=partner
+chandelier 18 24
+chandelier 29.5 20
+prop 4 37 kind=coat_rack
+prop 6.5 37 kind=coat_rack
+prop 3.5 23 kind=vanity
+prop 3 31 kind=chair
+prop 4 19 kind=screen
+prop 13.5 37 kind=coat_rack
+prop 18.5 37 kind=vanity
+prop 24.5 37 kind=shoes
+prop 29 37 kind=screen
+prop 34.5 37 kind=vanity
+prop 8.5 34 kind=heap_of_coats
+prop 25 19 kind=crate
+prop 34 19 kind=crate
+prop 33.5 19 kind=candlestand
+prop 36.5 19 kind=footlight
+light 6 9.5 radius=90 strength=0.9 color=ffc070 glow=0.15
+light 6 20.5 radius=90 strength=0.8 color=ffc070 glow=0.15
+light 20 31 radius=160 strength=0.6 color=ffa050 glow=0.1
+light 33 17 radius=110 strength=1.0 color=ff5aa0 glow=0.2 pulse=0.8
+light 29.5 12 radius=70 strength=0.6 color=ff5aa0 glow=0.1
