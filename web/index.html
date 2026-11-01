@@ -6,10 +6,51 @@
     <title>pixelvania</title>
     <link data-trunk rel="rust" href="../crates/game/Cargo.toml" data-bin="pixelvania" data-cargo-profile="web-release" data-wasm-opt="s" />
     <link data-trunk rel="copy-dir" href="../assets" />
+    <script>
+      // Browsers keep audio silent until the page is clicked or a key is pressed,
+      // and a gamepad press does not count. The game starts its audio before that,
+      // so every audio context it makes is kept here and resumed on the first click or key.
+      // This runs before the game's script, which takes AudioContext as it loads.
+      (() => {
+        const contexts = [];
+        for (const name of ["AudioContext", "webkitAudioContext"]) {
+          const Base = window[name];
+          if (!Base) continue;
+          window[name] = class extends Base {
+            constructor(...args) {
+              super(...args);
+              contexts.push(this);
+            }
+          };
+        }
+        const start = () => {
+          for (const ctx of contexts) {
+            if (ctx.state !== "running") ctx.resume();
+          }
+          const gate = document.getElementById("gate");
+          if (gate) gate.remove();
+          document.querySelector("canvas")?.focus();
+        };
+        for (const event of ["pointerdown", "keydown", "touchend"]) {
+          addEventListener(event, start, { capture: true });
+        }
+      })();
+    </script>
     <style>
       html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
       canvas { display: block; width: 100%; height: 100%; outline: none; }
+      #gate {
+        position: fixed; inset: 0; z-index: 1;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(6, 3, 7, 0.82); cursor: pointer;
+        color: #f2e0cc; font: 16px/1.6 Georgia, serif; letter-spacing: 0.12em; text-align: center;
+      }
+      #gate small { display: block; color: #a08a78; font-size: 12px; letter-spacing: 0.06em; }
     </style>
   </head>
-  <body></body>
+  <body>
+    <div id="gate">
+      <div>CLICK OR PRESS A KEY TO ENTER<small>Then a gamepad works too</small></div>
+    </div>
+  </body>
 </html>
