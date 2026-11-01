@@ -241,8 +241,12 @@ the Lure as stand-ins until the feast and the gardens exist. [The Arrival's page
     so beating the Doorman handed out the Plunge in his hall, and the Dancer never appeared.
     It now listens for the Dancer alone, and the Dancer stays away only once she is beaten.
 
-Still to do for the Arrival: its own music, which the Doorman also borrows from the Dancer for now,
-and a playtest of the Doorman and the coat lift.
+45. **The Doorman's theme.** A slow processional in C minor that adds its stems phase by phase:
+    timpani, knocks, bass and a door chime; then a harmonium, brass and a snare;
+    then a mocking fanfare over a ticking clock. Boss tracks now name their own layers.
+
+The Arrival keeps the ballroom heard through its walls as its music; the party next door suits it.
+Still to do: a listening pass on the Doorman's theme.
 
 ## For the director
 

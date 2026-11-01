@@ -187,7 +187,7 @@ fn spawn(
             Boss {
                 name: "THE DOORMAN",
                 kind: KIND,
-                music: "dancer",
+                music: "doorman",
                 max_health: 560.0,
                 phase: 1,
                 finishable: false,

@@ -101,3 +101,20 @@ The High opens the filter and brightens the room; the Comedown drops drums and l
 This sketch keeps a fixed playback rate, including during the Comedown.
 Silent stems keep their place when leaving the room, and returning fades them back in.
 Music is skipped on wasm. The sketch still needs a listening pass.
+
+## Boss themes
+
+A boss names its theme, and the encounter plays it in place of the room's music,
+bringing in more of its stems with each phase of the fight.
+Each stem takes one of the five mood roles, so the High and the Comedown mix a boss as they mix a room.
+
+The Dancer's theme is 40 bars of 132 BPM disco in D minor, in eight stems:
+drums, bass and pads first; the arp and the stabs from her second phase;
+the lead, a choir and a double-time surge for the last.
+
+The Doorman's is a slow processional, 32 bars at 104 BPM in C minor, on i, VI, iv and V.
+The list is timpani with the three knocks of his staff, a dotted bass and a door chime of bells.
+Impatience adds a harmonium in the same dotted rhythm, brass stabs on the offbeats and a marching snare.
+Closing time adds a mocking fanfare, an octave up in the third section,
+over a ticking clock and a hand bell calling last orders.
+Neither theme has had a listening pass.

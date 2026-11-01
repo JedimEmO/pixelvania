@@ -401,26 +401,37 @@ pub fn render_dancer() -> [Pcm; 8] {
             }
         }
     }
+    finish(
+        stems,
+        [
+            8500.0, 1100.0, 3400.0, 6800.0, 4800.0, 6500.0, 4200.0, 7500.0,
+        ],
+        [20.0, 20.0, 190.0, 330.0, 260.0, 380.0, 240.0, 25.0],
+        [0.06, 0.02, 0.22, 0.16, 0.12, 0.24, 0.3, 0.08],
+    )
+}
+
+/// Band-limits each stem between its high and low cutoffs, adds its room, and scales all of them
+/// by one gain that keeps the absolute sum at -6 dBFS, so every subset of layers has headroom.
+fn finish<const N: usize>(
+    mut stems: [Signal; N],
+    high: [f64; N],
+    low: [f64; N],
+    wet: [f64; N],
+) -> [Pcm; N] {
     for (i, data) in stems.iter_mut().enumerate() {
-        low_pass(
-            data,
-            [
-                8500.0, 1100.0, 3400.0, 6800.0, 4800.0, 6500.0, 4200.0, 7500.0,
-            ][i],
-        );
+        low_pass(data, high[i]);
         let mut lows = data.clone();
-        low_pass(
-            &mut lows,
-            [20.0, 20.0, 190.0, 330.0, 260.0, 380.0, 240.0, 25.0][i],
-        );
+        low_pass(&mut lows, low[i]);
         for (frame, low) in data.iter_mut().zip(lows) {
             for c in 0..2 {
                 frame[c] -= low[c];
             }
         }
-        room(data, [0.06, 0.02, 0.22, 0.16, 0.12, 0.24, 0.3, 0.08][i]);
+        room(data, wet[i]);
     }
-    let peak = (0..DANCER_FRAMES)
+    let frames = stems[0].len();
+    let peak = (0..frames)
         .flat_map(|i| (0..2).map(move |c| (i, c)))
         .map(|(i, c)| stems.iter().map(|s| s[i][c].abs()).sum::<f64>())
         .fold(0.0_f64, f64::max);
@@ -430,6 +441,240 @@ pub fn render_dancer() -> [Pcm; 8] {
             .map(|f| f.map(|v| (v * gain * f64::from(i16::MAX)).round() as i16))
             .collect()
     })
+}
+
+pub const DOORMAN_STEMS: [&str; 8] = [
+    "drums", "bass", "bells", "organ", "stabs", "march", "lead", "clock",
+];
+/// How many of the Doorman's stems play in each of his phases: the list, impatience, closing time.
+pub const DOORMAN_LAYERS: [usize; 3] = [3, 6, 8];
+pub const DOORMAN_BPM: f64 = 104.0;
+pub const DOORMAN_FRAMES: usize = (44100.0 * 60.0 / DOORMAN_BPM * 128.0 + 0.5) as usize;
+
+/// A tubular bell: inharmonic partials over a long decay, struck.
+fn bell(note: u8, t: f64, decay: f64) -> f64 {
+    let f = hz(note);
+    [
+        (1.0, 1.0),
+        (2.76, 0.5),
+        (5.40, 0.25),
+        (8.93, 0.12),
+        (0.5, 0.3),
+    ]
+    .into_iter()
+    .map(|(ratio, gain)| gain * (TAU * f * ratio * t).sin() * (-t * ratio.sqrt() / decay).exp())
+    .sum()
+}
+
+/// A brassy saw from its first eight harmonics, with a little swell.
+fn brass(note: u8, t: f64, bright: f64) -> f64 {
+    let f = hz(note);
+    let swell = 1.0 - (-t / 0.03).exp();
+    (1..=8)
+        .map(|n| {
+            let n = f64::from(n);
+            (TAU * f * n * t + 0.05 * (TAU * 5.5 * t).sin()).sin() / n * bright.powf(n - 1.0)
+        })
+        .sum::<f64>()
+        * swell
+}
+
+/// Thirty-two bars of a slow processional in C minor, for the man at the door.
+/// The list is timpani, the three knocks of his staff, a low bass and a door chime;
+/// impatience brings a harmonium, brass and a marching snare; closing time a mocking
+/// fanfare over a ticking clock, and a hand bell calling last orders.
+pub fn render_doorman() -> [Pcm; 8] {
+    let mut stems: [Signal; 8] = std::array::from_fn(|_| vec![[0.0; 2]; DOORMAN_FRAMES]);
+    let beat = 60.0 / DOORMAN_BPM;
+    // i, VI, iv, V: two bars each.
+    let chords: [(u8, [u8; 4]); 4] = [
+        (36, [60, 63, 67, 72]),
+        (32, [60, 63, 68, 72]),
+        (41, [60, 65, 68, 72]),
+        (43, [59, 62, 67, 71]),
+    ];
+    // The fanfare over each two bars: beat, length, note.
+    let fanfare: [[(f64, f64, u8); 6]; 4] = [
+        [
+            (0.0, 1.5, 67),
+            (1.5, 0.5, 72),
+            (2.0, 2.0, 75),
+            (4.0, 1.0, 74),
+            (5.0, 1.0, 72),
+            (6.0, 2.0, 67),
+        ],
+        [
+            (0.0, 1.5, 68),
+            (1.5, 0.5, 72),
+            (2.0, 2.0, 75),
+            (4.0, 1.0, 77),
+            (5.0, 1.0, 75),
+            (6.0, 2.0, 72),
+        ],
+        [
+            (0.0, 1.5, 65),
+            (1.5, 0.5, 68),
+            (2.0, 2.0, 72),
+            (4.0, 1.0, 77),
+            (5.0, 1.0, 75),
+            (6.0, 2.0, 74),
+        ],
+        [
+            (0.0, 1.5, 71),
+            (1.5, 0.5, 74),
+            (2.0, 2.0, 77),
+            (4.0, 1.0, 75),
+            (5.0, 1.0, 74),
+            (6.0, 2.0, 71),
+        ],
+    ];
+    let mut noise = Noise(0x0d00_4a11);
+    for pair in 0..16 {
+        let section = pair / 4;
+        let (root, chord) = chords[pair % 4];
+        let at = |b: f64| (pair as f64 * 8.0 + b) * beat;
+
+        // Drums: a timpani on the root and fifth on each bar's downbeat and third beat,
+        // a deep bass drum under it, and in the second bar the staff's three knocks.
+        for bar in 0..2 {
+            for (b, note) in [(0.0, root + 12), (2.0, root + 19)] {
+                let b = bar as f64 * 4.0 + b;
+                event_seconds(&mut stems[0], at(b), 1.2, -0.15, |t| {
+                    let f = hz(note) * (1.0 + 0.12 * (-t / 0.03).exp());
+                    0.42 * ((TAU * f * t).sin() + 0.3 * (TAU * f * 1.5 * t).sin())
+                        * (-t / 0.38).exp()
+                });
+                event_seconds(&mut stems[0], at(b), 0.5, 0.0, |t| {
+                    0.4 * (TAU * (42.0 * t + 2.0 * (1.0 - (-t / 0.03).exp()))).sin()
+                        * (-t / 0.16).exp()
+                });
+            }
+        }
+        for b in [6.0, 6.5, 7.0] {
+            event_seconds(&mut stems[0], at(b), 0.3, 0.2, |t| {
+                0.3 * (0.6 * noise.next() * (-t / 0.012).exp()
+                    + (TAU * 95.0 * t).sin() * (-t / 0.07).exp())
+            });
+        }
+
+        // Bass: a dotted march on the root, an octave leap on the pickup.
+        for bar in 0..2 {
+            for (b, len, up) in [(0.0, 1.4, 0), (1.5, 0.45, 12), (2.0, 1.9, 0)] {
+                let note = root + up;
+                let len = len * beat;
+                event_seconds(&mut stems[1], at(bar as f64 * 4.0 + b), len, 0.0, |t| {
+                    let p = TAU * hz(note) * t;
+                    let env = (t / 0.02).min(1.0) * ((len - t) / 0.08).clamp(0.0, 1.0);
+                    0.3 * env * (p.sin() + 0.45 * (2.0 * p).sin() + 0.2 * (3.0 * p).sin())
+                });
+            }
+        }
+
+        // Bells: the door chime, falling from the chord's top to its root,
+        // and in the later sections answered from below.
+        let chime: &[(f64, u8)] = if section == 0 {
+            &[(0.0, chord[3]), (1.0, chord[1])]
+        } else {
+            &[
+                (0.0, chord[3]),
+                (1.0, chord[1]),
+                (4.0, chord[2]),
+                (5.0, chord[0]),
+            ]
+        };
+        for &(b, note) in chime {
+            let pan = if b < 2.0 { -0.45 } else { 0.45 };
+            event_seconds(&mut stems[2], at(b), 3.2, pan, |t| 0.2 * bell(note, t, 1.1));
+        }
+
+        // Organ: the chord held in a pompous dotted rhythm, with a slow tremolo.
+        for bar in 0..2 {
+            for (b, len) in [(0.0, 1.45), (1.5, 0.45), (2.0, 1.95)] {
+                let len = len * beat;
+                for (v, note) in chord.into_iter().enumerate() {
+                    let pan = (v as f64 - 1.5) * 0.35;
+                    event_seconds(&mut stems[3], at(bar as f64 * 4.0 + b), len, pan, |t| {
+                        let p = TAU * hz(note - 12) * t;
+                        let env = (t / 0.03).min(1.0) * ((len - t) / 0.06).clamp(0.0, 1.0);
+                        let trem = 1.0 + 0.15 * (TAU * 5.0 * t).sin();
+                        0.045
+                            * env
+                            * trem
+                            * (p.sin()
+                                + 0.5 * (2.0 * p).sin()
+                                + 0.3 * (3.0 * p).sin()
+                                + 0.15 * (4.0 * p).sin())
+                    });
+                }
+            }
+        }
+
+        // Stabs: brass on the offbeats, pushing into each new chord.
+        for b in [1.5, 3.5, 5.5, 7.0, 7.5] {
+            for (v, note) in chord.into_iter().enumerate().skip(1) {
+                let pan = (v as f64 - 2.0) * 0.5;
+                event_seconds(&mut stems[4], at(b), 0.22, pan, |t| {
+                    0.17 * brass(note - 12, t, 0.75) * (-t / 0.14).exp()
+                });
+            }
+        }
+
+        // March: a snare on two and four, and a roll into each pair's last beat.
+        for b in [1.0, 3.0, 5.0] {
+            event_seconds(&mut stems[5], at(b), 0.2, 0.1, |t| {
+                0.36 * (noise.next() + 0.5 * (TAU * 190.0 * t).sin()) * (-t / 0.05).exp()
+            });
+        }
+        for step in 0..8 {
+            let gain = 0.1 + 0.03 * step as f64;
+            event_seconds(&mut stems[5], at(6.0 + step as f64 / 4.0), 0.12, 0.1, |t| {
+                gain * (noise.next() + 0.4 * (TAU * 200.0 * t).sin()) * (-t / 0.035).exp()
+            });
+        }
+
+        // Lead: the fanfare, an octave up in the third section.
+        let lift = if section == 2 { 12 } else { 0 };
+        for (b, len, note) in fanfare[pair % 4] {
+            let note = note + lift;
+            let len = len * beat;
+            event_seconds(&mut stems[6], at(b), len, -0.1, |t| {
+                let vibrato = 0.012 * (TAU * 5.8 * t).sin() * (t / 0.3).min(1.0);
+                let p = TAU * hz(note) * t * (1.0 + vibrato);
+                let env = (t / 0.025).min(1.0) * ((len - t) / 0.1).clamp(0.0, 1.0);
+                0.14 * env
+                    * (p.sin()
+                        + 0.6 * (2.0 * p).sin()
+                        + 0.45 * (3.0 * p).sin()
+                        + 0.25 * (4.0 * p).sin()
+                        + 0.12 * (5.0 * p).sin())
+            });
+        }
+
+        // Clock: tick and tock on every eighth, and at the end of each section
+        // a hand bell rung fast for last orders.
+        for step in 0..16 {
+            let f = if step % 2 == 0 { 1900.0 } else { 1450.0 };
+            event_seconds(&mut stems[7], at(step as f64 / 2.0), 0.05, 0.5, |t| {
+                0.18 * (TAU * f * t).sin() * (-t / 0.008).exp()
+            });
+        }
+        if pair % 4 == 3 {
+            for step in 0..12 {
+                let note = if step % 2 == 0 { 96 } else { 91 };
+                event_seconds(&mut stems[7], at(5.0 + step as f64 / 4.0), 0.6, -0.5, |t| {
+                    0.06 * bell(note, t, 0.25)
+                });
+            }
+        }
+    }
+    finish(
+        stems,
+        [
+            5000.0, 900.0, 7000.0, 3200.0, 2600.0, 7500.0, 4200.0, 9000.0,
+        ],
+        [25.0, 25.0, 180.0, 120.0, 110.0, 140.0, 260.0, 600.0],
+        [0.1, 0.02, 0.35, 0.2, 0.14, 0.12, 0.22, 0.18],
+    )
 }
 
 #[cfg(test)]
@@ -454,6 +699,37 @@ mod tests {
                 assert!(
                     seam < 300 && seam <= nearby + 2,
                     "dancer seam {seam}, nearby slope {nearby}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn doorman_layers_have_headroom_and_wrapped_tails() {
+        let stems = render_doorman();
+        for count in DOORMAN_LAYERS {
+            let layers: [Pcm; 8] = std::array::from_fn(|i| {
+                if i < count {
+                    stems[i].clone()
+                } else {
+                    vec![[0; 2]; DOORMAN_FRAMES]
+                }
+            });
+            assert!(levels(&mix(&layers)).1 <= -5.99);
+        }
+        for pcm in &stems {
+            assert_eq!(pcm.len(), DOORMAN_FRAMES);
+            for c in 0..2 {
+                let seam = (i32::from(pcm[0][c]) - i32::from(pcm[DOORMAN_FRAMES - 1][c])).abs();
+                let nearby = pcm[..441]
+                    .windows(2)
+                    .chain(pcm[pcm.len() - 441..].windows(2))
+                    .map(|w| (i32::from(w[1][c]) - i32::from(w[0][c])).abs())
+                    .max()
+                    .unwrap();
+                assert!(
+                    seam <= nearby + 2,
+                    "doorman seam {seam}, nearby slope {nearby}"
                 );
             }
         }

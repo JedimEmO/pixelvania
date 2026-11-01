@@ -112,7 +112,7 @@ mod stems {
     use std::error::Error;
 
     /// Every track, in the order they are decoded: the rooms' music first.
-    const TRACKS: [&str; 2] = ["ballroom", "dancer"];
+    const TRACKS: [&str; 3] = ["ballroom", "dancer", "doorman"];
 
     pub(super) fn build(app: &mut App) {
         app.init_asset::<StemBytes>()
@@ -251,27 +251,37 @@ mod native {
     const DANCER: [&str; 8] = [
         "drums", "bass", "pads", "arp", "stabs", "lead", "choir", "surge",
     ];
+    const DOORMAN: [&str; 8] = [
+        "drums", "bass", "bells", "organ", "stabs", "march", "lead", "clock",
+    ];
     pub(super) fn catalog(name: &str) -> Option<(&'static [&'static str], f64)> {
         match name {
             "ballroom" => Some((&STEMS, 120.0)),
             "dancer" => Some((&DANCER, 132.0)),
+            "doorman" => Some((&DOORMAN, 104.0)),
             _ => None,
         }
     }
-    fn volumes(name: &str, phase: u8, mix: Mix) -> Vec<f32> {
-        if name != "dancer" {
-            return mix.db.to_vec();
+
+    /// A boss track's layers: which of the mix's five roles each stem takes
+    /// (drums, bass, harmony, lead, texture), and how many stems play in each phase.
+    fn layers(name: &str) -> Option<(&'static [usize], [usize; 3])> {
+        match name {
+            "dancer" => Some((&[0, 1, 2, 2, 2, 3, 4, 0], [3, 5, 8])),
+            "doorman" => Some((&[0, 1, 2, 2, 2, 0, 3, 4], [3, 6, 8])),
+            _ => None,
         }
-        [0, 1, 2, 2, 2, 3, 4, 0]
-            .into_iter()
+    }
+
+    fn volumes(name: &str, phase: u8, mix: Mix) -> Vec<f32> {
+        let Some((roles, counts)) = layers(name) else {
+            return mix.db.to_vec();
+        };
+        let playing = counts[usize::from(phase.clamp(1, 3) - 1)];
+        roles
+            .iter()
             .enumerate()
-            .map(|(i, role)| {
-                if i < [3, 5, 8][usize::from(phase.clamp(1, 3) - 1)] {
-                    mix.db[role]
-                } else {
-                    SILENT
-                }
-            })
+            .map(|(i, &role)| if i < playing { mix.db[role] } else { SILENT })
             .collect()
     }
     const SILENT: f32 = -60.0;
@@ -696,6 +706,26 @@ mod native {
                 volumes("dancer", 255, mix("the High")),
                 volumes("dancer", 3, mix("the High"))
             );
+        }
+
+        #[test]
+        fn the_doorman_brings_in_his_layers_by_phase() {
+            let high = mix("the High");
+            let playing = |phase| {
+                volumes("doorman", phase, high)
+                    .iter()
+                    .filter(|db| **db > SILENT)
+                    .count()
+            };
+            assert_eq!((playing(1), playing(2), playing(3)), (3, 6, 8));
+            assert_eq!(
+                volumes("doorman", 3, high).len(),
+                catalog("doorman").unwrap().0.len()
+            );
+            // The Comedown drops his drums and his march, and keeps the bass and the bells.
+            let down = volumes("doorman", 3, mix("the Comedown"));
+            assert_eq!((down[0], down[5]), (SILENT, SILENT));
+            assert!(down[1] > SILENT && down[2] > SILENT);
         }
 
         #[test]

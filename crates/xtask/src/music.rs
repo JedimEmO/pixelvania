@@ -40,6 +40,25 @@ pub fn render() -> crate::Result<()> {
         diagnostics(&format!("phase-{phase}"), &mix, &out)?;
     }
     println!("Dancer diagnostics: {}", out.display());
+    let assets = crate::root().join("assets/music/doorman");
+    let out = crate::root().join("target/music/doorman");
+    fs::create_dir_all(&assets)?;
+    fs::create_dir_all(&out)?;
+    let stems = music::render_doorman();
+    println!("Doorman: 104 BPM, C minor, 4/4, 32 bars");
+    for (name, pcm) in music::DOORMAN_STEMS.into_iter().zip(&stems) {
+        music::write_wav(&assets.join(format!("{name}.wav")), pcm)?;
+        diagnostics(name, pcm, &out)?;
+    }
+    for (phase, count) in music::DOORMAN_LAYERS.into_iter().enumerate() {
+        let layers: [Pcm; 8] = std::array::from_fn(|i| {
+            if i < count { stems[i].clone() } else { vec![[0; 2]; music::DOORMAN_FRAMES] }
+        });
+        let mix = music::mix(&layers);
+        music::write_wav(&out.join(format!("phase-{}.wav", phase + 1)), &mix)?;
+        diagnostics(&format!("phase-{}", phase + 1), &mix, &out)?;
+    }
+    println!("Doorman diagnostics: {}", out.display());
     Ok(())
 }
 
