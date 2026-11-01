@@ -109,6 +109,7 @@ fn build(commands: &mut Commands, images: &mut Assets<Image>, room: &Room) {
         Anchor::TOP_LEFT,
         Transform::default(),
     ));
+    crate::hanging::spawn(commands, images, room);
     for light in room.entities_of("light") {
         let read = || -> Result<Light2d, ParseError> {
             let [r, g, b] = light.color("color", [1.0, 0.9, 0.7])?;

@@ -8,6 +8,7 @@ mod devtools;
 mod effects;
 mod enemies;
 mod fire;
+mod hanging;
 mod hud;
 mod input;
 mod lure;
@@ -56,6 +57,6 @@ fn main() -> AppExit {
             effects::EffectsPlugin,
             devtools::DevToolsPlugin,
         ))
-        .add_plugins(lure::LurePlugin)
+        .add_plugins((lure::LurePlugin, hanging::HangingPlugin))
         .run()
 }

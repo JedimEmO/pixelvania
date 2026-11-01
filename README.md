@@ -29,11 +29,14 @@ Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev
 | Lunge | East (B, Circle) | Left Shift |
 | Attack; hold to charge, with up to rise, with down in the air to pogo | West (X, Square) | J |
 | Toast, the parry | Left bumper (LB, L1) | K |
+| Lure: take hold of the light the stick aims at; hold to swing, release to let go | Right trigger (RT, R2) | I |
 | Next weapon: the sabre, the Jeroboam, the candelabrum | North (Y, Triangle) | L |
 | Next test room: the feel lab or the combat lab | Start | Tab |
 | Back to the spawn point, and the guests back to theirs | Select | R |
 
 Hold down while falling to fall faster, and press into a wall while falling to slide down it.
+On the Lure's rope, push the stick the way you want to swing, and up or down to climb or lower.
+A diamond marks the light the Lure would take hold of.
 The number keys 1 to 6 set off each pixelfx effect in front of the player.
 
 For the web build, install [trunk](https://trunkrs.dev) and run `trunk serve --release` in `web/`.
@@ -54,10 +57,12 @@ jump is pressed at frame 60 and the Lunge at frame 90.
 
 `crates/pixelfx` is a Rust port of [pixelfx](https://github.com/patch-gg/pixelfx), MIT licensed.
 `cargo xtask fx <id>` renders an effect to a contact sheet and a GIF in `target/fx/`,
-and `cargo xtask rig` renders the character rig's animations to `target/rig/`;
+and `cargo xtask rig` renders the character rig's animations to `target/rig/`,
+the costumed guests among them;
 `cargo xtask rig player` renders every pose of the player's animation, one row per state.
 `cargo xtask golden` renders reference frames from the JavaScript original, which needs Node and git;
 the golden tests themselves run without either.
+`cargo xtask hanging` renders the chandelier and the lantern, at rest, swung and flared, to `target/hanging/`.
 In the game, effects land on the room's floors, hide behind its walls, and light what is around them.
 
 ## Tiles

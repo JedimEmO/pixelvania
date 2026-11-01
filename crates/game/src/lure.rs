@@ -7,6 +7,7 @@
 
 use bevy::prelude::*;
 
+use crate::hanging::Hanging;
 use crate::input::TickInput;
 use crate::player::{Look, Player};
 use crate::rooms::ActiveRoom;
@@ -34,6 +35,7 @@ fn draw(
     active: Res<ActiveRoom>,
     input: Res<TickInput>,
     players: Query<(&Player, &Look, &GlobalTransform)>,
+    fixtures: Query<&Hanging>,
     mut gizmos: Gizmos,
 ) {
     let Some(room) = &active.room else { return };
@@ -46,9 +48,16 @@ fn draw(
             let hands =
                 feet + Vec2::new((pose.fx * pose.face as f64) as f32, -(pose.fy as f32) + 1.0);
             let hands = hands.floor() + Vec2::splat(0.5);
+            // To the fixture where it has swayed to.
+            let anchor = fixtures
+                .iter()
+                .find(|h| h.anchor == rope.anchor)
+                .map_or(to_world(rope.anchor), |h| {
+                    h.grab_point().floor() + Vec2::splat(0.5)
+                });
             gizmos.line_gradient_2d(
                 hands,
-                to_world(rope.anchor),
+                anchor,
                 Color::srgb(0.35, 0.22, 0.12),
                 Color::srgb(1.0, 0.82, 0.5),
             );

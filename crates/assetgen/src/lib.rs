@@ -4,6 +4,7 @@
 //! of a solid cell is opaque, so mortar and grain never produce false rim lights.
 
 pub mod backgrounds;
+pub mod hanging;
 #[cfg(feature = "sfx")]
 pub mod music;
 #[cfg(feature = "sfx")]

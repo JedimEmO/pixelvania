@@ -412,6 +412,54 @@ fn rig(character: &str) -> Result<()> {
     }
     guests_sheet(&out)
 }
+/// Chandeliers and lanterns at rest, swung both ways, and flared, lit roughly as in the game:
+/// the surface at the light's own warmth, the glow added on top, at 4x.
+fn hanging() -> Result<()> {
+    use assetgen::hanging::{Kind, paint};
+    let out = root().join("target/hanging");
+    std::fs::create_dir_all(&out)?;
+    for (kind, name) in [(Kind::Chandelier, "chandelier"), (Kind::Lantern, "lantern")] {
+        let frames: Vec<_> = [
+            (0.0, 0, 0.0),
+            (0.12, 1, 0.0),
+            (-0.12, 2, 0.0),
+            (0.0, 3, 1.0),
+        ]
+        .into_iter()
+        .map(|(angle, step, flare)| paint(kind, 24, angle, step, flare))
+        .collect();
+        let (w, h) = (frames[0].color.width(), frames[0].color.height());
+        let mut img = image::RgbaImage::from_pixel(w * 4, h, image::Rgba([14, 12, 18, 255]));
+        for (i, f) in frames.iter().enumerate() {
+            for (x, y, c) in f.color.enumerate_pixels() {
+                let g = f.glow.get_pixel(x, y);
+                if c[3] == 0 && g[3] == 0 {
+                    continue;
+                }
+                let lit = |k: usize| {
+                    let warm = [1.3, 1.1, 0.8][k];
+                    let base = if c[3] > 0 { c[k] as f32 * warm } else { 14.0 };
+                    (base + g[k] as f32).min(255.0) as u8
+                };
+                img.put_pixel(
+                    i as u32 * w + x,
+                    y,
+                    image::Rgba([lit(0), lit(1), lit(2), 255]),
+                );
+            }
+        }
+        let big = image::imageops::resize(
+            &img,
+            img.width() * 4,
+            img.height() * 4,
+            image::imageops::FilterType::Nearest,
+        );
+        big.save(out.join(format!("{name}.png")))?;
+    }
+    println!("wrote {}", out.display());
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
@@ -419,6 +467,7 @@ fn main() -> Result<()> {
         Some("music") if args.len() == 1 => { #[path = "music.rs"] mod music; music::render() },
         Some("sfx") if args.len() == 1 => assetgen::sfx::render_all(&root().join("assets/sfx"), &root().join("target/sfx")),
         Some("tiles") if args.len() == 1 => tiles::render(),
+        Some("hanging") if args.len() == 1 => hanging(),
         Some("backgrounds") if args.len() == 1 => {
             #[path = "backgrounds.rs"]
             mod backgrounds;
@@ -442,7 +491,7 @@ fn main() -> Result<()> {
             fx(id, seed, &out)
         }
         _ => Err(
-            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player|guests] | tiles | sfx | golden"
+            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player|guests] | tiles | hanging | sfx | golden"
                 .into(),
         ),
     }

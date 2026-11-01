@@ -419,7 +419,16 @@ pub(crate) fn animate(
         }
         let charge = weapons.get(&f.weapon).map_or(48, |w| w.0.charge_ticks);
         let standing = c.grounded && c.vx.abs() < 10.0;
-        let pose = combat_pose(&f, charge, standing).unwrap_or_else(|| carry(look.animator.pose()));
+        // On the rope both hands hold it, so the weapon is put away.
+        let free = || {
+            let pose = look.animator.pose();
+            if look.animator.state() == anim::State::Hang {
+                pose
+            } else {
+                carry(pose)
+            }
+        };
+        let pose = combat_pose(&f, charge, standing).unwrap_or_else(free);
         // Reeling bodies face the way the controller says, which a blow has turned.
         let face = if f.combat.helpless() {
             c.facing
