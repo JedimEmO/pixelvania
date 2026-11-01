@@ -255,7 +255,7 @@ fn player_sheet() -> Result<()> {
     guests_sheet(&out)
 }
 
-/// One row per guest class: standing, its swing, and every reaction.
+/// Guest costumes at 1× and 2×, turning, tilting and reacting to hits.
 fn guests_sheet(out: &Path) -> Result<()> {
     use anim::guest::{Class, Reaction, arm, reaction_pose, rig, scale};
     use anim::swing::{Phase, Swing, swing_pose};
@@ -266,6 +266,25 @@ fn guests_sheet(out: &Path) -> Result<()> {
         } else {
             Swing::Combo1
         };
+        let idle = anim::pose_for(anim::State::Idle, 0.0, 0.0);
+        let mut views = vec![
+            idle.clone(),
+            anim::Pose {
+                face: -1,
+                ..idle.clone()
+            },
+        ];
+        views.extend((1..=4).map(|i| anim::Pose {
+            yaw: i as f64 * std::f64::consts::FRAC_PI_2,
+            ..idle.clone()
+        }));
+        views.extend([-1.0, 1.0].map(|side| anim::Pose {
+            hx: side * 2.5,
+            hy: 1.0,
+            face: if side < 0.0 { -1 } else { 1 },
+            ..idle.clone()
+        }));
+        let views = views.iter().map(|p| arm(scale(p, k), class)).collect();
         let mut poses = vec![
             anim::pose_for(anim::State::Idle, 0.0, 0.0),
             swing_pose(swing, Phase::Windup, 1.0),
@@ -274,21 +293,33 @@ fn guests_sheet(out: &Path) -> Result<()> {
         ];
         poses.extend(Reaction::ALL.iter().map(|r| reaction_pose(*r, 0.1)));
         let poses: Vec<anim::Pose> = poses.iter().map(|p| arm(scale(p, k), class)).collect();
-        draw_rows_with(
-            &rig(class),
-            &[(class.name(), poses)],
-            &out.join(format!("guest-{}.png", class.name())),
-        )?;
+        let rows = [("costume", views), ("combat", poses)];
+        for zoom in [1, 2] {
+            let suffix = if zoom == 1 { "-1x" } else { "" };
+            draw_rows_with(
+                &rig(class),
+                &rows,
+                &out.join(format!("guest-{}{suffix}.png", class.name())),
+                [96, 96],
+                zoom,
+            )?;
+        }
     }
     Ok(())
 }
 
 fn draw_rows(rows: &[(&str, Vec<anim::Pose>)], path: &Path) -> Result<()> {
-    draw_rows_with(&anim::player_rig(), rows, path)
+    draw_rows_with(&anim::player_rig(), rows, path, [80, 64], 2)
 }
 
-fn draw_rows_with(rig: &anim::Rig, rows: &[(&str, Vec<anim::Pose>)], path: &Path) -> Result<()> {
-    let (w, h, scale) = (80u32, 64u32, 2u32);
+fn draw_rows_with(
+    rig: &anim::Rig,
+    rows: &[(&str, Vec<anim::Pose>)],
+    path: &Path,
+    size: [u32; 2],
+    scale: u32,
+) -> Result<()> {
+    let [w, h] = size;
     let cols = rows.iter().map(|r| r.1.len()).max().unwrap_or(1) as u32;
     let bg = image::Rgba([24, 20, 34, 255]);
     let ground = image::Rgba([60, 52, 80, 255]);
@@ -296,13 +327,13 @@ fn draw_rows_with(rig: &anim::Rig, rows: &[(&str, Vec<anim::Pose>)], path: &Path
     for (row, (name, poses)) in rows.iter().enumerate() {
         for (col, pose) in poses.iter().enumerate() {
             let mut f = Frame::new(w, h);
-            anim::draw(rig, pose, &mut f, [36.0, 56.0]);
+            anim::draw(rig, pose, &mut f, [(w / 2 - 4) as f64, (h - 8) as f64]);
             let img = rgba(&f);
             for (x, y, px) in img.enumerate_pixels() {
                 // The ground line shows through empty pixels, so feet can be checked against it.
                 let c = if px[3] > 0 {
                     *px
-                } else if y == 56 {
+                } else if y == h - 8 {
                     ground
                 } else {
                     continue;
@@ -327,11 +358,16 @@ fn rig(character: &str) -> Result<()> {
     if character == "player" {
         return player_sheet();
     }
-    if character != "stock" {
-        return Err(format!("unknown character {character}; available: stock, player").into());
-    }
     let out = root().join("target/rig");
     fs::create_dir_all(&out)?;
+    if character == "guests" {
+        return guests_sheet(&out);
+    }
+    if character != "stock" {
+        return Err(
+            format!("unknown character {character}; available: stock, player, guests").into(),
+        );
+    }
     let rig = Rig::default();
     let render = |poses: Vec<Pose>, name: &str| -> Result<()> {
         let mut images = vec![];
@@ -374,7 +410,7 @@ fn rig(character: &str) -> Result<()> {
             id.name().rsplit('/').next().unwrap(),
         )?;
     }
-    Ok(())
+    guests_sheet(&out)
 }
 fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
@@ -406,7 +442,7 @@ fn main() -> Result<()> {
             fx(id, seed, &out)
         }
         _ => Err(
-            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player] | tiles | sfx | golden"
+            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player|guests] | tiles | sfx | golden"
                 .into(),
         ),
     }
