@@ -120,9 +120,9 @@ struct Lounge {
     flare: f32,
 }
 
-/// The room the lounges were last spawned for.
+/// The room build the lounges were last spawned for.
 #[derive(Default)]
-struct SpawnedFor(Option<std::sync::Arc<world::Room>>);
+struct SpawnedFor(Option<u64>);
 
 /// Where a lounge with this id stands in a room, in pixels with y down.
 pub fn lounge_feet(room: &world::Room, id: &str) -> Option<(f32, f32)> {
@@ -138,14 +138,10 @@ fn spawn(
     mut images: ResMut<Assets<Image>>,
 ) {
     let Some(room) = &active.room else { return };
-    if spawned
-        .0
-        .as_ref()
-        .is_some_and(|r| std::sync::Arc::ptr_eq(r, room))
-    {
+    if spawned.0 == Some(active.build) {
         return;
     }
-    spawned.0 = Some(room.clone());
+    spawned.0 = Some(active.build);
     let image = |(w, h, data): (u32, u32, Vec<u8>), images: &mut Assets<Image>| {
         images.add(Image::new(
             bevy::render::render_resource::Extent3d {

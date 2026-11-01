@@ -281,16 +281,13 @@ fn drop_from_the_fallen(
 fn spawn_leftovers(
     mut commands: Commands,
     active: Res<ActiveRoom>,
-    mut spawned: Local<Option<std::sync::Arc<world::Room>>>,
+    mut spawned: Local<Option<u64>>,
 ) {
     let Some(room) = &active.room else { return };
-    if spawned
-        .as_ref()
-        .is_some_and(|r| std::sync::Arc::ptr_eq(r, room))
-    {
+    if *spawned == Some(active.build) {
         return;
     }
-    *spawned = Some(room.clone());
+    *spawned = Some(active.build);
     for def in room.entities_of("nectar") {
         let (x, y) = def.pixel_pos();
         for i in 0..6 {

@@ -380,7 +380,23 @@ impl Explorer<'_> {
 }
 
 /// Explores a room with some abilities, from a body standing with its feet at `start`.
+/// With the Plunge, cracked floors count as already broken.
 pub fn explore(room: &Room, t: &MoveTuning, abilities: Abilities, start: (f32, f32)) -> Reach {
+    let opened;
+    let room = if abilities.plunge {
+        let mut r = room.clone();
+        for ty in 0..r.height as i32 {
+            for tx in 0..r.width as i32 {
+                if r.material(tx, ty) == Some(crate::room::CRACKED) {
+                    r.clear(tx, ty);
+                }
+            }
+        }
+        opened = r;
+        &opened
+    } else {
+        room
+    };
     let named = |kind: &str, key: &str| -> Vec<(String, (f32, f32))> {
         room.entities_of(kind)
             .filter_map(|e| Some((e.props.get(key)?.clone(), e.pixel_pos())))

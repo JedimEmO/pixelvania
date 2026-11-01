@@ -14,7 +14,7 @@ pub mod sfx;
 use image::{Rgba, RgbaImage};
 use world::{Room, TILE, Tile};
 
-pub const MATERIALS: [&str; 4] = ["stone", "wood", "velvet", "gilt"];
+pub const MATERIALS: [&str; 5] = ["stone", "wood", "velvet", "gilt", "cracked"];
 pub const VARIANTS: u32 = 8;
 pub const SIZE: u32 = TILE as u32;
 
@@ -95,8 +95,34 @@ pub fn palette(material: &str) -> Option<[[u8; 3]; 5]> {
             [58, 51, 36],
             [76, 67, 47],
         ],
+        // Stone that the Plunge breaks: a touch warmer and lighter than the rest, so it reads.
+        "cracked" => [
+            [24, 20, 22],
+            [42, 36, 38],
+            [58, 50, 50],
+            [74, 64, 60],
+            [96, 82, 72],
+        ],
         _ => return None,
     })
+}
+
+/// Stone split by jagged cracks that run from block to block.
+fn cracked(x: u32, y: u32, v: u32) -> usize {
+    // A crack zigzags down the tile, stepping a pixel sideways every two rows,
+    // with a branch off it; both are the darkest tone.
+    let main = 4 + v % 5 + [0, 1, 1, 2, 1, 0, 0, 1][(y / 2) as usize % 8];
+    if x == main || (y.is_multiple_of(3) && x == main + 1) {
+        return 0;
+    }
+    let branch_y = 5 + v % 6;
+    if y == branch_y && x > main && x <= main + 4 + v % 3 {
+        return 0;
+    }
+    if x == main + 1 || (y == branch_y + 1 && x > main && x <= main + 3) {
+        return 1;
+    }
+    stone(x, y, v)
 }
 
 fn hash(x: u32, y: u32) -> u32 {
@@ -244,6 +270,7 @@ pub fn tile(material: &str, seed: u32, neighbours: Neighbours) -> RgbaImage {
             "wood" => wood(x, y, v),
             "velvet" => velvet(x, y, v),
             "gilt" => gilt(x, y, v),
+            "cracked" => cracked(x, y, v),
             _ => unreachable!("palette and generators share the material list"),
         });
         let [r, g, b] = ramp[tone];

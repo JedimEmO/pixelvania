@@ -254,6 +254,7 @@ pub fn take_controls(mut input: ResMut<TickInput>, mut controls: ResMut<TickCont
         parry_pressed: std::mem::take(&mut input.toast_pressed),
         lure_pressed: std::mem::take(&mut input.lure_pressed),
         lure_held: input.lure_held,
+        plunge_pressed: std::mem::take(&mut input.plunge_pressed),
     };
 }
 

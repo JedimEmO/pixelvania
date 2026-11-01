@@ -5,8 +5,6 @@
 //! and swing when in reach and rested. Everything after that, from the swing's commitment to
 //! how it reels from a hit, is the same code that runs the player.
 
-use std::sync::Arc;
-
 use anim::guest::{Class, arm, rig, scale};
 use bevy::prelude::*;
 use pixelfx::EffectId;
@@ -116,9 +114,9 @@ fn weight(class: Class) -> WeightClass {
     }
 }
 
-/// The room the guests were last spawned for, so they are spawned once per build.
+/// The room build the guests were last spawned for, so they are spawned once per build.
 #[derive(Resource, Default)]
-struct SpawnedFor(Option<Arc<Room>>);
+struct SpawnedFor(Option<u64>);
 
 fn spawn(
     mut commands: Commands,
@@ -130,10 +128,10 @@ fn spawn(
     let (Some(room), Some(weapons)) = (&active.room, weapons) else {
         return;
     };
-    if spawned.0.as_ref().is_some_and(|r| Arc::ptr_eq(r, room)) {
+    if spawned.0 == Some(active.build) {
         return;
     }
-    spawned.0 = Some(room.clone());
+    spawned.0 = Some(active.build);
     for def in room.entities_of("guest") {
         let class = match def.props.get("class").map(String::as_str) {
             Some("light") => Class::Light,
@@ -166,6 +164,7 @@ pub fn spawn_guest(
             swoon: false,
             cling: false,
             lure: false,
+            plunge: false,
         },
     );
     ctrl.facing = -1;
@@ -415,6 +414,7 @@ pub(crate) fn animate(
                 swooning: false,
                 run_speed: g.tuning.run_speed,
                 rope: None,
+                plunging: false,
             },
             dt,
         );

@@ -36,6 +36,8 @@ pub struct Motion {
     pub run_speed: f32,
     /// On the Lure's rope: the direction from the hands to the light, a unit vector with y down.
     pub rope: Option<(f32, f32)>,
+    /// Diving in a Plunge.
+    pub plunging: bool,
 }
 
 /// What the body is doing, which decides the pose.
@@ -55,10 +57,12 @@ pub enum State {
     WallSlide,
     /// On the Lure's rope, both hands on it.
     Hang,
+    /// Diving straight down, tucked, the blade pointed at the floor.
+    Plunge,
 }
 
 impl State {
-    pub const ALL: [Self; 11] = [
+    pub const ALL: [Self; 12] = [
         Self::Idle,
         Self::Run,
         Self::Turn,
@@ -70,6 +74,7 @@ impl State {
         Self::Swoon,
         Self::WallSlide,
         Self::Hang,
+        Self::Plunge,
     ];
 
     pub fn name(self) -> &'static str {
@@ -85,6 +90,7 @@ impl State {
             Self::Swoon => "swoon",
             Self::WallSlide => "wall-slide",
             Self::Hang => "hang",
+            Self::Plunge => "plunge",
         }
     }
 }
@@ -181,6 +187,9 @@ impl Animator {
     }
 
     fn pick(&self, m: Motion) -> State {
+        if m.plunging {
+            return State::Plunge;
+        }
         if m.rope.is_some() && !m.grounded {
             return State::Hang;
         }
@@ -364,6 +373,19 @@ pub fn pose_for(state: State, t: f64, phase: f64) -> Pose {
             }
         }
         State::Hang => hang((0.0, -1.0), 0.0, 1),
+        State::Plunge => Pose {
+            crouch: 7.0,
+            lean: 2.0,
+            ffx: 4.0,
+            ffy: -10.0,
+            fbx: -3.0,
+            fby: -12.0,
+            fx: 3.0,
+            fy: -8.0,
+            bx: 1.0,
+            by: -9.0,
+            ..air()
+        },
         State::WallSlide => Pose {
             lean: -2.0,
             crouch: 3.0,

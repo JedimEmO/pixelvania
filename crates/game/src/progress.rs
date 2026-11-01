@@ -9,14 +9,12 @@
 //! to the ballroom. `PIXELVANIA_PROGRESS=new` starts with nothing but the sabre,
 //! and `PIXELVANIA_PROGRESS=all` with everything.
 
-use std::sync::Arc;
-
 use bevy::asset::RenderAssetUsages;
 use bevy::camera::visibility::RenderLayers;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use pixelfx::effects::EffectId;
-use world::{Item, Progress, Room};
+use world::{Item, Progress};
 
 use crate::effects::SpawnFx;
 use crate::player::Player;
@@ -57,9 +55,9 @@ struct Pickup {
     phase: f32,
 }
 
-/// The room the pickups were last spawned for.
+/// The room build the pickups were last spawned for.
 #[derive(Resource, Default)]
-struct SpawnedFor(Option<Arc<Room>>);
+struct SpawnedFor(Option<u64>);
 
 /// The movement abilities and the most health follow what has been found.
 fn give_abilities(
@@ -138,10 +136,10 @@ fn spawn_pickups(
     mut images: ResMut<Assets<Image>>,
 ) {
     let Some(room) = &active.room else { return };
-    if spawned.0.as_ref().is_some_and(|r| Arc::ptr_eq(r, room)) {
+    if spawned.0 == Some(active.build) {
         return;
     }
-    spawned.0 = Some(room.clone());
+    spawned.0 = Some(active.build);
     for (i, def) in room.entities_of("pickup").enumerate() {
         let name = def.props.get("item").map(String::as_str).unwrap_or("");
         let Some(item) = Item::parse(name) else {

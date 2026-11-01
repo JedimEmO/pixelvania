@@ -1,4 +1,4 @@
-//! The player's movement: running, jumping, the Lunge, the Swoon, the Cling and the Lure.
+//! The player's movement: running, jumping, the Lunge, the Swoon, the Cling, the Lure and the Plunge.
 //!
 //! [`Controller::tick`] advances one fixed tick. It takes the input as the tick sees it
 //! and returns what happened, so the game can squash the sprite, kick dust or rumble.
@@ -89,6 +89,10 @@ pub struct MoveTuning {
     /// A rope snapping taut that would take more speed than this keeps the speed instead,
     /// turned along the swing.
     pub lure_snap_keep: f32,
+
+    /// The Plunge hangs still this long at its start, then dives straight down at this speed.
+    pub plunge_hang: f32,
+    pub plunge_speed: f32,
 }
 
 impl Default for MoveTuning {
@@ -138,6 +142,8 @@ impl Default for MoveTuning {
             lure_release_boost: 1.12,
             lure_jump_speed: 420.0,
             lure_snap_keep: 40.0,
+            plunge_hang: 0.07,
+            plunge_speed: 760.0,
         }
     }
 }
@@ -149,6 +155,7 @@ pub struct Abilities {
     pub swoon: bool,
     pub cling: bool,
     pub lure: bool,
+    pub plunge: bool,
 }
 
 impl Abilities {
@@ -157,6 +164,7 @@ impl Abilities {
         swoon: true,
         cling: true,
         lure: true,
+        plunge: true,
     };
 }
 
@@ -175,13 +183,14 @@ pub struct Controls {
     pub parry_pressed: bool,
     pub lure_pressed: bool,
     pub lure_held: bool,
+    pub plunge_pressed: bool,
 }
 
 impl Controls {
     /// One line of an input recording: `x y flags`, where flags are `h` (jump held),
     /// `j` (jump pressed), `l` (Lunge pressed), `a` (attack pressed),
-    /// `b` (attack held), `p` (parry pressed), `g` (Lure pressed) and `r` (Lure held),
-    /// or `-` for none.
+    /// `b` (attack held), `p` (parry pressed), `g` (Lure pressed), `r` (Lure held)
+    /// and `v` (Plunge pressed), or `-` for none.
     pub fn encode(&self) -> String {
         let mut flags = String::new();
         for (on, c) in [
@@ -193,6 +202,7 @@ impl Controls {
             (self.parry_pressed, 'p'),
             (self.lure_pressed, 'g'),
             (self.lure_held, 'r'),
+            (self.plunge_pressed, 'v'),
         ] {
             if on {
                 flags.push(c);
@@ -221,6 +231,7 @@ impl Controls {
             parry_pressed: flags.contains('p'),
             lure_pressed: flags.contains('g'),
             lure_held: flags.contains('r'),
+            plunge_pressed: flags.contains('v'),
         })
     }
 }
@@ -239,6 +250,10 @@ pub struct Events {
     pub lured: Option<(f32, f32)>,
     /// Let go of the Lure.
     pub released: bool,
+    /// Began a Plunge.
+    pub plunge_started: bool,
+    /// A Plunge hit the ground, at its full speed.
+    pub plunged: bool,
 }
 
 impl Events {
@@ -250,6 +265,8 @@ impl Events {
         self.lunged |= other.lunged;
         self.lured = self.lured.or(other.lured);
         self.released |= other.released;
+        self.plunge_started |= other.plunge_started;
+        self.plunged |= other.plunged;
         self.landed = match (self.landed, other.landed) {
             (Some(a), Some(b)) => Some(a.max(b)),
             (a, b) => a.or(b),
@@ -293,6 +310,8 @@ pub struct Controller {
     pub lunging: f32,
     /// The Lure's rope while it holds a light.
     pub rope: Option<Rope>,
+    /// In a Plunge: seconds left hanging at its start, then diving until it lands.
+    pub plunging: Option<f32>,
     coyote: f32,
     jump_buffer: f32,
     jump_cut_done: bool,
@@ -318,6 +337,7 @@ impl Controller {
             wall: 0,
             lunging: 0.0,
             rope: None,
+            plunging: None,
             coyote: 0.0,
             jump_buffer: 0.0,
             jump_cut_done: true,
@@ -443,6 +463,24 @@ impl Controller {
             self.jump_cut_done = true;
             ev.lured = Some(anchor);
         }
+        // The Plunge: from the air, straight down. It commits until it lands.
+        if input.plunge_pressed
+            && self.abilities.plunge
+            && !self.grounded
+            && self.rope.is_none()
+            && self.plunging.is_none()
+            && lock.is_none()
+        {
+            self.plunging = Some(t.plunge_hang);
+            self.lunging = 0.0;
+            self.jump_buffer = 0.0;
+            self.wall = 0;
+            ev.plunge_started = true;
+        }
+        if self.plunging.is_some() {
+            self.wall = 0;
+            self.jump_buffer = 0.0;
+        }
         if self.rope.is_some() {
             self.wall = 0;
             // Jumping off the rope, or Lunging off it, lets go.
@@ -508,7 +546,15 @@ impl Controller {
             }
         }
 
-        if self.rope.is_some() {
+        if let Some(hang) = self.plunging {
+            self.vx = 0.0;
+            if hang > 0.0 {
+                self.plunging = Some(hang - dt);
+                self.vy = 0.0;
+            } else {
+                self.vy = t.plunge_speed;
+            }
+        } else if self.rope.is_some() {
             self.swing(t, input, dir, dt);
         } else if self.lunging > 0.0 {
             self.lunging = (self.lunging - dt).max(0.0);
@@ -540,12 +586,21 @@ impl Controller {
             if airborne && self.vy > 0.0 && self.rope.is_none() {
                 ev.landed = Some(self.vy);
                 self.grounded = true;
+                if self.plunging.take().is_some() {
+                    ev.plunged = true;
+                }
             }
             self.vy = 0.0;
         }
         // A rope needs a clear line to take hold, but once held it stays held, even when
         // the swing carries the line past a corner: snapping there would feel arbitrary.
         ev
+    }
+
+    /// Carries on a Plunge through a floor that broke under it.
+    pub fn keep_plunging(&mut self) {
+        self.plunging = Some(0.0);
+        self.grounded = false;
     }
 
     /// Where the rope meets the body: the hands, raised above the head.
@@ -667,6 +722,7 @@ impl Controller {
     pub fn stop_actions(&mut self) {
         self.lunging = 0.0;
         self.rope = None;
+        self.plunging = None;
         self.jump_buffer = 0.0;
         self.coyote = 0.0;
         self.wall_coyote = 0.0;
@@ -830,6 +886,7 @@ mod tests {
             parry_pressed: true,
             lure_pressed: true,
             lure_held: false,
+            plunge_pressed: true,
         };
         assert_eq!(Controls::decode(&c.encode()), Some(c));
         let none = Controls::default();

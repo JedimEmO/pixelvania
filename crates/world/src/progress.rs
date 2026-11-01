@@ -150,6 +150,8 @@ pub struct Progress {
     pub taken: BTreeSet<String>,
     pub carnations: u32,
     pub goblets: u32,
+    /// Floors broken by the Plunge, as `room:x,y` in tiles, so they stay broken.
+    pub broken: BTreeSet<String>,
 }
 
 impl Progress {
@@ -196,6 +198,7 @@ impl Progress {
             swoon: self.has(Ability::Swoon),
             cling: self.has(Ability::Cling),
             lure: self.has(Ability::Lure),
+            plunge: self.has(Ability::Plunge),
         }
     }
 
@@ -236,6 +239,20 @@ impl Progress {
             }
         };
         true
+    }
+
+    /// Records a broken floor tile.
+    pub fn broke(&mut self, room: &str, x: i32, y: i32) {
+        self.broken.insert(format!("{room}:{x},{y}"));
+    }
+
+    /// The tiles broken in a room.
+    pub fn broken_in<'a>(&'a self, room: &'a str) -> impl Iterator<Item = (i32, i32)> + 'a {
+        self.broken.iter().filter_map(move |k| {
+            let (r, xy) = k.split_once(':')?;
+            let (x, y) = xy.split_once(',')?;
+            (r == room).then_some((x.parse().ok()?, y.parse().ok()?))
+        })
     }
 
     pub fn taken(&self, room: &str, item: Item) -> bool {

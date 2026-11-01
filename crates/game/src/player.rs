@@ -409,6 +409,7 @@ fn tick(
     mut log: ResMut<crate::combat::CombatLog>,
     mut players: Query<(Entity, &mut Player, &mut Fighting)>,
     indulgence: Option<Res<crate::indulge::Indulgence>>,
+    mut plunges: MessageWriter<crate::plunge::PlungeLanded>,
 ) {
     let Some(room) = &active.room else { return };
     // The tick's own length, so a tick stepped by hand while paused is a whole tick.
@@ -444,6 +445,12 @@ fn tick(
             && f.combat.helpless()
         {
             p.ctrl.facing = -d;
+        }
+        if ev.plunged {
+            let b = &p.ctrl.body;
+            plunges.write(crate::plunge::PlungeLanded {
+                body: (b.x, b.y, b.w, b.h),
+            });
         }
         if ev.swooned {
             p.swooning = true;
@@ -495,6 +502,7 @@ pub(crate) fn animate(
                 lunging: c.lunging > 0.0,
                 swooning: p.swooning,
                 run_speed: tuning.movement.run_speed,
+                plunging: c.plunging.is_some(),
                 rope: c.rope.map(|r| {
                     let h = c.hands();
                     let d = Vec2::new(r.anchor.0 - h.0, r.anchor.1 - h.1).normalize_or(Vec2::NEG_Y);

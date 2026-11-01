@@ -60,6 +60,9 @@ pub struct ActiveRoom {
     /// The name of the room loading or loaded.
     pub name: String,
     pub room: Option<Arc<Room>>,
+    /// Counts the times a room has been built. Things spawned from a room's entities
+    /// are spawned once per build; a floor breaking changes the room but not the build.
+    pub build: u64,
 }
 
 impl ActiveRoom {
@@ -88,6 +91,15 @@ fn pulse(beat: Res<crate::music::Beat>, mut lights: Query<(&Pulse, &mut Light2d)
     }
 }
 
+/// The sprite of the room's painted tiles.
+#[derive(Component)]
+pub struct RoomTiles;
+
+/// Repaints the room's tiles, after a floor has broken.
+pub fn repaint_tiles(room: &Room, images: &mut Assets<Image>) -> Handle<Image> {
+    images.add(rasterize(room))
+}
+
 /// Marks everything built from the active room, so a rebuild can clear it.
 #[derive(Component)]
 pub struct RoomPart;
@@ -105,6 +117,7 @@ fn load_first_room(mut commands: Commands, assets: Res<AssetServer>) {
         handle: assets.load(format!("rooms/{name}.room")),
         name,
         room: None,
+        build: 0,
     });
 }
 
@@ -135,6 +148,7 @@ fn build_on_change(
     mut active: ResMut<ActiveRoom>,
     mut images: ResMut<Assets<Image>>,
     parts: Query<Entity, With<RoomPart>>,
+    progress: Res<crate::progress::PlayerProgress>,
 ) {
     // A room is built when it first loads, when its file changes,
     // and when the game switches back to a room that loaded earlier.
@@ -145,19 +159,27 @@ fn build_on_change(
     if changed || active.room.is_none() {
         let id = active.handle.id();
         let Some(asset) = rooms.get(id) else { return };
-        let room = asset.0.clone();
+        // Floors broken earlier stay broken.
+        let mut room = (*asset.0).clone();
+        let broken: Vec<_> = progress.0.broken_in(&room.name).collect();
+        for (x, y) in broken {
+            room.clear(x, y);
+        }
+        let room = Arc::new(room);
         for part in &parts {
             commands.entity(part).despawn();
         }
         build(&mut commands, &mut images, &room);
         info!("built room `{}`", room.name);
         active.room = Some(room);
+        active.build += 1;
     }
 }
 
 fn build(commands: &mut Commands, images: &mut Assets<Image>, room: &Room) {
     commands.spawn((
         RoomPart,
+        RoomTiles,
         Name::new("tiles"),
         Sprite::from_image(images.add(rasterize(room))),
         Anchor::TOP_LEFT,

@@ -29,6 +29,9 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
+/// The tile material the Plunge breaks.
+pub const CRACKED: &str = "cracked";
+
 /// The kinds of entity the Lure can take hold of: lights that hang.
 pub const LURE_KINDS: [&str; 2] = ["chandelier", "lantern"];
 
@@ -275,6 +278,21 @@ impl Room {
             return Tile::Solid(0);
         }
         self.tiles[ty as usize * self.width + tx as usize]
+    }
+
+    /// Empties a tile, as when a floor breaks. Outside the room nothing changes.
+    pub fn clear(&mut self, tx: i32, ty: i32) {
+        if tx >= 0 && ty >= 0 && tx < self.width as i32 && ty < self.height as i32 {
+            self.tiles[ty as usize * self.width + tx as usize] = Tile::Empty;
+        }
+    }
+
+    /// The name of a tile's material, or `None` for an empty tile.
+    pub fn material(&self, tx: i32, ty: i32) -> Option<&str> {
+        match self.tile(tx, ty) {
+            Tile::Solid(m) => self.materials.get(m as usize).map(String::as_str),
+            Tile::Empty => None,
+        }
     }
 
     pub fn is_solid(&self, tx: i32, ty: i32) -> bool {

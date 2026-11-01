@@ -136,7 +136,11 @@ Then the slice's content:
     a 9-second Comedown follows. The High quickens movement by a tenth and the Comedown slows it.
     Resting lowers tolerance, never to nothing once it has started, and lifts a hangover.
     Carnations raise health by 20 and Goblets the Nectar carried by 25. The HUD has a Nectar bar.
-20. **The Plunge and cracked floors.**
+20. **The Plunge and cracked floors.** Done. The right bumper in the air hangs for a moment,
+    then dives straight down at 760 px/s. Landing on `cracked` stone shatters the whole connected patch
+    and dives on through; broken tiles are kept in the progress record and stay broken.
+    The reachability checker counts cracked floors as open once the Plunge is found.
+    Not yet: the Plunge as an attack on guests below.
 21. **Two more guests**: a spinning dancer and a guest who throws glasses.
 22. **The rooms**: about twenty around the ballroom, ending at the stage and the cellar below it.
 23. **The Dancer**, the ballroom's boss, whose fight ends with the stage floor giving way.
