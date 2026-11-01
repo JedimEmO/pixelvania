@@ -78,6 +78,8 @@ the costumed guests among them;
 `cargo xtask rig player` renders every pose of the player's animation, one row per state.
 `cargo xtask golden` renders reference frames from the JavaScript original, which needs Node and git;
 the golden tests themselves run without either.
+`cargo xtask reach` walks the world with each step of the progression's abilities, using the real movement,
+and lists the rooms, pickups and lounges it reaches and any way in with no way out.
 `cargo xtask hanging` renders the chandelier and the lantern, at rest, swung and flared, to `target/hanging/`.
 In the game, effects land on the room's floors, hide behind its walls, and light what is around them.
 

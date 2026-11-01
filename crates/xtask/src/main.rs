@@ -460,6 +460,53 @@ fn hanging() -> Result<()> {
     Ok(())
 }
 
+/// Walks the world with each step of the progression's abilities and prints what it reaches.
+fn reach() -> Result<()> {
+    use world::reach::{check_world, progression_steps};
+    let assets = root().join("assets");
+    let world = world::World::parse(&std::fs::read_to_string(assets.join("world.ron"))?)?;
+    let mut rooms = std::collections::BTreeMap::new();
+    for r in &world.rooms {
+        let src = std::fs::read_to_string(assets.join(format!("rooms/{}.room", r.name)))?;
+        rooms.insert(
+            r.name.clone(),
+            world::Room::parse(&src).map_err(|e| e.to_string())?,
+        );
+    }
+    let t = world::MoveTuning::default();
+    for step in progression_steps() {
+        let names: Vec<_> = step.iter().map(|a| a.name()).collect();
+        let r = check_world(&world, &rooms, &t, &step);
+        println!(
+            "with {}:",
+            if names.is_empty() {
+                "nothing".into()
+            } else {
+                names.join(", ")
+            }
+        );
+        println!(
+            "  rooms    {}",
+            r.rooms.iter().cloned().collect::<Vec<_>>().join(", ")
+        );
+        println!(
+            "  pickups  {}",
+            r.pickups.iter().cloned().collect::<Vec<_>>().join(", ")
+        );
+        println!(
+            "  lounges  {}",
+            r.lounges.iter().cloned().collect::<Vec<_>>().join(", ")
+        );
+        if !r.traps.is_empty() {
+            println!(
+                "  TRAPS    {}",
+                r.traps.iter().cloned().collect::<Vec<_>>().join(", ")
+            );
+        }
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
@@ -468,6 +515,7 @@ fn main() -> Result<()> {
         Some("sfx") if args.len() == 1 => assetgen::sfx::render_all(&root().join("assets/sfx"), &root().join("target/sfx")),
         Some("tiles") if args.len() == 1 => tiles::render(),
         Some("hanging") if args.len() == 1 => hanging(),
+        Some("reach") if args.len() == 1 => reach(),
         Some("backgrounds") if args.len() == 1 => {
             #[path = "backgrounds.rs"]
             mod backgrounds;
@@ -491,7 +539,7 @@ fn main() -> Result<()> {
             fx(id, seed, &out)
         }
         _ => Err(
-            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player|guests] | tiles | hanging | sfx | golden"
+            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player|guests] | tiles | hanging | reach | sfx | golden"
                 .into(),
         ),
     }

@@ -8,6 +8,7 @@ pub mod combat;
 pub mod controller;
 pub mod doors;
 pub mod progress;
+pub mod reach;
 pub mod room;
 
 pub use body::Body;

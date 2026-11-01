@@ -120,7 +120,15 @@ First the systems it needs, then its rooms.
     A blackout closes a slow curtain and wakes the player at the last lounge with a hangover,
     the Comedown, until they rest. The antechamber and the ballroom's alcove each have one.
     The web build does not save yet.
-18. **The reachability checker.** The ballroom's route search, grown to walk the whole world.
+18. **The reachability checker.** Done. `world::reach` explores a room from where the player enters,
+    playing short input scripts (walk, jump, Swoon, Lunge, wall jump, take hold, swing and let go)
+    through the real controller from every place it can stand, cling or hang, and follows doors across the world.
+    `cargo xtask reach` prints what each step of the progression reaches; tests check that the slice
+    reaches every room and pickup, traps nobody, and keeps the ballroom's alcove for the Lure.
+    The map image `cargo xtask map` is not built yet.
+
+Next: the slice's content. Its rooms around the ballroom, five enemy types, Nectar and the High,
+the Dancer and Plunge, and the map.
 
 ## For the director
 
