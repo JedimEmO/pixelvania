@@ -182,8 +182,26 @@ more juice, and levelling. And a boss arena that cannot be left by accident. All
     and a 132 BPM fight track whose stems build with the phases. The arena's doors stay shut while she stands.
 31. **Juice.** Drifting motes in every room, and a moment of slow motion when an ability is found.
 
+## After the second playtest
+
+The director played the slice through and beat the Dancer, in about an hour.
+Combat was close to crisp but not quite; healing and levelling went unexplained;
+the HUD sat under the foreground's drapes; and doors opened onto air.
+
+32. **Interaction prompts.** `[UP] Talk`, `Read` and `Rest`, `[RT] Lure` under the Lure's brackets,
+    and the buttons named for the device in hand in banners, menus and dialogue.
+33. **The HUD over everything, and dark doorways.** An overlay buffer drawn last holds the HUD;
+    each doorway fades to black over a few tiles, and beyond the room is black.
+34. **Crisper light swings.** The sabre's first two combo swings, first air swing and pogo are `mobile`:
+    the stick steers, a jump jumps, and a jump or Lunge in recovery ends them, hit or miss.
+    They wind up in half the time, and a landed one pushes the player back. Heavy swings stay committed.
+35. **Three currencies.** Cordials heal (three, refilled at lounges), Nectar buys only Highs,
+    and Favours, found in five rooms and two from the Dancer, buy levels.
+    The HUD shows Cordial pips, marks the cost of a High, counts Favours, and says what the left trigger would do.
+
 Known gaps: there is one backdrop, the ballroom's windows, behind every room (underground rooms have none);
-a lamp's glow is drawn over the player standing in front of it; the fight and the slice's ending have not been played through end to end.
+a lamp's glow is drawn over the player standing in front of it; the web build does not save;
+the slice has no end screen.
 
 ## For the director
 

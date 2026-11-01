@@ -125,7 +125,10 @@ fn break_floors(
 /// Seconds between the boss falling and the stage giving way, so the finisher has its moment.
 const GIVE_WAY_AFTER: f32 = 1.6;
 
-/// After the Dancer falls, breaks the room's cracked floor and gives the Plunge.
+/// Favours the Dancer's fall is worth.
+const DANCER_FAVOURS: u32 = 2;
+
+/// After the Dancer falls, breaks the room's cracked floor and gives the Plunge, and two Favours.
 fn stage_gives_way(
     mut commands: Commands,
     time: Res<Time<Real>>,
@@ -150,6 +153,8 @@ fn stage_gives_way(
     let plunge = world::Item::Ability(world::Ability::Plunge);
     if breaker.progress.0.take(&room, plunge) {
         commands.spawn(crate::progress::Banner::bundle(plunge, *device));
+        // The Host is pleased: two Favours, which the HUD shows arriving.
+        breaker.progress.0.favours += DANCER_FAVOURS;
     }
     info!("the stage gave way: {n} tiles, and the Plunge is found");
 }

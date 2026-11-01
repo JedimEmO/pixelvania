@@ -55,7 +55,7 @@ npc 25 30 id=wallflower
 guest 40 30 class=spinner
 guest 14 23 class=toaster
 guest 8 30 class=light
-nectar 52 10.5
+pickup 52 10.5 item=favour
 lantern 14 12
 lantern 34 17
 lantern 44 10

@@ -68,9 +68,9 @@ This is the mechanic that carries the theme, so it gets its own section.
 
 You collect Nectar, a golden, sweet, abstract resource,
 from enemies, hidden places and the leftovers of the party.
-You spend it in two ways.
-A small amount heals you.
-A larger amount starts a High.
+You spend it on one thing: a High.
+Healing is apart from it, in a few Cordials refilled at each rest,
+so reaching for Nectar is always a choice to indulge, never a need.
 
 During a High the world saturates, the music opens up with every stem playing,
 you move a little faster and hit a little harder.

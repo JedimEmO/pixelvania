@@ -52,7 +52,7 @@ note 21 19 id=champagne_cellar
 guest 12 20 class=heavy
 guest 38 20 class=medium
 guest 58 20 class=light
-nectar 47 27.5
+pickup 47 27.5 item=favour
 prop 3 20 kind=bottle_rack
 prop 5 20 kind=bottle_rack
 prop 9 20 kind=bottle_rack

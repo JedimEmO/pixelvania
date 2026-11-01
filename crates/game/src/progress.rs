@@ -88,8 +88,11 @@ fn give_abilities(
     }
 }
 
+/// A Favour's silver-lilac core and rim, on its pickup and in the HUD.
+pub(crate) const FAVOUR: ([u8; 3], [u8; 3]) = ([236, 226, 255], [120, 86, 200]);
+
 /// A small diamond with a bright core, drawn into the glow buffer.
-fn glyph(core: [u8; 3], rim: [u8; 3]) -> Image {
+pub(crate) fn glyph(core: [u8; 3], rim: [u8; 3]) -> Image {
     const S: i32 = 11;
     let mut data = vec![0u8; (S * S * 4) as usize];
     for y in 0..S {
@@ -130,6 +133,9 @@ fn colours(item: Item) -> ([u8; 3], [u8; 3], LinearRgba) {
             [150, 50, 100],
             LinearRgba::rgb(1.0, 0.45, 0.7),
         ),
+        Item::Upgrade(world::progress::Upgrade::Favour) => {
+            (FAVOUR.0, FAVOUR.1, LinearRgba::rgb(0.75, 0.65, 1.0))
+        }
         Item::Upgrade(_) => (
             [255, 236, 236],
             [200, 60, 80],
@@ -323,7 +329,11 @@ fn words(item: Item, device: crate::prompt::Device) -> (&'static str, String) {
         },
         Item::Upgrade(u) => match u {
             Upgrade::Carnation => ("A CARNATION", "Pinned to the lapel. More health".into()),
-            Upgrade::Goblet => ("A GOBLET", "Room for more Nectar".into()),
+            Upgrade::Goblet => ("A GOBLET", "One more Cordial between rests".into()),
+            Upgrade::Favour => (
+                "A FAVOUR",
+                "The Host's. Spend it on a level when you rest".into(),
+            ),
         },
         Item::Weapon(w) => {
             let switch = format!("{} changes weapon", key(Control::SwitchWeapon));

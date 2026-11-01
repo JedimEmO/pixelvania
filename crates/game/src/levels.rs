@@ -1,9 +1,9 @@
-//! The lounge's menu: where Nectar is banked into levels.
+//! The lounge's menu: where Favours are spent on levels.
 //!
-//! Resting at a lounge opens it, over the paused game. Up and down pick a stat,
-//! jump buys a level of it with Nectar, and the Lunge or the map button leaves,
-//! which saves again. Every level costs a little more than the last,
-//! so the Nectar that would have started a High now buys a level, and the choice is the game's.
+//! Resting at a lounge opens it, over the paused game, and fills the Cordials.
+//! Up and down pick a stat, jump spends a Favour on a level of it,
+//! and the Lunge or the map button leaves, which saves again.
+//! Favours are found, not earned: hidden in the rooms, and given by the bosses.
 
 use bevy::prelude::*;
 use world::Stat;
@@ -100,7 +100,7 @@ fn navigate(
     mut menu: ResMut<LoungeMenu>,
     mut input: ResMut<TickInput>,
     mut progress: ResMut<PlayerProgress>,
-    mut indulgence: ResMut<Indulgence>,
+    indulgence: Res<Indulgence>,
     mut time: ResMut<Time<Virtual>>,
     roots: Query<Entity, With<MenuRoot>>,
     last: Res<crate::lounge::LastLounge>,
@@ -126,22 +126,18 @@ fn navigate(
     // The game is paused, so presses wait here unconsumed; the menu takes them.
     if std::mem::take(&mut input.jump_pressed) {
         let stat = Stat::ALL[menu.selected];
-        match progress.0.level_up(stat, indulgence.nectar) {
-            Some(cost) => {
-                indulgence.nectar -= cost;
-                sfx.write(crate::audio::PlaySfx {
-                    pitch: 1.2,
-                    ..crate::audio::PlaySfx::new(crate::audio::Sfx::LureCatch)
-                });
-                info!("{} raised to {}", stat.name(), progress.0.stats.get(stat));
-            }
-            None => {
-                sfx.write(crate::audio::PlaySfx {
-                    pitch: 0.6,
-                    volume: 0.6,
-                    ..crate::audio::PlaySfx::new(crate::audio::Sfx::HitLight)
-                });
-            }
+        if progress.0.level_up(stat) {
+            sfx.write(crate::audio::PlaySfx {
+                pitch: 1.2,
+                ..crate::audio::PlaySfx::new(crate::audio::Sfx::LureCatch)
+            });
+            info!("{} raised to {}", stat.name(), progress.0.stats.get(stat));
+        } else {
+            sfx.write(crate::audio::PlaySfx {
+                pitch: 0.6,
+                volume: 0.6,
+                ..crate::audio::PlaySfx::new(crate::audio::Sfx::HitLight)
+            });
         }
     }
     let leave = std::mem::take(&mut input.lunge_pressed) || std::mem::take(&mut input.map_pressed);
@@ -163,7 +159,6 @@ fn navigate(
 fn show(
     menu: Res<LoungeMenu>,
     progress: Res<PlayerProgress>,
-    indulgence: Res<Indulgence>,
     device: Res<crate::prompt::Device>,
     mut texts: Query<&mut Text, With<MenuText>>,
 ) {
@@ -171,12 +166,11 @@ fn show(
         return;
     };
     let stats = &progress.0.stats;
-    let cost = stats.next_cost();
+    let favours = progress.0.favours;
+    let plural = if favours == 1 { "" } else { "s" };
     let mut s = format!(
-        "RESTING\n\nNectar {:.0}    Level {}    Next level {:.0}\n\n",
-        indulgence.nectar,
+        "RESTING\n\nCordials refilled    Level {}\n{favours} Favour{plural} to spend\n\n",
         stats.level(),
-        cost
     );
     for (i, stat) in Stat::ALL.into_iter().enumerate() {
         let mark = if i == menu.selected { ">" } else { " " };
@@ -189,13 +183,13 @@ fn show(
     }
     use crate::prompt::Control;
     let leave = format!("{} leave", Control::Lunge.key(*device));
-    if indulgence.nectar >= cost {
+    if favours > 0 {
         s.push_str(&format!(
-            "\n{} raise    {leave}",
+            "\n{} spend a Favour    {leave}",
             Control::Jump.key(*device)
         ));
     } else {
-        s.push_str(&format!("\nNot enough Nectar    {leave}"));
+        s.push_str(&format!("\nFavours are found in the rooms    {leave}"));
     }
     if text.0 != s {
         text.0 = s;

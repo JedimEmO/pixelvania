@@ -1,10 +1,13 @@
-//! Nectar, the High and the Comedown: the loop of feeling the game is built on.
+//! Nectar, the High and the Comedown: the loop of feeling the game is built on. And Cordials, which heal.
 //!
 //! Nectar is golden and abstract. Guests drop it when they fall, a finisher shakes more loose,
 //! and leftovers of the party lie about the rooms (`nectar x y` in a room file).
-//! It drifts to the player when they come near.
+//! It drifts to the player when they come near. It is spent on nothing but Highs.
 //!
-//! The left trigger spends it. A tap heals a little. Holding it starts a High:
+//! A tap of the left trigger drinks a Cordial: three between rests, and one more for each Goblet.
+//! Drinking takes a moment and slows the player, and a blow in that moment spills it.
+//! Resting at a lounge, or waking at one, fills them again.
+//! Holding the trigger spends Nectar on a High:
 //! the world saturates, the music opens up, the player moves faster and hits harder.
 //! When the High ends the Comedown follows, drained, quiet and slower, for a while.
 //! Tolerance builds with every High, so the next is shorter;
@@ -37,6 +40,9 @@ impl Plugin for IndulgePlugin {
             phase: Phase::Sober,
             held: 0.0,
             started: false,
+            cordials: FULL,
+            drinking: None,
+            empty: 0.0,
         })
         .add_systems(
             Update,
@@ -45,10 +51,13 @@ impl Plugin for IndulgePlugin {
     }
 }
 
-/// Nectar to heal, and to start a High; and what a heal gives back.
-const HEAL_COST: f32 = 20.0;
-const HEAL: f32 = 30.0;
-const HIGH_COST: f32 = 50.0;
+/// What a Cordial heals, before Appetite, and how long it takes to drink.
+const HEAL: f32 = 40.0;
+const DRINK_TIME: f32 = 0.4;
+/// Nectar to start a High.
+pub const HIGH_COST: f32 = 50.0;
+/// Cordials as many as can be carried; clamped to the progress's count each frame.
+const FULL: u32 = u32::MAX;
 /// Seconds the trigger must be held to start a High.
 const HOLD: f32 = 0.5;
 /// A High's length before tolerance, and how much each High adds to tolerance.
@@ -82,25 +91,40 @@ pub struct Indulgence {
     pub held: f32,
     /// This hold has already started a High.
     started: bool,
+    /// Cordials left until the next rest.
+    pub cordials: u32,
+    /// Seconds left of the Cordial being drunk, and the health it started at.
+    pub drinking: Option<(f32, f32)>,
+    /// Seconds left of the HUD's flash after a tap with no Cordial left.
+    pub empty: f32,
 }
 
 impl Indulgence {
     /// How fast the player moves in this phase, against the tuning.
     pub fn pace(&self) -> f32 {
-        match self.phase {
+        let mood = match self.phase {
             Phase::High { .. } => 1.1,
             Phase::Comedown { .. } => 0.9,
             Phase::Sober => 1.0,
+        };
+        if self.drinking.is_some() {
+            mood * 0.5
+        } else {
+            mood
         }
     }
 
-    /// Blacks out: a hangover until the player rests or indulges.
+    /// Blacks out: a hangover until the player rests or indulges. They wake at a lounge,
+    /// so the Cordials are full again.
     pub fn hangover(&mut self) {
         self.phase = Phase::Comedown { left: None };
+        self.cordials = FULL;
+        self.drinking = None;
     }
 
-    /// Rests at a lounge: the hangover lifts and tolerance falls.
+    /// Rests at a lounge: the Cordials fill, the hangover lifts and tolerance falls.
     pub fn rest(&mut self) {
+        self.cordials = FULL;
         if matches!(self.phase, Phase::Comedown { .. }) {
             self.phase = Phase::Sober;
         }
@@ -126,7 +150,7 @@ impl Indulgence {
     }
 }
 
-/// Reads the left trigger: a tap heals, a hold starts a High; and runs the High and the Comedown.
+/// Reads the left trigger: a tap drinks a Cordial, a hold starts a High; and runs the High and the Comedown.
 #[allow(clippy::too_many_arguments)]
 fn indulge(
     time: Res<Time>,
@@ -145,7 +169,40 @@ fn indulge(
     };
     let at = at.translation.truncate() + Vec2::Y * 17.0;
     ind.nectar = ind.nectar.min(progress.0.nectar_capacity());
+    ind.cordials = ind.cordials.min(progress.0.cordials());
+    ind.empty = (ind.empty - dt).max(0.0);
     let alive = f.combat.health > 0.0;
+
+    // A Cordial being drunk: a blow spills it, otherwise it heals once it is down.
+    if let Some((left, before)) = ind.drinking {
+        if !alive || f.combat.health < before {
+            ind.drinking = None;
+            sfx.write(crate::audio::PlaySfx {
+                pitch: 0.7,
+                volume: 0.6,
+                ..crate::audio::PlaySfx::new(crate::audio::Sfx::LureRelease)
+            });
+        } else if left - dt > 0.0 {
+            ind.drinking = Some((left - dt, before));
+        } else {
+            ind.drinking = None;
+            let heal = HEAL * progress.0.stats.heal_scale();
+            f.combat.health = (f.combat.health + heal).min(f.max_health);
+            let mut glow = SpawnFx::new(EffectId::Poof, at);
+            glow.options.palette = CORDIAL.iter().map(|&c| pixelfx::color::hex(c)).collect();
+            glow.options.light = 1.4;
+            fx.write(glow);
+            sfx.write(crate::audio::PlaySfx {
+                pitch: 1.6,
+                volume: 0.8,
+                ..crate::audio::PlaySfx::new(crate::audio::Sfx::LureCatch)
+            });
+            // Drinking lifts a hangover.
+            if ind.phase == (Phase::Comedown { left: None }) {
+                ind.phase = Phase::Sober;
+            }
+        }
+    }
 
     if input.indulge_held && alive {
         ind.held += dt;
@@ -171,25 +228,25 @@ fn indulge(
             );
         }
     } else {
-        // Let go before the hold became a High: a tap, which heals.
-        if ind.held > 0.0 && ind.held < HOLD && alive && ind.nectar >= HEAL_COST {
-            let hurt = f.combat.health < f.max_health;
-            if hurt {
-                ind.nectar -= HEAL_COST;
-                let heal = HEAL * progress.0.stats.heal_scale();
-                f.combat.health = (f.combat.health + heal).min(f.max_health);
-                let mut glow = SpawnFx::new(EffectId::Poof, at);
-                glow.options.palette = GOLD.iter().map(|&c| pixelfx::color::hex(c)).collect();
-                fx.write(glow);
+        // Let go before the hold became a High: a tap, which drinks a Cordial.
+        let tapped = ind.held > 0.0 && ind.held < HOLD;
+        let hurt = f.combat.health < f.max_health;
+        if tapped && alive && hurt && ind.drinking.is_none() {
+            if ind.cordials > 0 {
+                ind.cordials -= 1;
+                ind.drinking = Some((DRINK_TIME, f.combat.health));
                 sfx.write(crate::audio::PlaySfx {
-                    pitch: 1.6,
-                    volume: 0.7,
-                    ..crate::audio::PlaySfx::new(crate::audio::Sfx::LureCatch)
+                    pitch: 2.2,
+                    volume: 0.5,
+                    ..crate::audio::PlaySfx::new(crate::audio::Sfx::Footstep)
                 });
-                // Indulging lifts a hangover.
-                if ind.phase == (Phase::Comedown { left: None }) {
-                    ind.phase = Phase::Sober;
-                }
+            } else {
+                ind.empty = 0.5;
+                sfx.write(crate::audio::PlaySfx {
+                    pitch: 0.5,
+                    volume: 0.5,
+                    ..crate::audio::PlaySfx::new(crate::audio::Sfx::HitLight)
+                });
             }
         }
         ind.held = 0.0;
@@ -219,6 +276,9 @@ fn indulge(
         *mood = want;
     }
 }
+
+/// A Cordial's rose-red ramp, dark to light.
+const CORDIAL: [u32; 6] = [0x3a0c1c, 0x7a1830, 0xb83048, 0xe05a6a, 0xff9aa0, 0xffe0e0];
 
 /// Nectar's golden ramp, dark to light.
 const GOLD: [u32; 6] = [0x4a3010, 0x8a5a18, 0xc88a28, 0xf0b840, 0xffd878, 0xfff4d0];
@@ -360,7 +420,29 @@ mod tests {
             phase: Phase::Sober,
             held: 0.0,
             started: false,
+            cordials: 0,
+            drinking: None,
+            empty: 0.0,
         }
+    }
+
+    #[test]
+    fn resting_and_waking_fill_the_cordials() {
+        let mut i = fresh();
+        i.rest();
+        assert_eq!(i.cordials, FULL);
+        i.cordials = 0;
+        i.drinking = Some((0.2, 50.0));
+        i.hangover();
+        assert_eq!(i.cordials, FULL);
+        assert_eq!(i.drinking, None);
+    }
+
+    #[test]
+    fn drinking_slows_the_player() {
+        let mut i = fresh();
+        i.drinking = Some((0.2, 50.0));
+        assert!(i.pace() < 1.0);
     }
 
     #[test]

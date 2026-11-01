@@ -1,6 +1,6 @@
 // The smoking room: a low, hazy room of booths off the cloakroom, green with absinthe.
 //
-// A Carnation waits on a gilt shelf hung high in the middle of the room, out of reach of every wall.
+// A Favour waits on a gilt shelf hung high in the middle of the room, out of reach of every wall.
 // Swing to it from either lantern. The floor under the shelf is cracked.
 [room]
 name = smoking_room
@@ -42,7 +42,7 @@ vv...vvv....vvv..........vvv....vvvvvvvvvvvv
 
 [entities]
 door 43 14 h=3 id=east to=cloakroom:west
-pickup 21.5 5 item=carnation
+pickup 21.5 5 item=favour
 guest 10 20 class=heavy
 guest 36 17 class=light
 guest 18.5 6 class=toaster

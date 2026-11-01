@@ -53,7 +53,7 @@ music = ballroom
 [entities]
 door 0 16 h=3 id=west_high to=mirror_corridor:east
 door 0 32 h=3 id=west_low to=bandstand:east_high
-nectar 17 10.5
+pickup 17 10.5 item=favour
 lantern 14 15
 lantern 20 5
 prop 6 9 kind=curtain

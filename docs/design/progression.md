@@ -10,7 +10,7 @@ The director has settled its main choices; the ones still open are listed at the
 Four things change as the game goes on, and they pull against each other on purpose.
 
 The player gains reach. Abilities open the map, weapons open new ways to fight,
-and found upgrades raise health and the Nectar a High can draw on.
+and found upgrades add Cordials and buy levels.
 Every gain makes the player stronger and the palace easier to cross.
 
 The world loses colour. Each ability found takes a share of the colour from lit surfaces,
@@ -107,15 +107,23 @@ Unlit sconces appear in every area, so carrying fire back opens secrets everywhe
 
 ## Upgrades
 
-Two kinds of upgrade hide in the rooms, as rewards for exploring and for going back.
+Each of the three things the player can spend has its own source, so each choice reads clearly.
+The director asked for this after the first playtest, when one Nectar for healing, Highs and levels
+left all three under-explained.
 
-Carnations raise health. There are six, pinned where someone left them.
-Goblets raise how much Nectar the player can carry, so a High can start sooner and heal more.
-There are six of those too.
+Cordials heal. The player carries three, drinks one with a tap of the left trigger,
+and a lounge fills them again, as a blackout does. Drinking takes a moment and slows the player,
+and a blow in that moment spills it.
+Goblets add a Cordial each. There are six, hidden in the rooms.
 
-There is no experience and no currency.
-Nectar is the only resource, it is spent, never saved up for a shop,
-and losing it on a blackout would be a punishment the vision rules out.
+Nectar is spent on nothing but Highs. Guests drop it and the party leaves it lying about;
+it is never saved up for a shop, and a blackout keeps it, since losing it would be a punishment the vision rules out.
+
+Favours buy levels: one Favour, one level in Vitality, Composure, Strength or Appetite, spent at a lounge.
+They are found, not earned. They hide in the rooms, and bosses give them, two each.
+There is no experience: exploring makes the player stronger, and grinding does not.
+
+Carnations, which raised health, are retired in favour of Favours spent on Vitality.
 
 ## The fade as a number
 
@@ -164,7 +172,7 @@ About 150 rooms over five to ten hours, so roughly an hour to an hour and a half
 
 The slice is the ballroom as a player would reach it:
 arriving with the Lunge, Cling, Swoon and the Lure, at a fade of 0.26.
-Inside it are the candelabrum, a Carnation, a Goblet, three lounges,
+Inside it are the candelabrum, five Favours and the Dancer's two, a Goblet, three lounges,
 the Dancer, and Plunge as the reward, which ends the slice by dropping the player through the floor.
 
 Building it needs four things the game does not have yet:
@@ -184,5 +192,4 @@ The director has chosen, on 2026-11-01:
 ## Still open
 
 - Seven bosses, with the three answer-guests among them.
-- Carnations and Goblets as the only upgrades, with no currency.
 - The fade's steps, and whether Dawn lifts it.

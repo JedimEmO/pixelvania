@@ -1,4 +1,4 @@
-// The powder room: mirrors, a vanity, and Nectar left on the shelves.
+// The powder room: mirrors, a vanity, and a Favour left on the shelves.
 //
 // A dead end off the balcony, its door high on the east wall. Climb the vanity and the shelf to get back up.
 [room]
@@ -39,7 +39,7 @@ vv......g.....g...................vv
 
 [entities]
 door 35 6 h=3 id=east to=balcony:west
-nectar 20.5 11.5
+pickup 20.5 11.5 item=favour
 chandelier 24 5
 prop 22 19 kind=vanity
 prop 27 19 kind=mirror

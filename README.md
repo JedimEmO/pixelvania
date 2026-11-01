@@ -37,7 +37,7 @@ Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev
 | Attack; hold to charge, with up to rise, with down in the air to pogo | West (X, Square) | J |
 | Toast, the parry | Left bumper (LB, L1) | K |
 | Lure: take hold of the light the stick aims at; hold to swing, release to let go | Right trigger (RT, R2) | I |
-| Indulge: tap to heal with Nectar, hold to start a High | Left trigger (LT, L2) | N |
+| Tap to drink a Cordial and heal, hold to spend Nectar on a High | Left trigger (LT, L2) | N |
 | Plunge: in the air, dive straight down; breaks cracked floors | Right bumper (RB, R1) | M |
 | Next weapon: the sabre, the Jeroboam, the candelabrum | North (Y, Triangle) | L |
 | Next room, for testing: each room of the world, the feel lab, the combat lab | Start | Tab |
@@ -46,9 +46,11 @@ Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev
 
 Hold down while falling to fall faster, and press into a wall while falling to slide down it.
 Press up beside a lounge, a velvet chaise under a standing lamp, to rest:
-it heals, saves, and is where you wake after a blackout.
-Resting opens the lounge's menu, where Nectar buys levels in Vitality, Composure, Strength and Appetite;
-each level costs a little more than the last, so Nectar drunk for a High is a level not bought.
+it heals, fills your three Cordials, saves, and is where you wake after a blackout.
+Resting opens the lounge's menu, where each Favour you have found buys a level
+in Vitality, Composure, Strength or Appetite. Favours hide in the rooms, and the Dancer gives two.
+The HUD shows health, poise, a pip for each Cordial, the Nectar bar marked at the cost of a High,
+and the Favours you carry; a line under it says what the left trigger would do.
 The save is `save.ron` in your data folder (`~/.local/share/pixelvania` on Linux),
 and the game starts from it; delete it, or set `PIXELVANIA_FRESH=1`, for a new game.
 On the Lure's rope, push the stick the way you want to swing, and up or down to climb or lower.

@@ -36,6 +36,8 @@ pub enum Control {
     Lure,
     Plunge,
     SwitchWeapon,
+    /// The left trigger: a tap drinks a Cordial, a hold starts a High.
+    Indulge,
 }
 
 impl Control {
@@ -50,6 +52,7 @@ impl Control {
                 Lure => "RT",
                 Plunge => "RB",
                 SwitchWeapon => "Y",
+                Indulge => "LT",
             },
             Device::Keyboard => match self {
                 Up => "W",
@@ -58,6 +61,7 @@ impl Control {
                 Lure => "I",
                 Plunge => "M",
                 SwitchWeapon => "L",
+                Indulge => "N",
             },
         }
     }

@@ -89,15 +89,20 @@ impl Weapon {
 pub enum Upgrade {
     /// Raises health.
     Carnation,
-    /// Raises how much Nectar can be carried.
+    /// One more Cordial between rests.
     Goblet,
+    /// The Host's favour, spent at a lounge on a level.
+    Favour,
 }
 
 impl Upgrade {
+    pub const ALL: [Upgrade; 3] = [Upgrade::Carnation, Upgrade::Goblet, Upgrade::Favour];
+
     pub fn name(self) -> &'static str {
         match self {
             Upgrade::Carnation => "carnation",
             Upgrade::Goblet => "goblet",
+            Upgrade::Favour => "favour",
         }
     }
 }
@@ -124,7 +129,7 @@ impl Item {
                     .map(Item::Weapon)
             })
             .or_else(|| {
-                [Upgrade::Carnation, Upgrade::Goblet]
+                Upgrade::ALL
                     .into_iter()
                     .find(|u| u.name() == name)
                     .map(Item::Upgrade)
@@ -140,7 +145,7 @@ impl Item {
     }
 }
 
-/// A stat raised at a lounge with Nectar.
+/// A stat raised at a lounge with a Favour.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Stat {
     /// More health.
@@ -149,7 +154,7 @@ pub enum Stat {
     Composure,
     /// Harder blows: more damage and poise damage.
     Strength,
-    /// Longer Highs and bigger heals.
+    /// Longer Highs and stronger Cordials.
     Appetite,
 }
 
@@ -176,7 +181,7 @@ impl Stat {
             Stat::Vitality => "+12 health",
             Stat::Composure => "+8 poise",
             Stat::Strength => "+6% to every blow",
-            Stat::Appetite => "+8% to a High, +10% to a heal",
+            Stat::Appetite => "+8% to a High, +10% to a Cordial",
         }
     }
 }
@@ -215,11 +220,6 @@ impl Stats {
         Stat::ALL.iter().map(|&s| self.get(s)).sum()
     }
 
-    /// What the next level costs in Nectar: a little more each time.
-    pub fn next_cost(&self) -> f32 {
-        20.0 + 6.0 * self.level() as f32
-    }
-
     /// Multiplier on outgoing damage and poise damage.
     pub fn strength_scale(&self) -> f32 {
         1.0 + 0.06 * self.strength as f32
@@ -245,11 +245,13 @@ pub struct Progress {
     pub taken: BTreeSet<String>,
     pub carnations: u32,
     pub goblets: u32,
+    /// Favours found and not yet spent on a level.
+    pub favours: u32,
     /// Floors broken by the Plunge, as `room:x,y` in tiles, so they stay broken.
     pub broken: BTreeSet<String>,
     /// Rooms the player has been in, for the map.
     pub visited: BTreeSet<String>,
-    /// Levels bought with Nectar.
+    /// Levels bought with Favours.
     pub stats: Stats,
 }
 
@@ -311,19 +313,24 @@ impl Progress {
         60.0 + 8.0 * self.stats.composure as f32
     }
 
-    /// Buys a level in a stat with Nectar. Returns what it cost, or `None` if there is not enough.
-    pub fn level_up(&mut self, stat: Stat, nectar: f32) -> Option<f32> {
-        let cost = self.stats.next_cost();
-        if nectar < cost {
-            return None;
+    /// Spends a Favour on a level in a stat. False if there is no Favour to spend.
+    pub fn level_up(&mut self, stat: Stat) -> bool {
+        if self.favours == 0 {
+            return false;
         }
+        self.favours -= 1;
         *self.stats.get_mut(stat) += 1;
-        Some(cost)
+        true
     }
 
-    /// How much Nectar can be carried, with every Goblet found.
+    /// How much Nectar can be carried.
     pub fn nectar_capacity(&self) -> f32 {
-        100.0 + 25.0 * self.goblets as f32
+        100.0
+    }
+
+    /// Cordials carried between rests, with every Goblet found.
+    pub fn cordials(&self) -> u32 {
+        3 + self.goblets
     }
 
     /// How much colour the abilities found have taken from the world, 0 to 1.
@@ -349,6 +356,10 @@ impl Progress {
             }
             Item::Upgrade(Upgrade::Goblet) => {
                 self.goblets += 1;
+                true
+            }
+            Item::Upgrade(Upgrade::Favour) => {
+                self.favours += 1;
                 true
             }
         };
@@ -398,14 +409,26 @@ mod tests {
             Some(Item::Weapon(Weapon::Candelabrum))
         );
         assert_eq!(Item::parse("cake"), None);
+        assert_eq!(Item::parse("favour"), Some(Item::Upgrade(Upgrade::Favour)));
     }
 
     #[test]
-    fn levels_cost_more_each_time_and_need_the_nectar() {
+    fn a_favour_buys_one_level() {
         let mut p = Progress::new_game();
-        assert_eq!(p.level_up(Stat::Vitality, 10.0), None);
-        assert_eq!(p.level_up(Stat::Vitality, 100.0), Some(20.0));
-        assert_eq!(p.level_up(Stat::Strength, 100.0), Some(26.0));
+        assert!(!p.level_up(Stat::Vitality));
+        p.take("cellar", Item::Upgrade(Upgrade::Favour));
+        assert_eq!(p.favours, 1);
+        assert!(p.level_up(Stat::Vitality));
+        assert_eq!((p.favours, p.stats.vitality), (0, 1));
+        assert!(!p.level_up(Stat::Strength));
+    }
+
+    #[test]
+    fn levels_raise_the_stats() {
+        let mut p = Progress::new_game();
+        p.favours = 2;
+        assert!(p.level_up(Stat::Vitality));
+        assert!(p.level_up(Stat::Strength));
         assert_eq!(p.stats.level(), 2);
         assert_eq!(p.max_health(), 112.0);
         assert!((p.stats.strength_scale() - 1.06).abs() < 1e-6);
