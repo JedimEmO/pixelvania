@@ -13,13 +13,15 @@ mod resolve;
 pub use attacker::{AttackMotion, Attacker, Phase};
 pub use combatant::{Combatant, Reaction, WeightClass};
 pub use data::{AttackData, AttackId, Chain, Hitbox, Rect, TickRange, Weapon, Weight};
-pub use resolve::{CombatEvent, Fighter, Hit, ImpactScale, resolve, resolve_body_collisions};
+pub use resolve::{
+    CombatEvent, Fighter, Hit, ImpactScale, resolve, resolve_body_collisions, slam_hit,
+};
 
 pub const TICK_RATE: u32 = 120;
 pub const DT: f32 = 1.0 / TICK_RATE as f32;
 pub const BUFFER_TICKS: u32 = 18;
 pub const PARRY_SECONDS: f32 = 0.12;
-pub const WALL_SPLAT_SPEED: f32 = 180.0;
+pub const WALL_SPLAT_SPEED: f32 = 140.0;
 pub const WALL_SPLAT_DAMAGE: f32 = 12.0;
 pub const POGO_SPEED: f32 = 340.0;
 

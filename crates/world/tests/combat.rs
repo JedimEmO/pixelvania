@@ -432,7 +432,7 @@ fn heavy_blows_launch_light_knock_down_medium_and_never_launch_heavy() {
             assert!(b.velocity().1 < 0.0);
         }
         if weight == WeightClass::Heavy {
-            assert_eq!(b.velocity(), (0.0, 0.0));
+            assert_eq!(b.velocity(), (420.0 * 0.18, 0.0));
         }
     }
     let mut a = guest(WeightClass::Light);
@@ -440,7 +440,7 @@ fn heavy_blows_launch_light_knock_down_medium_and_never_launch_heavy() {
     active(&mut a, &weapon, AttackId::Combo3);
     contact(&mut a, &mut b, ImpactScale::NEUTRAL);
     assert_eq!(b.reaction(), Reaction::Stagger);
-    assert_eq!(b.velocity(), (0.0, 0.0));
+    assert_eq!(b.velocity(), (420.0 * 0.18, 0.0));
 }
 
 #[test]
@@ -468,7 +468,7 @@ fn launched_guests_splat_against_tiles_take_damage_and_bounce() {
     ));
     assert_eq!(body.x + body.w, 19 * 16);
     assert_eq!(b.health, after_hit - WALL_SPLAT_DAMAGE);
-    assert_eq!(b.velocity().0, -300.0 * 0.45);
+    assert_eq!(b.velocity().0, -420.0 * 0.45);
     assert!(!body.collides_at(&room, 0, 0));
     println!(
         "wall splat: threshold {WALL_SPLAT_SPEED} px/s, damage {WALL_SPLAT_DAMAGE}, bounce {} px/s",
@@ -550,7 +550,7 @@ fn hit_stop_freezes_attack_movement_and_reactions_for_the_scaled_duration() {
         assert_eq!(a.freeze_ticks(), ticks);
         assert_eq!(b.freeze_ticks(), ticks);
         assert_eq!(h.poise_damage, 8.0 * mood.poise_damage);
-        assert_eq!(h.knockback.0, 110.0 * mood.knockback);
+        assert_eq!(h.knockback.0, 154.0 * mood.knockback);
         assert_eq!(h.shake, mood.shake);
         let before = (
             ac.clone(),
@@ -831,7 +831,7 @@ fn hitboxes_mirror_and_the_slam_has_a_delayed_shockwave() {
         ImpactScale::NEUTRAL,
     );
     assert_eq!(hit(&events).direction, -1);
-    assert_eq!(hit(&events).knockback.0, -110.0);
+    assert_eq!(hit(&events).knockback.0, -154.0);
 
     let weapon = jeroboam();
     let mut a = Attacker::default();
@@ -867,13 +867,13 @@ fn poise_regenerates_only_after_the_delay_and_reactions_end() {
     contact(&mut a, &mut b, ImpactScale::NEUTRAL);
     for _ in 0..seconds_to_ticks(weapon.combo[0].hit_stop) {
         assert!(!b.tick(&weapon, Controls::default(), true, -1));
-        assert_eq!(b.reaction_ticks(), 12);
+        assert_eq!(b.reaction_ticks(), 18);
         assert_eq!(b.poise, 92.0);
     }
     for i in 1..=120 {
         b.tick(&weapon, Controls::default(), true, -1);
         assert_eq!(b.poise, 92.0);
-        if i < 12 {
+        if i < 18 {
             assert_eq!(b.reaction(), Reaction::Flinch);
         } else {
             assert_eq!(b.reaction(), Reaction::Ready);
@@ -1082,7 +1082,7 @@ fn collateral_impacts_apply_mood_and_respect_armour() {
         let [CombatEvent::BodyHit { velocity, .. }] = events.as_slice() else {
             panic!("body hit");
         };
-        assert_eq!(velocity.0, 300.0 * 0.6 * mood.knockback);
+        assert_eq!(velocity.0, 420.0 * 0.6 * mood.knockback);
         assert_eq!(victim.health, 494.0);
         assert_eq!(victim.poise, 100.0 - 20.0 * mood.poise_damage);
         assert_eq!(
@@ -1154,4 +1154,158 @@ fn burning_hurts_without_interrupting() {
     assert_eq!(c.reaction(), Reaction::Ready);
     c.burn(1000.0);
     assert_eq!(c.reaction(), Reaction::Dead);
+}
+
+fn slam() -> Hit {
+    Hit {
+        attacker: 1,
+        target: 2,
+        attack: AttackId::Charged,
+        direction: -1,
+        damage: 30.0,
+        poise_damage: 80.0,
+        hit_stop: 0.16,
+        knockback: (-340.0, -340.0),
+        weight: Weight::Charged,
+        launches: true,
+        shake: 1.0,
+    }
+}
+
+#[test]
+fn outgoing_scales_and_defence_apply_once_to_swings_and_slams() {
+    for external in [false, true] {
+        let mut source = guest(WeightClass::Light);
+        let mut target = guest(WeightClass::Light);
+        assert_eq!(
+            (source.damage_scale, source.poise_scale, target.defence),
+            (1.0, 1.0, 1.0)
+        );
+        source.damage_scale = 2.0;
+        source.poise_scale = 0.5;
+        target.defence = 0.25;
+        let weapon = sabre();
+        let events = if external {
+            vec![slam_hit(&mut source, &mut target, slam(), ImpactScale::HIGH).unwrap()]
+        } else {
+            active(&mut source, &weapon, AttackId::Combo1);
+            contact(&mut source, &mut target, ImpactScale::HIGH)
+        };
+        let h = hit(&events);
+        let damage = if external { 30.0 } else { 12.0 };
+        let poise = if external { 80.0 } else { 8.0 };
+        assert_eq!(h.damage, damage * 2.0 * 0.25);
+        assert_eq!(target.health, 500.0 - h.damage);
+        assert_eq!(h.poise_damage, poise * 0.5 * 1.2);
+        assert_eq!(target.poise, 100.0 - h.poise_damage);
+        assert!(source.is_frozen() && target.shivering());
+    }
+}
+
+#[test]
+fn slam_launches_outward_and_rejects_dead_targets() {
+    let mut source = guest(WeightClass::Light);
+    let mut target = guest(WeightClass::Light);
+    slam_hit(&mut source, &mut target, slam(), ImpactScale::NEUTRAL).unwrap();
+    assert_eq!(target.reaction(), Reaction::Launched);
+    assert_eq!(target.velocity(), (-340.0, -340.0));
+    assert_eq!(target.freeze_ticks(), 20);
+    target.health = 0.0;
+    assert!(slam_hit(&mut source, &mut target, slam(), ImpactScale::NEUTRAL).is_none());
+}
+
+#[test]
+fn flinch_interrupts_unarmoured_windups_but_heavy_guests_keep_swinging() {
+    let weapon = sabre();
+    for weight in [WeightClass::Light, WeightClass::Medium, WeightClass::Heavy] {
+        let mut source = guest(WeightClass::Light);
+        let mut target = guest(weight);
+        target.attacker.start(&weapon, AttackId::Combo1, -1);
+        active(&mut source, &weapon, AttackId::Combo1);
+        contact(&mut source, &mut target, ImpactScale::NEUTRAL);
+        assert!(target.velocity().0 > 0.0);
+        assert!(target.shivering());
+        if weight == WeightClass::Heavy {
+            assert_eq!(target.reaction(), Reaction::Ready);
+            assert_eq!(target.attacker.phase(), Phase::Windup);
+        } else {
+            assert_eq!(target.reaction(), Reaction::Flinch);
+            assert_eq!(target.reaction_ticks(), 18);
+            assert_eq!(target.attacker.phase(), Phase::Idle);
+        }
+    }
+}
+
+#[test]
+fn a_launch_bounces_once_then_opens_the_broken_poise_window() {
+    let weapon = sabre();
+    let mut source = guest(WeightClass::Light);
+    let mut target = Combatant::new(500.0, 50.0, WeightClass::Light);
+    slam_hit(&mut source, &mut target, slam(), ImpactScale::NEUTRAL).unwrap();
+    let room = room();
+    let mut body = Body::new(150, 158, 12, 34);
+    let mut bounced = false;
+    let mut falling = false;
+    for _ in 0..240 {
+        if target.tick(&weapon, Controls::default(), body.on_ground(&room), 1) {
+            target.move_body(2, &mut body, &room, 1450.0);
+            if falling && target.velocity().1 < 0.0 {
+                bounced = true;
+            }
+            falling = target.velocity().1 > 0.0;
+            if target.reaction() == Reaction::Stagger {
+                assert!(bounced);
+                assert_eq!(target.reaction_ticks(), 108);
+                return;
+            }
+        }
+    }
+    panic!("broken body never became finishable");
+}
+
+#[test]
+fn lethal_hits_preserve_the_impulse_for_the_falling_body() {
+    let mut source = guest(WeightClass::Light);
+    let mut target = Combatant::new(10.0, 50.0, WeightClass::Light);
+    slam_hit(&mut source, &mut target, slam(), ImpactScale::NEUTRAL).unwrap();
+    assert_eq!(target.reaction(), Reaction::Dead);
+    assert_eq!(target.velocity(), (-340.0, -340.0));
+    thaw(&mut target, &sabre());
+    assert_eq!(target.velocity(), (-340.0, -340.0));
+}
+
+#[test]
+fn slam_respects_charge_armour_but_still_pushes_and_shivers() {
+    let mut source = guest(WeightClass::Light);
+    let mut target = guest(WeightClass::Medium);
+    let weapon = sabre();
+    target.attacker.start(&weapon, AttackId::Charged, 1);
+    slam_hit(&mut source, &mut target, slam(), ImpactScale::NEUTRAL).unwrap();
+    assert_eq!(target.reaction(), Reaction::Ready);
+    assert_eq!(target.attacker.attack(), Some(AttackId::Charged));
+    assert!(target.shivering());
+    assert!(target.velocity().0 < 0.0);
+}
+
+#[test]
+fn light_flinch_slides_a_visible_distance_on_the_floor() {
+    let mut source = guest(WeightClass::Light);
+    let mut target = guest(WeightClass::Medium);
+    let weapon = sabre();
+    active(&mut source, &weapon, AttackId::Combo1);
+    contact(&mut source, &mut target, ImpactScale::NEUTRAL);
+    let mut controller = player(100.0, 192.0);
+    let start = controller.body.x;
+    for _ in 0..24 {
+        target.tick_controller(
+            2,
+            &mut controller,
+            &room(),
+            &MoveTuning::default(),
+            &weapon,
+            Controls::default(),
+        );
+    }
+    assert!(controller.body.x - start >= 15);
+    assert!(controller.grounded);
 }

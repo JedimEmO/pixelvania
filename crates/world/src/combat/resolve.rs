@@ -142,8 +142,10 @@ pub fn resolve(fighters: &mut [Fighter<'_>], mood: ImpactScale) -> Vec<CombatEve
                     target: victim.id,
                     attack: state.attack().expect("active swing"),
                     direction,
-                    damage: data.damage,
-                    poise_damage: data.poise_damage * mood.poise_damage,
+                    damage: data.damage * attacker.combat.damage_scale * victim.combat.defence,
+                    poise_damage: data.poise_damage
+                        * mood.poise_damage
+                        * attacker.combat.poise_scale,
                     hit_stop: data.hit_stop * mood.hit_stop,
                     knockback: (
                         data.knockback.0 * direction as f32 * mood.knockback,
@@ -279,4 +281,28 @@ fn check_mood(mood: ImpactScale) {
             .iter()
             .all(|n| n.is_finite() && *n >= 0.0)
     );
+}
+
+/// Applies an external hit with the same scaling, armour and freeze as a swing.
+pub fn slam_hit(
+    source: &mut Combatant,
+    target: &mut Combatant,
+    mut hit: Hit,
+    mood: ImpactScale,
+) -> Option<CombatEvent> {
+    check_mood(mood);
+    if source.health <= 0.0 || target.health <= 0.0 {
+        return None;
+    }
+    hit.damage *= source.damage_scale * target.defence;
+    hit.poise_damage *= source.poise_scale * mood.poise_damage;
+    hit.hit_stop *= mood.hit_stop;
+    hit.knockback.0 *= mood.knockback;
+    hit.knockback.1 *= mood.knockback;
+    hit.shake *= mood.shake;
+    let armoured = target.attacker.armoured();
+    source.freeze(hit.hit_stop, false);
+    target.freeze(hit.hit_stop, true);
+    target.receive(&hit, armoured);
+    Some(CombatEvent::Hit(hit))
 }
