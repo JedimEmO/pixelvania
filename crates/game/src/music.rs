@@ -1,16 +1,41 @@
-//! Room-selected ballroom stems, mixed beneath the existing ducked music bus.
+//! Named room and encounter stems beneath the ducked music bus.
 use bevy::prelude::*;
 
 pub struct MusicPlugin;
 impl Plugin for MusicPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Beat>()
+        app.init_resource::<Encounter>()
+            .add_systems(Startup, encounter_from_env)
+            .init_resource::<Beat>()
             .add_systems(PreUpdate, advance_beat);
         #[cfg(not(target_arch = "wasm32"))]
         app.insert_non_send(native::Music::default())
             .add_systems(PostUpdate, native::update);
         #[cfg(target_arch = "wasm32")]
-        app.add_systems(Startup, || info!("Ballroom music is disabled on wasm"));
+        app.add_systems(Startup, || info!("Music is disabled on wasm"));
+    }
+}
+
+/// Overrides room music while a boss encounter is active.
+#[derive(Resource, Default, Debug, Clone, PartialEq, Eq)]
+pub struct Encounter {
+    pub track: Option<String>,
+    pub phase: u8,
+}
+
+fn encounter_from_env(mut encounter: ResMut<Encounter>) {
+    if let Ok(value) = std::env::var("PIXELVANIA_ENCOUNTER") {
+        if let Some((track, phase)) = value.rsplit_once(':')
+            && !track.is_empty()
+            && let Ok(phase @ 1..=3) = phase.parse::<u8>()
+        {
+            *encounter = Encounter {
+                track: Some(track.into()),
+                phase,
+            };
+        } else {
+            warn!("Invalid PIXELVANIA_ENCOUNTER; expected track:1..3");
+        }
     }
 }
 
@@ -49,9 +74,39 @@ mod native {
         sound::static_sound::{StaticSoundData, StaticSoundHandle},
         track::{TrackBuilder, TrackHandle, TrackPlaybackState},
     };
-    use std::{error::Error, time::Duration};
+    use std::{
+        collections::{HashMap, HashSet},
+        error::Error,
+        time::Duration,
+    };
 
     const STEMS: [&str; 5] = ["drums", "bass", "harmony", "lead", "texture"];
+    const DANCER: [&str; 8] = [
+        "drums", "bass", "pads", "arp", "stabs", "lead", "choir", "surge",
+    ];
+    fn catalog(name: &str) -> Option<(&'static [&'static str], f64)> {
+        match name {
+            "ballroom" => Some((&STEMS, 120.0)),
+            "dancer" => Some((&DANCER, 132.0)),
+            _ => None,
+        }
+    }
+    fn volumes(name: &str, phase: u8, mix: Mix) -> Vec<f32> {
+        if name != "dancer" {
+            return mix.db.to_vec();
+        }
+        [0, 1, 2, 2, 2, 3, 4, 0]
+            .into_iter()
+            .enumerate()
+            .map(|(i, role)| {
+                if i < [3, 5, 8][usize::from(phase.clamp(1, 3) - 1)] {
+                    mix.db[role]
+                } else {
+                    SILENT
+                }
+            })
+            .collect()
+    }
     const SILENT: f32 = -60.0;
 
     #[derive(Clone, Copy, Debug, PartialEq)]
@@ -107,9 +162,10 @@ mod native {
 
     #[derive(Default)]
     pub(super) struct Music {
-        player: Option<Player>,
-        attempted: bool,
-        applied: Option<(bool, Mix)>,
+        players: HashMap<String, Player>,
+        attempted: HashSet<String>,
+        selected: Option<String>,
+        encounter: bool,
     }
     struct Player {
         track: TrackHandle,
@@ -117,14 +173,16 @@ mod native {
         reverb: ReverbHandle,
         pending: Vec<StaticSoundData>,
         stems: Vec<StaticSoundHandle>,
+        applied: Option<(Vec<f32>, Mix)>,
+        phase: u8,
     }
     impl Player {
         fn new(
             parent: &mut TrackHandle,
             pending: Vec<StaticSoundData>,
         ) -> Result<Self, Box<dyn Error>> {
-            if pending.len() != STEMS.len() || pending[0].num_frames() == 0 {
-                return Err("music needs five nonempty stems".into());
+            if pending.is_empty() || pending[0].num_frames() == 0 {
+                return Err("music needs nonempty stems".into());
             }
             if pending
                 .iter()
@@ -134,7 +192,7 @@ mod native {
             }
             let mut builder = TrackBuilder::new()
                 .volume(Decibels::SILENCE)
-                .sound_capacity(5);
+                .sound_capacity(pending.len());
             let reverb =
                 builder.add_effect(ReverbBuilder::new().feedback(0.65).mix(0.035).damping(0.7));
             let filter = builder.add_effect(FilterBuilder::new().cutoff(4200.0).resonance(0.0));
@@ -151,6 +209,8 @@ mod native {
                 reverb,
                 pending,
                 stems: Vec::new(),
+                applied: None,
+                phase: 1,
             })
         }
 
@@ -175,22 +235,67 @@ mod native {
             Ok(true)
         }
 
-        fn apply(&mut self, audible: bool, mix: Mix) {
-            self.track
-                .set_volume(if audible { 0.0 } else { SILENT }, fade());
-            for (stem, db) in self.stems.iter_mut().zip(mix.db) {
-                stem.set_volume(db, fade());
+        fn set_mix(&mut self, db: Vec<f32>, mix: Mix) {
+            if self.applied.as_ref() == Some(&(db.clone(), mix)) {
+                return;
+            }
+            for (stem, db) in self.stems.iter_mut().zip(&db) {
+                stem.set_volume(*db, fade());
             }
             self.filter.set_cutoff(mix.cutoff, fade());
             self.reverb.set_mix(mix.reverb, fade());
             self.reverb.set_damping(mix.damping, fade());
+            self.applied = Some((db, mix));
+        }
+        #[cfg(test)]
+        fn apply(&mut self, audible: bool, mix: Mix) {
+            self.track
+                .set_volume(if audible { 0.0 } else { SILENT }, fade());
+            self.set_mix(mix.db.to_vec(), mix);
         }
     }
 
-    fn load() -> Result<Vec<StaticSoundData>, Box<dyn Error>> {
-        let root =
-            bevy::asset::io::file::FileAssetReader::get_base_path().join("assets/music/ballroom");
-        STEMS
+    fn transition(
+        players: &mut HashMap<String, Player>,
+        previous: Option<&str>,
+        next: Option<&str>,
+        quantized: bool,
+    ) {
+        let delay = if quantized {
+            previous
+                .and_then(|name| {
+                    let position = players.get(name)?.stems.first()?.position();
+                    let bar = 240.0 / catalog(name)?.1;
+                    Some(bar - position.rem_euclid(bar))
+                })
+                .unwrap_or(0.0)
+        } else {
+            0.0
+        };
+        let tween = Tween {
+            start_time: Duration::from_secs_f64(delay).into(),
+            duration: Duration::from_millis(if quantized { 1000 } else { 1500 }),
+            ..default()
+        };
+        for (name, player) in players {
+            player.track.set_volume(
+                if Some(name.as_str()) == next {
+                    0.0
+                } else {
+                    SILENT
+                },
+                tween,
+            );
+        }
+    }
+
+    fn load(name: &str) -> Result<Vec<StaticSoundData>, Box<dyn Error>> {
+        let root = bevy::asset::io::file::FileAssetReader::get_base_path()
+            .join("assets/music")
+            .join(name);
+        catalog(name)
+            .ok_or("unknown music track")?
+            .0
             .iter()
             .map(|name| {
                 let bytes = std::fs::read(root.join(format!("{name}.wav")))?;
@@ -200,57 +305,78 @@ mod native {
     }
 
     pub(super) fn update(
-        audio: Option<NonSendMut<Audio>>,
+        mut audio: Option<NonSendMut<Audio>>,
         active: Option<Res<ActiveRoom>>,
         mood: Option<Res<Mood>>,
         progression: Option<Res<crate::fade::ProgressionFade>>,
+        encounter: Res<Encounter>,
         mut beat: ResMut<Beat>,
         mut music: NonSendMut<Music>,
     ) {
-        let audible = active
+        let room = active
             .as_ref()
             .and_then(|a| a.room.as_ref())
-            .and_then(|r| r.music.as_deref())
-            == Some("ballroom");
-        let mood = mood.map_or(Mood::ALL[0], |m| *m);
-        let shown = progression.map_or(0.0, |f| f.shown(&mood));
-        let wanted = (audible, thinned(mood.name, shown));
-        if audible && !music.attempted {
-            let Some(mut audio) = audio else { return };
-            music.attempted = true;
-            let Some(parent) = audio.music_track() else {
+            .and_then(|r| r.music.clone());
+        let wanted = encounter.track.clone().or(room);
+        if let Some(name) = &wanted
+            && !music.attempted.contains(name)
+        {
+            let Some(parent) = audio.as_mut().and_then(|a| a.music_track()) else {
                 return;
             };
-            match load().and_then(|data| Player::new(parent, data)) {
-                Ok(player) => music.player = Some(player),
+            music.attempted.insert(name.clone());
+            match load(name).and_then(|data| Player::new(parent, data)) {
+                Ok(player) => {
+                    music.players.insert(name.clone(), player);
+                }
                 Err(error) => {
-                    warn!("Ballroom music disabled: {error}; render it with `cargo xtask music`")
+                    warn!("Music {name} unavailable: {error}; render with `cargo xtask music`")
                 }
             }
         }
-        let changed = music.applied != Some(wanted);
-        let Some(player) = &mut music.player else {
-            return;
-        };
-        match player.start_when_paused() {
-            Ok(false) => return,
-            Err(error) => {
-                warn!("Ballroom music disabled: {error}; render it with `cargo xtask music`");
-                // Dropping the child track also removes any partially queued loop.
-                music.player = None;
-                return;
-            }
-            Ok(true) => {}
+        let mood = mood.map_or(Mood::ALL[0], |m| *m);
+        let shown = progression.map_or(0.0, |f| f.shown(&mood));
+        let mix = thinned(mood.name, shown);
+        let mut ready = wanted.is_none();
+        music
+            .players
+            .retain(|name, player| match player.start_when_paused() {
+                Ok(true) => {
+                    if encounter.track.as_ref() == Some(name) {
+                        player.phase = encounter.phase;
+                    }
+                    player.set_mix(volumes(name, player.phase, mix), mix);
+                    if Some(name) == wanted.as_ref() {
+                        ready = true;
+                    }
+                    true
+                }
+                Ok(false) => true,
+                Err(error) => {
+                    warn!("Music {name} disabled: {error}");
+                    false
+                }
+            });
+        if ready && music.selected != wanted {
+            let previous = music.selected.clone();
+            let quantized = music.encounter || encounter.track.is_some();
+            transition(
+                &mut music.players,
+                previous.as_deref(),
+                wanted.as_deref(),
+                quantized,
+            );
+            music.selected = wanted;
+            music.encounter = encounter.track.is_some();
         }
-        if let Some(stem) = player.stems.first() {
+        if let Some(player) = music
+            .selected
+            .as_ref()
+            .and_then(|name| music.players.get(name))
+            && let Some(stem) = player.stems.first()
+        {
             beat.seconds = stem.position();
         }
-        if changed {
-            player.apply(wanted.0, wanted.1);
-            music.applied = Some(wanted);
-        }
-        // Keep silent transports running outside the ballroom, so returning and
-        // hot reloading a room never restarts or duplicates a stem.
     }
 
     #[cfg(test)]
@@ -297,6 +423,81 @@ mod native {
         }
 
         #[test]
+        fn named_switches_and_phases_preserve_alignment() {
+            use kira::{
+                AudioManager, AudioManagerSettings, Frame,
+                backend::mock::{MockBackend, MockBackendSettings},
+            };
+            let mut manager = AudioManager::<MockBackend>::new(AudioManagerSettings {
+                backend_settings: MockBackendSettings { sample_rate: 44100 },
+                ..default()
+            })
+            .unwrap();
+            let mut parent = manager.add_sub_track(TrackBuilder::new()).unwrap();
+            let data = StaticSoundData {
+                sample_rate: 44100,
+                frames: vec![Frame::from_mono(0.01); 4410].into(),
+                settings: default(),
+                slice: None,
+            };
+            let mut players = HashMap::new();
+            for (name, count) in [("ballroom", 5), ("dancer", 8)] {
+                players.insert(
+                    name.to_owned(),
+                    Player::new(&mut parent, vec![data.clone(); count]).unwrap(),
+                );
+            }
+            manager.backend_mut().on_start_processing();
+            manager.backend_mut().process();
+            for player in players.values_mut() {
+                assert!(player.start_when_paused().unwrap());
+            }
+            for (previous, next) in [
+                (None, Some("ballroom")),
+                (Some("ballroom"), Some("dancer")),
+                (Some("dancer"), Some("ballroom")),
+            ] {
+                transition(&mut players, previous, next, true);
+                for phase in 1..=3 {
+                    let high = mix("the High");
+                    let expected: Vec<_> = (0..8)
+                        .map(|i| {
+                            if i < [3, 5, 8][phase - 1] {
+                                0.0
+                            } else {
+                                SILENT
+                            }
+                        })
+                        .collect();
+                    let db = volumes("dancer", phase as u8, high);
+                    assert_eq!(db, expected);
+                    players.get_mut("dancer").unwrap().set_mix(db, high);
+                    assert_eq!(players["dancer"].applied.as_ref().unwrap().0, expected);
+                    for _ in 0..1536 {
+                        manager.backend_mut().on_start_processing();
+                        manager.backend_mut().process();
+                    }
+                    for player in players.values() {
+                        let position = player.stems[0].position();
+                        assert!(player.stems.iter().all(|s| s.position() == position));
+                    }
+                }
+            }
+            let down = volumes("dancer", 3, mix("the Comedown"));
+            assert_eq!(down[0], SILENT);
+            assert_eq!(down[5], SILENT);
+            assert_eq!(down[7], SILENT);
+            assert_eq!(
+                volumes("dancer", 0, mix("the High")),
+                volumes("dancer", 1, mix("the High"))
+            );
+            assert_eq!(
+                volumes("dancer", 255, mix("the High")),
+                volumes("dancer", 3, mix("the High"))
+            );
+        }
+
+        #[test]
         fn shipped_stems_decode_on_the_same_grid() {
             let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../assets/music/ballroom");
@@ -313,11 +514,28 @@ mod native {
         }
 
         #[test]
+        fn dancer_stems_decode_on_the_same_grid() {
+            let root =
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/music/dancer");
+            if !root.exists() {
+                return;
+            }
+            for stem in DANCER {
+                let data = StaticSoundData::from_file(root.join(format!("{stem}.wav"))).unwrap();
+                assert_eq!(data.sample_rate, 44100);
+                assert_eq!(
+                    data.num_frames(),
+                    (44100.0_f64 * 240.0 / 132.0 * 40.0).round() as usize
+                );
+            }
+        }
+
+        #[test]
         fn missing_audio_is_silent() {
             let mut app = App::new();
             app.add_plugins((MinimalPlugins, MusicPlugin));
             app.update();
-            assert!(app.world().non_send::<Music>().player.is_none());
+            assert!(app.world().non_send::<Music>().players.is_empty());
         }
 
         #[test]

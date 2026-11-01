@@ -21,6 +21,25 @@ pub fn render() -> crate::Result<()> {
     println!("Waveforms: top = full loop at ±1; bottom = last/first 10 ms at ±0.2 (seam in red).");
     println!("Spectrograms: time left to right; 30 Hz at bottom, 16 kHz at top; -90..-18 dBFS.");
     println!("Diagnostics: {}", out.display());
+    let assets = crate::root().join("assets/music/dancer");
+    let out = out.join("dancer");
+    fs::create_dir_all(&assets)?;
+    fs::create_dir_all(&out)?;
+    let stems = music::render_dancer();
+    println!("Dancer: 132 BPM, D minor, 4/4, 40 bars");
+    for (name, pcm) in music::DANCER_STEMS.into_iter().zip(&stems) {
+        music::write_wav(&assets.join(format!("{name}.wav")), pcm)?;
+        diagnostics(name, pcm, &out)?;
+    }
+    for phase in 1..=3 {
+        let layers: [Pcm; 8] = std::array::from_fn(|i| {
+            if i < [3,5,8][phase-1] { stems[i].clone() } else { vec![[0;2]; music::DANCER_FRAMES] }
+        });
+        let mix = music::mix(&layers);
+        music::write_wav(&out.join(format!("phase-{phase}.wav")), &mix)?;
+        diagnostics(&format!("phase-{phase}"), &mix, &out)?;
+    }
+    println!("Dancer diagnostics: {}", out.display());
     Ok(())
 }
 
