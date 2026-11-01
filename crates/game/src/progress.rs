@@ -209,6 +209,7 @@ fn collect(
     mut sfx: MessageWriter<crate::audio::PlaySfx>,
     mut shake: ResMut<crate::camera::Shake>,
     mut slow: ResMut<crate::combat::SlowMotion>,
+    device: Res<crate::prompt::Device>,
 ) {
     for (mut p, mut f) in &mut players {
         let b = p.ctrl.body;
@@ -244,7 +245,7 @@ fn collect(
                 ring.options.light = 2.0;
                 fx.write(ring);
             }
-            commands.spawn(Banner::bundle(pickup.item));
+            commands.spawn(Banner::bundle(pickup.item, *device));
             info!("found the {}", pickup.item.name());
         }
     }
@@ -260,13 +261,13 @@ pub(crate) struct Banner {
 const BANNER_TIME: f32 = 3.0;
 
 impl Banner {
-    pub(crate) fn bundle(item: Item) -> impl Bundle {
-        let (title, hint) = words(item);
-        Self::bundle_text(title, hint)
+    pub(crate) fn bundle(item: Item, device: crate::prompt::Device) -> impl Bundle {
+        let (title, hint) = words(item, device);
+        Self::bundle_text(title, &hint)
     }
 
     /// A banner with a title and a line under it.
-    pub(crate) fn bundle_text(title: &str, hint: &str) -> impl Bundle {
+    pub(crate) fn bundle_text(title: &str, hint: &str) -> impl Bundle + use<> {
         (
             Banner { age: 0.0 },
             Text2d::new(format!("{title}\n{hint}")),
@@ -282,35 +283,59 @@ impl Banner {
     }
 }
 
-/// What a find is called on screen, and a line on how to use it.
-fn words(item: Item) -> (&'static str, &'static str) {
+/// What a find is called on screen, and a line on how to use it,
+/// naming the buttons on the device the player holds.
+fn words(item: Item, device: crate::prompt::Device) -> (&'static str, String) {
+    use crate::prompt::Control;
     use world::progress::{Ability, Upgrade, Weapon};
+    let key = |c: Control| c.key(device);
     match item {
         Item::Ability(a) => match a {
-            Ability::Lunge => ("THE LUNGE", "East to dash, through guests too"),
+            Ability::Lunge => (
+                "THE LUNGE",
+                format!("{} to dash, through guests too", key(Control::Lunge)),
+            ),
             Ability::Cling => (
                 "THE CLING",
-                "Press into a wall to hold on, jump to leap off",
+                format!(
+                    "Press into a wall to hold on, {} to leap off",
+                    key(Control::Jump)
+                ),
             ),
-            Ability::Swoon => ("THE SWOON", "Jump again in the air"),
-            Ability::Lure => ("THE LURE", "Right trigger takes hold of light"),
-            Ability::Plunge => ("THE PLUNGE", "Dive through what is cracked"),
-            Ability::Submerge => ("SUBMERGE", "Sink into the nectar"),
-            Ability::Drift => ("THE DRIFT", "Ride the warm air"),
-            Ability::Numb => ("NUMB", "Feel nothing"),
+            Ability::Swoon => (
+                "THE SWOON",
+                format!("{} again in the air", key(Control::Jump)),
+            ),
+            Ability::Lure => (
+                "THE LURE",
+                format!("{} takes hold of the light", key(Control::Lure)),
+            ),
+            Ability::Plunge => (
+                "THE PLUNGE",
+                format!(
+                    "{} in the air dives through what is cracked",
+                    key(Control::Plunge)
+                ),
+            ),
+            Ability::Submerge => ("SUBMERGE", "Sink into the nectar".into()),
+            Ability::Drift => ("THE DRIFT", "Ride the warm air".into()),
+            Ability::Numb => ("NUMB", "Feel nothing".into()),
         },
         Item::Upgrade(u) => match u {
-            Upgrade::Carnation => ("A CARNATION", "Pinned to the lapel. More health"),
-            Upgrade::Goblet => ("A GOBLET", "Room for more Nectar"),
+            Upgrade::Carnation => ("A CARNATION", "Pinned to the lapel. More health".into()),
+            Upgrade::Goblet => ("A GOBLET", "Room for more Nectar".into()),
         },
-        Item::Weapon(w) => match w {
-            Weapon::Sabre => ("THE SABRE", "North changes weapon"),
-            Weapon::Jeroboam => ("THE JEROBOAM", "Swung like a maul. North changes weapon"),
-            Weapon::Candelabrum => (
-                "THE CANDELABRUM",
-                "Its swings leave fire. North changes weapon",
-            ),
-        },
+        Item::Weapon(w) => {
+            let switch = format!("{} changes weapon", key(Control::SwitchWeapon));
+            match w {
+                Weapon::Sabre => ("THE SABRE", switch),
+                Weapon::Jeroboam => ("THE JEROBOAM", format!("Swung like a maul. {switch}")),
+                Weapon::Candelabrum => (
+                    "THE CANDELABRUM",
+                    format!("Its swings leave fire. {switch}"),
+                ),
+            }
+        }
     }
 }
 

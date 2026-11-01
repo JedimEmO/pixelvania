@@ -18,10 +18,12 @@ pub struct LurePlugin;
 
 impl Plugin for LurePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<LureTarget>().add_systems(
-            PostUpdate,
-            draw.after(bevy::transform::TransformSystems::Propagate),
-        );
+        app.init_resource::<LureTarget>()
+            .add_systems(Startup, spawn_prompt)
+            .add_systems(
+                PostUpdate,
+                draw.after(bevy::transform::TransformSystems::Propagate),
+            );
     }
 }
 
@@ -30,6 +32,18 @@ impl Plugin for LurePlugin {
 pub struct LureTarget {
     pub anchor: Option<(f32, f32)>,
     since: f32,
+}
+
+/// The prompt under the brackets: which button takes hold.
+#[derive(Component)]
+struct LurePrompt;
+
+fn spawn_prompt(mut commands: Commands) {
+    commands.spawn((
+        LurePrompt,
+        Name::new("lure prompt"),
+        crate::prompt::Prompt::bundle(crate::prompt::Control::Lure, "Lure", Vec2::ZERO),
+    ));
 }
 
 /// Half the width and height of the brackets round each kind of fixture, and how far
@@ -55,8 +69,10 @@ fn draw(
     input: Res<TickInput>,
     players: Query<(&Player, &Look, &GlobalTransform)>,
     fixtures: Query<&Hanging>,
+    mut prompt: Query<(&mut Transform, &mut Visibility), With<LurePrompt>>,
     mut gizmos: Gizmos,
 ) {
+    let mut shown = None;
     let Some(room) = &active.room else { return };
     let mut aimed = None;
     for (p, look, at) in &players {
@@ -109,6 +125,7 @@ fn draw(
         let (half, drop) = frame(fixture.kind());
         let half = (half * snap).round() + Vec2::splat(on_beat);
         let centre = (fixture.grab_point() - Vec2::Y * drop).floor() + Vec2::splat(0.5);
+        shown = Some(centre - Vec2::Y * (half.y + 8.0));
         let arm = 6.0;
         let pink = Color::srgb(1.0, 0.45, 0.75);
         for (sx, sy) in [(-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0)] {
@@ -121,4 +138,14 @@ fn draw(
         }
     }
     target.anchor = aimed;
+    if let Ok((mut at, mut vis)) = prompt.single_mut() {
+        if let Some(below) = shown {
+            at.translation = below.round().extend(5.0);
+        }
+        vis.set_if_neq(if shown.is_some() {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        });
+    }
 }

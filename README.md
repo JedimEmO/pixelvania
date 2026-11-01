@@ -52,7 +52,9 @@ each level costs a little more than the last, so Nectar drunk for a High is a le
 The save is `save.ron` in your data folder (`~/.local/share/pixelvania` on Linux),
 and the game starts from it; delete it, or set `PIXELVANIA_FRESH=1`, for a new game.
 On the Lure's rope, push the stick the way you want to swing, and up or down to climb or lower.
-A diamond marks the light the Lure would take hold of.
+Brackets mark the light the Lure would take hold of.
+A prompt such as `[UP] Talk` shows over anything that can be used, and the prompts, banners and menus
+name the buttons of the device last pressed, keyboard or gamepad.
 The number keys 1 to 6 set off each pixelfx effect in front of the player.
 
 For the web build, install [trunk](https://trunkrs.dev) and run `trunk serve --release` in `web/`.

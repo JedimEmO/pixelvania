@@ -132,6 +132,7 @@ fn stage_gives_way(
     mut defeated: MessageReader<crate::boss::BossDefeated>,
     mut waiting: Local<Option<f32>>,
     mut breaker: Breaker,
+    device: Res<crate::prompt::Device>,
 ) {
     if defeated.read().count() > 0 {
         *waiting = Some(GIVE_WAY_AFTER);
@@ -148,7 +149,7 @@ fn stage_gives_way(
     let room = breaker.active.name.clone();
     let plunge = world::Item::Ability(world::Ability::Plunge);
     if breaker.progress.0.take(&room, plunge) {
-        commands.spawn(crate::progress::Banner::bundle(plunge));
+        commands.spawn(crate::progress::Banner::bundle(plunge, *device));
     }
     info!("the stage gave way: {n} tiles, and the Plunge is found");
 }

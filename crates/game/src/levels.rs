@@ -1,7 +1,7 @@
 //! The lounge's menu: where Nectar is banked into levels.
 //!
 //! Resting at a lounge opens it, over the paused game. Up and down pick a stat,
-//! jump buys a level of it with Nectar, and East (the Lunge) or Select leaves,
+//! jump buys a level of it with Nectar, and the Lunge or the map button leaves,
 //! which saves again. Every level costs a little more than the last,
 //! so the Nectar that would have started a High now buys a level, and the choice is the game's.
 
@@ -164,6 +164,7 @@ fn show(
     menu: Res<LoungeMenu>,
     progress: Res<PlayerProgress>,
     indulgence: Res<Indulgence>,
+    device: Res<crate::prompt::Device>,
     mut texts: Query<&mut Text, With<MenuText>>,
 ) {
     let Ok(mut text) = texts.single_mut() else {
@@ -186,12 +187,16 @@ fn show(
             stat.effect()
         ));
     }
-    let afford = if indulgence.nectar >= cost {
-        "Jump to raise"
+    use crate::prompt::Control;
+    let leave = format!("{} leave", Control::Lunge.key(*device));
+    if indulgence.nectar >= cost {
+        s.push_str(&format!(
+            "\n{} raise    {leave}",
+            Control::Jump.key(*device)
+        ));
     } else {
-        "Not enough Nectar"
-    };
-    s.push_str(&format!("\n{afford}.  East to leave."));
+        s.push_str(&format!("\nNot enough Nectar    {leave}"));
+    }
     if text.0 != s {
         text.0 = s;
     }

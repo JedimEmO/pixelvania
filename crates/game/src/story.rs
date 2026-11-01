@@ -2,8 +2,9 @@
 //!
 //! Guests who talk are room entities, `npc x y id=attendant`, drawn on the guest rigs and never hostile.
 //! The Host's cards are `note x y id=cloakroom`, small glowing cards that float above the floor.
-//! A small mark shows over either when the player is close; pressing up opens a box at the bottom
-//! of the screen and pauses the game. Jump or up shows the next line; the last one closes it.
+//! A prompt shows over either when the player is close, `[W] Talk` or `[UP] Read`; pressing up
+//! opens a box at the bottom of the screen and pauses the game. Jump or up shows the next line;
+//! the last one closes it, and the box says which button does it.
 //! The words are in `assets/story.ron`, decided in `docs/design/story.md`.
 //!
 //! The staged moments: a new game opens on black with one line, and fades up slowly;
@@ -20,6 +21,7 @@ use world::Ability;
 use crate::input::{TickControls, TickInput, TickSet};
 use crate::player::{Look, Player};
 use crate::progress::PlayerProgress;
+use crate::prompt::{Control, Device, Prompt};
 use crate::render::{GLOW_LAYER, Light2d, ScreenCamera};
 use crate::rooms::{ActiveRoom, RoomPart};
 
@@ -37,6 +39,7 @@ impl Plugin for StoryPlugin {
             .iter()
             .any(|v| std::env::var(v).is_ok());
         app.init_resource::<Dialogue>()
+            .init_resource::<NearTalk>()
             .insert_resource(Scene {
                 waking: waking.then_some(0.0),
                 ending: None,
@@ -120,7 +123,12 @@ struct Talkable {
     feet: (f32, f32),
 }
 
-/// The small mark over something the player is close enough to talk to.
+/// Whether the player is close enough to talk to someone or read something,
+/// so the lounge does not also offer a rest that up would not give.
+#[derive(Resource, Default, PartialEq)]
+pub struct NearTalk(pub bool);
+
+/// The prompt over something the player is close enough to talk to or read.
 #[derive(Component)]
 struct Mark;
 
@@ -182,10 +190,7 @@ fn spawn(
                 ),
                 (
                     Mark,
-                    Sprite::from_color(Color::srgb(1.0, 0.85, 0.5), Vec2::new(3.0, 3.0)),
-                    RenderLayers::layer(GLOW_LAYER),
-                    Transform::from_xyz(0.0, 48.0, 0.0),
-                    Visibility::Hidden,
+                    Prompt::bundle(Control::Up, "Talk", Vec2::new(0.0, 50.0)),
                 ),
             ],
         ));
@@ -225,10 +230,7 @@ fn spawn(
                 ),
                 (
                     Mark,
-                    Sprite::from_color(Color::srgb(1.0, 0.85, 0.5), Vec2::new(3.0, 3.0)),
-                    RenderLayers::layer(GLOW_LAYER),
-                    Transform::from_xyz(0.0, 10.0, 0.0),
-                    Visibility::Hidden,
+                    Prompt::bundle(Control::Up, "Read", Vec2::new(0.0, 12.0)),
                 ),
             ],
         ));
@@ -251,24 +253,25 @@ fn face_and_mark(
     time: Res<Time>,
     players: Query<&Player>,
     mut talkers: Query<(&Talkable, Option<&mut Look>, &Children)>,
-    mut marks: Query<(&mut Visibility, &mut Transform), With<Mark>>,
+    mut marks: Query<&mut Visibility, With<Mark>>,
+    dialogue: Res<Dialogue>,
+    mut near_talk: ResMut<NearTalk>,
     mut images: ResMut<Assets<Image>>,
     mut frame_no: Local<u32>,
 ) {
     *frame_no = frame_no.wrapping_add(1);
     let player = players.single().ok();
+    let mut any = false;
     for (t, look, children) in &mut talkers {
-        let close = player.is_some_and(|p| near(p, t));
-        let blink = ((time.elapsed_secs() * 2.0) as u32).is_multiple_of(2);
+        let close = player.is_some_and(|p| near(p, t)) && !dialogue.is_open();
+        any |= close;
         for &c in children {
-            if let Ok((mut vis, mut tr)) = marks.get_mut(c) {
-                *vis = if close {
+            if let Ok(mut vis) = marks.get_mut(c) {
+                vis.set_if_neq(if close {
                     Visibility::Inherited
                 } else {
                     Visibility::Hidden
-                };
-                let base = if t.card { 10.0 } else { 48.0 };
-                tr.translation.y = base + if blink { 1.0 } else { 0.0 };
+                });
             }
         }
         if let Some(mut look) = look {
@@ -284,6 +287,7 @@ fn face_and_mark(
             look.draw(&pose, false, false, &mut images, *frame_no);
         }
     }
+    near_talk.set_if_neq(NearTalk(any));
 }
 
 /// The open box, if any: who speaks, their lines, and how far through them it is.
@@ -356,6 +360,10 @@ struct DialogueName;
 #[derive(Component)]
 struct DialogueText;
 
+/// The line under the text saying which button goes on.
+#[derive(Component)]
+struct DialogueHint;
+
 const PANEL: Color = Color::srgba(0.05, 0.03, 0.06, 0.92);
 const GOLD: Color = Color::srgb(1.0, 0.82, 0.45);
 const CREAM: Color = Color::srgb(0.95, 0.88, 0.8);
@@ -400,6 +408,16 @@ fn open_box(
         children![
             (DialogueName, Text::new(""), font(8.0), TextColor(GOLD)),
             (DialogueText, Text::new(""), font(10.0), TextColor(CREAM)),
+            (
+                DialogueHint,
+                Text::new(""),
+                font(7.0),
+                TextColor(GOLD.with_alpha(0.7)),
+                Node {
+                    align_self: AlignSelf::FlexEnd,
+                    ..default()
+                },
+            ),
         ],
     ));
 }
@@ -415,6 +433,15 @@ fn advance(
     boxes: Query<Entity, With<DialogueBox>>,
     mut names: Query<&mut Text, (With<DialogueName>, Without<DialogueText>)>,
     mut texts: Query<&mut Text, (With<DialogueText>, Without<DialogueName>)>,
+    mut hints: Query<
+        &mut Text,
+        (
+            With<DialogueHint>,
+            Without<DialogueName>,
+            Without<DialogueText>,
+        ),
+    >,
+    device: Res<Device>,
     mut was_up: Local<bool>,
     mut sfx: MessageWriter<crate::audio::PlaySfx>,
 ) {
@@ -455,6 +482,17 @@ fn advance(
         && name.0 != dialogue.speaker
     {
         name.0 = dialogue.speaker.clone();
+    }
+    if let Ok(mut hint) = hints.single_mut() {
+        let last = dialogue.line + 1 == dialogue.lines.len();
+        let want = format!(
+            "{} {}",
+            Control::Jump.key(*device),
+            if last { "close" } else { "next" }
+        );
+        if hint.0 != want {
+            hint.0 = want;
+        }
     }
     if let Ok(mut text) = texts.single_mut() {
         let shown: String = line.chars().take(dialogue.shown as usize).collect();

@@ -30,7 +30,7 @@ impl Plugin for LoungePlugin {
     fn build(&self, app: &mut App) {
         let save = startup_save();
         app.insert_resource(LastLounge(save.as_ref().map(|s| s.lounge.clone())))
-            .add_systems(Update, (spawn, flicker, wake_at_start))
+            .add_systems(Update, (spawn, flicker, wake_at_start, show_prompt))
             .add_systems(
                 FixedUpdate,
                 rest.in_set(crate::input::TickSet::Simulate)
@@ -249,6 +249,11 @@ fn spawn(
                     },
                     Transform::from_xyz(26.0, 32.0, 0.0),
                 ),
+                crate::prompt::Prompt::bundle(
+                    crate::prompt::Control::Up,
+                    "Rest",
+                    Vec2::new(0.0, 44.0)
+                ),
             ],
         ));
     }
@@ -278,6 +283,40 @@ fn flicker(
     }
 }
 
+/// Whether the player stands close enough to rest at this lounge.
+fn near(p: &Player, l: &Lounge) -> bool {
+    let b = &p.ctrl.body;
+    let feet = ((b.x + b.w / 2) as f32, (b.y + b.h) as f32);
+    p.ctrl.grounded && (feet.0 - l.feet.0).abs() < 28.0 && (feet.1 - l.feet.1).abs() < 4.0
+}
+
+/// Shows the Rest prompt when pressing up would rest.
+fn show_prompt(
+    players: Query<&Player>,
+    lounges: Query<(&Lounge, &Children)>,
+    mut prompts: Query<&mut Visibility, With<crate::prompt::Prompt>>,
+    dialogue: Res<crate::story::Dialogue>,
+    menu: Res<crate::levels::LoungeMenu>,
+    near_talk: Res<crate::story::NearTalk>,
+) {
+    let player = players.single().ok();
+    for (l, children) in &lounges {
+        let show = player.is_some_and(|p| near(p, l))
+            && !crate::story::talking(&dialogue)
+            && !menu.wanted
+            && !near_talk.0;
+        for &c in children {
+            if let Ok(mut vis) = prompts.get_mut(c) {
+                vis.set_if_neq(if show {
+                    Visibility::Inherited
+                } else {
+                    Visibility::Hidden
+                });
+            }
+        }
+    }
+}
+
 /// Rests at a lounge when the player presses up beside it.
 #[allow(clippy::too_many_arguments)]
 fn rest(
@@ -301,11 +340,8 @@ fn rest(
         return;
     }
     for (p, mut f) in &mut players {
-        let b = &p.ctrl.body;
-        let feet = ((b.x + b.w / 2) as f32, (b.y + b.h) as f32);
         for mut l in &mut lounges {
-            let near = (feet.0 - l.feet.0).abs() < 28.0 && (feet.1 - l.feet.1).abs() < 4.0;
-            if !near || !p.ctrl.grounded {
+            if !near(p, &l) {
                 continue;
             }
             f.combat.health = f.max_health;
