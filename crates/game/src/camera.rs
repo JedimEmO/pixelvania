@@ -27,7 +27,7 @@ impl Plugin for CameraPlugin {
 }
 
 #[derive(Resource, Default)]
-struct Follow {
+pub(crate) struct Follow {
     started: bool,
     /// The smoothed view centre, before shake.
     pos: Vec2,
@@ -36,6 +36,14 @@ struct Follow {
     anchor_y: f32,
     /// The player has fallen or risen far enough that the camera tracks them directly.
     tracking_y: bool,
+}
+
+impl Follow {
+    /// Jumps straight to the player on the next frame instead of easing there, as after a door.
+    pub(crate) fn snap(&mut self) {
+        self.started = false;
+        self.tracking_y = false;
+    }
 }
 
 fn follow(

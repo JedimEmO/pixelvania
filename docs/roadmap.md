@@ -97,6 +97,23 @@ Its five steps are built; what decides it now is playing the room and listening 
     `crates/world/tests/ballroom.rs` finds a way through each route against the real room and tuning,
     so a change that breaks one fails a test.
 
+## The vertical slice
+
+The ballroom as a player reaches it in [progression](design/progression.md):
+entered with the Lunge, Cling, the Swoon and the Lure, at a fade of 0.26.
+First the systems it needs, then its rooms.
+
+15. **Doors and the world file.** Done. `assets/world.ron` lists the rooms and the start;
+    doors are room entities (`door 43 18 h=3 id=east to=ballroom:west`),
+    and walking into one draws a black curtain, loads the next room,
+    and puts the player just inside the matching door with their running speed.
+    A test checks that every door leads to a door that leads back, and that nobody arrives inside a wall.
+    The antechamber, where a new game starts, opens into the ballroom.
+16. **Progress.** Abilities and weapons as things found in rooms, kept in one record of progress,
+    with the fade following the abilities found.
+17. **Lounges and saving.** Resting at a lounge saves and heals; a blackout wakes the player at the last one.
+18. **The reachability checker.** The ballroom's route search, grown to walk the whole world.
+
 ## For the director
 
 Play the ballroom with a gamepad; `cargo run --bin pixelvania` starts there.

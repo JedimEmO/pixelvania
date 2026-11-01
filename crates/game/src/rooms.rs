@@ -1,5 +1,8 @@
 //! Loading rooms from `.room` files and building them in the world.
 //!
+//! The rooms of the game are listed in `assets/world.ron`, which is built into the binary;
+//! the feel lab and the combat lab are test rooms outside it.
+//!
 //! A room reloads while the game runs (with the `dev` feature): saving the file rebuilds
 //! the room's tiles and lights in place, and the player stays where they are.
 
@@ -10,7 +13,7 @@ use bevy::asset::{AssetLoader, AsyncReadExt, LoadContext, RenderAssetUsages};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy::sprite::Anchor;
-use world::{ParseError, Room};
+use world::{ParseError, Room, World};
 
 use crate::render::Light2d;
 
@@ -29,15 +32,43 @@ impl Plugin for RoomsPlugin {
 #[derive(Asset, TypePath)]
 pub struct RoomAsset(pub Arc<Room>);
 
-/// The test rooms, in the order Start or Tab steps through them.
-const ROOMS: [&str; 3] = ["ballroom", "lab", "arena"];
+/// Test rooms outside the world, after its rooms in the order Start or Tab steps through them.
+const TEST_ROOMS: [&str; 2] = ["lab", "arena"];
+
+/// The world file, read once.
+pub fn world() -> &'static World {
+    static WORLD: std::sync::OnceLock<World> = std::sync::OnceLock::new();
+    WORLD.get_or_init(|| {
+        World::parse(include_str!("../../../assets/world.ron")).expect("assets/world.ron parses")
+    })
+}
+
+/// Every room Start or Tab steps through: the world's, then the test rooms.
+fn room_names() -> Vec<String> {
+    let w = world();
+    w.rooms
+        .iter()
+        .map(|r| r.name.clone())
+        .chain(TEST_ROOMS.iter().map(|r| (*r).to_owned()))
+        .collect()
+}
 
 /// The room the player is in. `room` is `None` until it has loaded.
 #[derive(Resource)]
 pub struct ActiveRoom {
     handle: Handle<RoomAsset>,
-    index: usize,
+    /// The name of the room loading or loaded.
+    pub name: String,
     pub room: Option<Arc<Room>>,
+}
+
+impl ActiveRoom {
+    /// Starts loading another room. Its parts are rebuilt once it has loaded.
+    pub fn go_to(&mut self, assets: &AssetServer, name: &str) {
+        self.handle = assets.load(format!("rooms/{name}.room"));
+        self.name = name.to_owned();
+        self.room = None;
+    }
 }
 
 /// A light that swells on every beat of the music: `pulse=0.6` in the room file.
@@ -61,13 +92,16 @@ fn pulse(beat: Res<crate::music::Beat>, mut lights: Query<(&Pulse, &mut Light2d)
 #[derive(Component)]
 pub struct RoomPart;
 
-/// Starts in the room `PIXELVANIA_ROOM` names, or the feel lab.
+/// Starts in the room `PIXELVANIA_ROOM` names, or the world's start.
 fn load_first_room(mut commands: Commands, assets: Res<AssetServer>) {
     let wanted = std::env::var("PIXELVANIA_ROOM").unwrap_or_default();
-    let index = ROOMS.iter().position(|r| *r == wanted).unwrap_or(0);
+    let name = room_names()
+        .into_iter()
+        .find(|r| *r == wanted)
+        .unwrap_or_else(|| world().start.clone());
     commands.insert_resource(ActiveRoom {
-        handle: assets.load(format!("rooms/{}.room", ROOMS[index])),
-        index,
+        handle: assets.load(format!("rooms/{name}.room")),
+        name,
         room: None,
     });
 }
@@ -83,9 +117,10 @@ fn next_room(
     if !input.next_room_pressed {
         return;
     }
-    active.index = (active.index + 1) % ROOMS.len();
-    active.handle = assets.load(format!("rooms/{}.room", ROOMS[active.index]));
-    active.room = None;
+    let names = room_names();
+    let at = names.iter().position(|r| *r == active.name).unwrap_or(0);
+    let next = names[(at + 1) % names.len()].clone();
+    active.go_to(&assets, &next);
     for p in &players {
         commands.entity(p).despawn();
     }

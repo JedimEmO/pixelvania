@@ -17,6 +17,7 @@ mod music;
 mod player;
 mod render;
 mod rooms;
+mod travel;
 mod tuning;
 
 use bevy::prelude::*;
@@ -58,6 +59,11 @@ fn main() -> AppExit {
             effects::EffectsPlugin,
             devtools::DevToolsPlugin,
         ))
-        .add_plugins((lure::LurePlugin, hanging::HangingPlugin, fade::FadePlugin))
+        .add_plugins((
+            lure::LurePlugin,
+            hanging::HangingPlugin,
+            fade::FadePlugin,
+            travel::TravelPlugin,
+        ))
         .run()
 }

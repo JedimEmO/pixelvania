@@ -13,6 +13,7 @@ struct CompositeParams {
     background: vec4<f32>,
     saturation: f32,
     fade: f32,
+    curtain: f32,
 }
 
 @group(2) @binding(0) var<uniform> params: CompositeParams;
@@ -96,5 +97,7 @@ fn fragment(in: FragmentIn) -> @location(0) vec4<f32> {
     // The mood's grade: towards grey in the Comedown, richer in the High.
     let luma = dot(out, vec3(0.2126, 0.7152, 0.0722));
     out = max(mix(vec3(luma), out, params.saturation), vec3(0.0));
+    // The curtain drawn between rooms: 0 open, 1 black.
+    out *= 1.0 - params.curtain;
     return vec4(out, 1.0);
 }

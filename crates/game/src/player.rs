@@ -121,6 +121,25 @@ pub struct Player {
 }
 
 impl Player {
+    /// Puts the player at a door's arrival point, facing into the room,
+    /// keeping their running speed and letting go of any rope.
+    pub fn arrive(&mut self, feet: (f32, f32), facing: i32) {
+        let c = &mut self.ctrl;
+        let (w, h) = (c.body.w, c.body.h);
+        c.body = world::Body::new(
+            feet.0.round() as i32 - w / 2,
+            feet.1.round() as i32 - h,
+            w,
+            h,
+        );
+        c.rope = None;
+        c.lunging = 0.0;
+        c.facing = facing;
+        c.vx = facing as f32 * c.vx.abs();
+        c.vy = c.vy.min(0.0);
+        self.prev = self.feet();
+    }
+
     /// Feet position, exact, in pixels with y down.
     fn feet(&self) -> Vec2 {
         let (x, y) = self.ctrl.body.exact_pos();

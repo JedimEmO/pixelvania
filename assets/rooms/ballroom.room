@@ -1,6 +1,6 @@
 // The ballroom: one finished room. Tiles are 16 x 16; entity positions are in tiles.
 //
-// A hall built for the Lure. The dance floor runs along the bottom, with a sunken orchestra pit
+// A hall built for the Lure, entered from the antechamber through the door at the dance floor's left end. The dance floor runs along the bottom, with a sunken orchestra pit
 // to its right and a tall shaft beyond. Chandeliers lead from the floor up to a gilt gallery,
 // lanterns light the way up the shaft, and one last chandelier swings to a lounge in the upper left.
 [room]
@@ -49,15 +49,16 @@ g gilt
 ##.............................................................#
 ##............................................................##
 ##............................................................##
-##............................................................##
-##............................................................##
-##............................................................##
+..............................................................##
+..............................................................##
+..............................................................##
 ============================================............========
 ############################################............########
 ############################################vvvvvvvvvvvv########
 
 [entities]
 spawn 4 37
+door 0 34 h=3 id=west to=antechamber:east
 guest 21 37 class=light
 guest 29 37 class=medium
 guest 39 37 class=heavy

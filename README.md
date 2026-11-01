@@ -13,10 +13,11 @@ Start with [the plan](docs/plan.md), which links to the design pages.
 cargo dev
 ```
 
-The game starts in the ballroom, the first room at final quality:
+The game starts in the antechamber, whose door leads into the ballroom, the first room at final quality:
 a dance floor, an orchestra pit, a lantern-lit shaft, a gilt gallery and a lounge,
 joined by chandeliers to swing from with the Lure.
-Start or Tab steps on to the feel lab and the combat lab.
+The rooms of the game are listed in `assets/world.ron` and joined by doors in their room files.
+Start or Tab steps through every room, then the feel lab and the combat lab.
 
 `cargo dev` runs the game with the `dev` feature:
 tuning in `assets/tuning.ron` and rooms in `assets/rooms/` reload when you save them.
@@ -37,7 +38,7 @@ Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev
 | Toast, the parry | Left bumper (LB, L1) | K |
 | Lure: take hold of the light the stick aims at; hold to swing, release to let go | Right trigger (RT, R2) | I |
 | Next weapon: the sabre, the Jeroboam, the candelabrum | North (Y, Triangle) | L |
-| Next room: the ballroom, the feel lab, the combat lab | Start | Tab |
+| Next room, for testing: each room of the world, the feel lab, the combat lab | Start | Tab |
 | Back to the spawn point, and the guests back to theirs | Select | R |
 
 Hold down while falling to fall faster, and press into a wall while falling to slide down it.

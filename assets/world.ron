@@ -1,0 +1,9 @@
+// The rooms of the game and where a new game starts.
+// Each room is assets/rooms/<name>.room; doors inside the rooms join them.
+(
+    start: "antechamber",
+    rooms: [
+        (name: "antechamber", area: "ballroom"),
+        (name: "ballroom", area: "ballroom"),
+    ],
+)

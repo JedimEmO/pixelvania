@@ -92,6 +92,8 @@ pub struct Lighting {
     /// How much colour the progression fade has taken from lit surfaces, 0 to 1.
     /// The glow buffer keeps its colour, so a faded world is grey stone under vivid lamps.
     pub fade: f32,
+    /// The black curtain drawn while passing between rooms, 0 open to 1 closed.
+    pub curtain: f32,
 }
 
 impl Default for Lighting {
@@ -103,6 +105,7 @@ impl Default for Lighting {
             background: Color::srgb_u8(0x1a, 0x16, 0x26).to_linear(),
             saturation: 1.0,
             fade: 0.0,
+            curtain: 0.0,
         }
     }
 }
@@ -242,6 +245,7 @@ fn update_composite(
         background: lighting.background.to_vec4(),
         saturation: lighting.saturation,
         fade: lighting.fade,
+        curtain: lighting.curtain,
     };
     // Only touch the asset when something changed, so it is not re-uploaded every frame.
     if materials
@@ -264,6 +268,7 @@ struct CompositeParams {
     background: Vec4,
     saturation: f32,
     fade: f32,
+    curtain: f32,
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Clone)]

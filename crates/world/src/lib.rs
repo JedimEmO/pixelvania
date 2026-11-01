@@ -6,8 +6,10 @@
 pub mod body;
 pub mod combat;
 pub mod controller;
+pub mod doors;
 pub mod room;
 
 pub use body::Body;
 pub use controller::{Abilities, Controller, Controls, Events, MoveTuning, MovementLock, Rope};
+pub use doors::{Door, Side, World, WorldRoom};
 pub use room::{EntityDef, ParseError, Room, TILE, Tile};
