@@ -1,6 +1,7 @@
 // The porter's lodge: a cubby under the receiving line, full of luggage nobody unpacked.
 //
-// Drop in from the stairwell above; landings climb back to it on the west side.
+// Drop in from the stairwell above onto the top landing; the landings below zigzag back up to it,
+// and from the top landing a jump goes straight up the stairwell.
 // A Favour sits on a high shelf to the east, a Lunge from the landings.
 [room]
 name = porters_lodge
@@ -18,10 +19,10 @@ g gilt
 ==............................==
 ==............................==
 ==............................==
-==.........====...............==
+==.....=====..................==
 ==............................==
 ==............................==
-==.=====......................==
+==.====.......................==
 ==............................==
 ==............................==
 ==........=====.........gggggg==

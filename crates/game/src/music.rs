@@ -523,14 +523,13 @@ mod native {
                     if encounter.track.as_ref() == Some(name) {
                         player.phase = encounter.phase;
                     }
-                    let mix = if through_wall
-                        && encounter.track.is_none()
-                        && room.as_ref() == Some(name)
-                    {
-                        muffled(mix)
-                    } else {
-                        mix
-                    };
+                    let mix =
+                        if through_wall && encounter.track.is_none() && room.as_ref() == Some(name)
+                        {
+                            muffled(mix)
+                        } else {
+                            mix
+                        };
                     player.set_mix(volumes(name, player.phase, mix), mix);
                     if Some(name) == wanted.as_ref() {
                         ready = true;
@@ -576,7 +575,13 @@ mod native {
             let open = mix("neutral");
             let through = muffled(open);
             assert!(through.cutoff < open.cutoff);
-            assert!(through.db.iter().zip(open.db).all(|(m, o)| *m < o || *m == SILENT));
+            assert!(
+                through
+                    .db
+                    .iter()
+                    .zip(open.db)
+                    .all(|(m, o)| *m < o || *m == SILENT)
+            );
         }
 
         #[test]

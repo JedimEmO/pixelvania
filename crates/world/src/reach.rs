@@ -8,7 +8,7 @@
 //!
 //! [`check_world`] runs that room by room, through the doors, from the world's start,
 //! once for each step of the progression, and reports what is reachable and where a player
-//! who walks in cannot walk out again.
+//! who walks in can neither get back to where the night starts nor find a way on.
 //!
 //! The scripts are a sample of what a player can do, not all of it, so the search can miss
 //! a route a skilled player finds; it does not invent routes the movement does not allow.
@@ -450,7 +450,7 @@ pub struct WorldReach {
     pub pickups: BTreeSet<String>,
     /// Lounges reachable, as `room:id`.
     pub lounges: BTreeSet<String>,
-    /// Ways in from which no door out can be reached, as `room:door`.
+    /// Ways in that lead neither back to the start nor to a new ability, as `room:door`.
     pub traps: BTreeSet<String>,
 }
 
@@ -478,10 +478,11 @@ pub fn check_world(
     }
     .movement();
     let mut out = WorldReach::default();
-    // A way into a room: the room and the door entered by, or none for the start.
-    let mut queue: VecDeque<(String, Option<String>)> =
-        VecDeque::from([(world.start.clone(), None)]);
-    let mut done = BTreeSet::new();
+    let mut queue: VecDeque<Entry> = VecDeque::from([(world.start.clone(), None)]);
+    let mut done: BTreeSet<Entry> = BTreeSet::new();
+    let mut leads: BTreeMap<Entry, Vec<Entry>> = BTreeMap::new();
+    // Ways in from which a new ability can be picked up.
+    let mut gifts: BTreeSet<Entry> = BTreeSet::new();
     while let Some((name, entry)) = queue.pop_front() {
         if !done.insert((name.clone(), entry.clone())) {
             continue;
@@ -519,6 +520,11 @@ pub fn check_world(
         }
         for p in &reach.pickups {
             out.pickups.insert(format!("{name}:{p}"));
+            if let Some(crate::progress::Item::Ability(a)) = crate::progress::Item::parse(p)
+                && !abilities.contains(&a)
+            {
+                gifts.insert((name.clone(), entry.clone()));
+            }
         }
         for l in &reach.lounges {
             out.lounges.insert(format!("{name}:{l}"));
@@ -530,9 +536,49 @@ pub fn check_world(
         }
         for d in room.doors().unwrap_or_default() {
             if reach.doors.contains(&d.id) {
-                queue.push_back((d.to_room.clone(), Some(d.to_door.clone())));
+                let next = (d.to_room.clone(), Some(d.to_door.clone()));
+                leads
+                    .entry((name.clone(), entry.clone()))
+                    .or_default()
+                    .push(next.clone());
+                queue.push_back(next);
             }
+        }
+    }
+    // A door out is not enough: two rooms can hand the player back and forth for ever,
+    // as a hole whose far side drops them straight back in. Every way in must lead,
+    // door by door, back to the room the night starts in, or on to a new ability,
+    // which opens the way back.
+    let mut safe: BTreeSet<Entry> = done
+        .iter()
+        .filter(|e| e.0 == world.start || gifts.contains(*e))
+        .cloned()
+        .collect();
+    loop {
+        let more: Vec<Entry> = done
+            .iter()
+            .filter(|e| !safe.contains(*e))
+            .filter(|e| {
+                leads
+                    .get(*e)
+                    .is_some_and(|next| next.iter().any(|n| safe.contains(n)))
+            })
+            .cloned()
+            .collect();
+        if more.is_empty() {
+            break;
+        }
+        safe.extend(more);
+    }
+    for (name, entry) in &done {
+        if let Some(door) = entry
+            && !safe.contains(&(name.clone(), entry.clone()))
+        {
+            out.traps.insert(format!("{name}:{door}"));
         }
     }
     out
 }
+
+/// A way into a room: the room and the door entered by, or none for the start.
+type Entry = (String, Option<String>);

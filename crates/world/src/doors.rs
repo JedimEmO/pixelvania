@@ -93,7 +93,9 @@ impl Door {
 
     /// Where a body arriving through this door stands: its feet, in pixels with y down,
     /// a tile inside the opening, and the way it faces, into the room.
-    /// A door in the floor or the ceiling puts the body just inside it, mid-opening.
+    /// A door in the ceiling drops the body in mid-opening.
+    /// A door in the floor is climbed out of: the body stands on the floor beside the hole,
+    /// since one left in it would fall straight back through.
     pub fn arrival(&self, room: &Room) -> Option<((f32, f32), i32)> {
         let inside = TILE as f32 * 1.5;
         let bottom = self.y + self.h;
@@ -102,8 +104,34 @@ impl Door {
             Side::Left => ((self.x + self.w + inside, bottom), 1),
             Side::Right => ((self.x - inside, bottom), -1),
             Side::Top => ((mid, self.y + self.h + TILE as f32 * 2.5), 1),
-            Side::Bottom => ((mid, self.y - TILE as f32 * 0.5), 1),
+            Side::Bottom => self
+                .beside(room)
+                .unwrap_or(((mid, self.y - TILE as f32 * 0.5), 1)),
         })
+    }
+
+    /// The nearest floor beside a hole in the floor, a tile and a half from its edge,
+    /// on the right if both sides have one, with the way that faces away from the hole.
+    fn beside(&self, room: &Room) -> Option<((f32, f32), i32)> {
+        let t = TILE as f32;
+        let inside = t * 1.5;
+        // The body is a little over two tiles tall, so it needs three free tiles to stand.
+        let floor = |x: f32| -> Option<f32> {
+            let tx = (x / t).floor() as i32;
+            let bottom = (self.y / t).floor() as i32;
+            (bottom - 8..=bottom).rev().find_map(|ty| {
+                let free = (1..=3).all(|up| !room.is_solid(tx, ty - up));
+                (room.is_solid(tx, ty) && free).then_some(ty as f32 * t)
+            })
+        };
+        let right = self.x + self.w + inside;
+        let left = self.x - inside;
+        match (floor(right), floor(left)) {
+            (Some(y), Some(l)) if l > y => Some(((left, l), -1)),
+            (Some(y), _) => Some(((right, y), 1)),
+            (None, Some(y)) => Some(((left, y), -1)),
+            (None, None) => None,
+        }
     }
 }
 
@@ -224,6 +252,18 @@ impl World {
                             d.to_room, d.to_door
                         ));
                     }
+                    let b = &feet;
+                    let touched = other
+                        .doors()
+                        .unwrap_or_default()
+                        .into_iter()
+                        .find(|o| o.touches(b.x as f32, b.y as f32, b.w as f32, b.h as f32));
+                    if let Some(o) = touched {
+                        problems.push(format!(
+                            "{at}: arriving through `{}:{}` touches door `{}` and leaves again",
+                            d.to_room, d.to_door, o.id
+                        ));
+                    }
                 }
             }
         }
@@ -313,5 +353,30 @@ mod tests {
         assert_eq!(d.side(&r), Some(Side::Left));
         let ((x, y), facing) = d.arrival(&r).unwrap();
         assert_eq!((x, y, facing), (40.0, 64.0, 1));
+    }
+
+    #[test]
+    fn climbing_up_through_a_floor_stands_beside_the_hole() {
+        let r = Room::parse(
+            "[room]\nname = a\n[legend]\n# stone\n[tiles]\n\
+             ##########\n\
+             #........#\n\
+             #........#\n\
+             #........#\n\
+             #........#\n\
+             ####..####\n\
+             ####..####\n\
+             [entities]\n\
+             door 4 6 w=2 id=down to=b:top\n",
+        )
+        .unwrap();
+        let d = r.door("down").unwrap();
+        assert_eq!(d.side(&r), Some(Side::Bottom));
+        let ((x, y), facing) = d.arrival(&r).unwrap();
+        // The right side, a tile and a half past the hole, on the floor at row 5.
+        assert_eq!((x, y, facing), (120.0, 80.0, 1));
+        let b = crate::Body::new(x as i32 - 6, y as i32 - 34, 12, 34);
+        assert!(!b.collides_at(&r, 0, 0));
+        assert!(b.on_ground(&r));
     }
 }

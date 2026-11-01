@@ -387,7 +387,15 @@ pub fn foyer(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
     // A fern on a stand, close and out of focus, in the bottom corner.
     let (px, py) = (60, 352);
     front.rect(px - 8, py, 16, 48, [3, 3, 4, 255]);
-    for (dx, dy) in [(-44, -30), (-30, -52), (-8, -62), (16, -56), (38, -36), (48, -10), (-50, -6)] {
+    for (dx, dy) in [
+        (-44, -30),
+        (-30, -52),
+        (-8, -62),
+        (16, -56),
+        (38, -36),
+        (48, -10),
+        (-50, -6),
+    ] {
         for t in 0..=24 {
             let x = px + dx * t / 24;
             let y = py - 4 + (dy * t / 24) + (t * t) / 30;

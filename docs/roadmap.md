@@ -231,6 +231,12 @@ the Lure as stand-ins until the feast and the gardens exist. [The Arrival's page
     a grand stair in the distance and columns with sconces.
 42. **The music through the walls.** `music = ballroom muffled` hears the party through a wall:
     quieter, darker and drier. The Arrival is muffled, and the ballroom's wing opens it up.
+43. **Out of the porter's lodge.** A playtest found the lodge a trap: its top landing sat under the ceiling,
+    and a player who did reach the stairwell came up inside it and fell straight back.
+    The top landing now sits under the stairwell, and coming up through a hole in the floor
+    stands the player on the floor beside it. The world check reports an arrival that touches a door,
+    and the reachability checker counts a way in as a trap unless it leads back to the start
+    or on to a new ability, so two rooms handing the player back and forth no longer pass.
 
 Still to do for the Arrival: its own music, which the Doorman also borrows from the Dancer for now,
 and a playtest of the Doorman and the coat lift.

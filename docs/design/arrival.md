@@ -15,7 +15,7 @@ and the ballroom keeps the Swoon and the Lure it gave in the slice.
 |---|---|
 | The vestibule | A new game wakes on the chaise by the front doors, which stay shut until the end of the night. The first lounge. |
 | The receiving line | The first guests, lined up to greet whoever comes in. A stairwell in the floor goes down to the porter's lodge. |
-| The porter's lodge | Luggage nobody unpacked, the porter, and a Favour a Lunge away. |
+| The porter's lodge | Luggage nobody unpacked, the porter, and a Favour a Lunge away. Landings zigzag back up to the stairwell. |
 | The grand stair | The hub. Steps climb to the sealed doors of the feast and the gardens; above them the walls need Cling. |
 | The coat check | The attendant, and a pair of dancing shoes on the counter that give the Lunge. A gap too wide to jump leads to the coat lift. |
 | The coat lift | A shaft. The player falls in, finds long silk gloves at the bottom, and climbs out with Cling. |
