@@ -208,6 +208,7 @@ fn collect(
     mut fx: MessageWriter<SpawnFx>,
     mut sfx: MessageWriter<crate::audio::PlaySfx>,
     mut shake: ResMut<crate::camera::Shake>,
+    mut slow: ResMut<crate::combat::SlowMotion>,
 ) {
     for (mut p, mut f) in &mut players {
         let b = p.ctrl.body;
@@ -233,6 +234,15 @@ fn collect(
             if let (world::Item::Weapon(w), Some(weapons)) = (pickup.item, &weapons) {
                 p.carried = w.into();
                 f.weapon = weapons.handle(p.carried);
+            }
+            // An ability found is an event: the world holds its breath for a moment.
+            if matches!(pickup.item, Item::Ability(_)) {
+                slow.left = 0.6;
+                slow.speed = 0.2;
+                shake.kick(Vec2::Y, 4.0);
+                let mut ring = SpawnFx::new(EffectId::HammerSmash, pickup.at - Vec2::Y * 8.0);
+                ring.options.light = 2.0;
+                fx.write(ring);
             }
             commands.spawn(Banner::bundle(pickup.item));
             info!("found the {}", pickup.item.name());

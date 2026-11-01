@@ -1,5 +1,6 @@
 //! The game binary: app setup and plugin wiring.
 
+mod ambience;
 pub mod audio;
 mod backdrop;
 mod boss;
@@ -84,6 +85,7 @@ fn main() -> AppExit {
             levels::LevelsPlugin,
             story::StoryPlugin,
             encounter::EncounterPlugin,
+            ambience::AmbiencePlugin,
         ))
         .run()
 }
