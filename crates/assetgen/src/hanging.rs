@@ -1,4 +1,5 @@
-//! Hanging lights: chandeliers and lanterns on their chains, painted pixel by pixel.
+//! Hanging lights: chandeliers and lanterns on their chains, and glowing flowers on their vines,
+//! painted pixel by pixel.
 //!
 //! A light is a set of pixels around its grab point, where the Lure's rope takes hold,
 //! hung from a chain whose top is the pivot. [`paint`] draws it swung by an angle about
@@ -14,6 +15,8 @@ use image::{Rgba, RgbaImage};
 pub enum Kind {
     Chandelier,
     Lantern,
+    /// A glowing flower hanging from a vine, in the gardens.
+    Bloom,
 }
 
 /// Width of the painted images, with the pivot on the centre column.
@@ -40,6 +43,8 @@ const MID: [u8; 3] = [150, 114, 58];
 const HI: [u8; 3] = [214, 176, 104];
 const WAX: [u8; 3] = [226, 212, 186];
 const GLASS: [u8; 3] = [150, 140, 170];
+const VINE: [u8; 3] = [40, 70, 48];
+const LEAF: [u8; 3] = [60, 104, 66];
 
 /// What a point is made of, which decides the image and colour it lands in.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -52,6 +57,8 @@ enum Ink {
     Flame(u8),
     /// The lantern's glass, lit from inside.
     Pane,
+    /// A glowing petal: 0 at its tip, brighter towards the heart.
+    Petal(u8),
 }
 
 type Points = Vec<(i32, i32, Ink)>;
@@ -151,6 +158,53 @@ fn points(kind: Kind) -> Vec<(i32, i32, Ink)> {
             p.push((0, 19, Ink::Crystal));
             p.push((0, 21, Ink::Crystal));
         }
+        Kind::Bloom => {
+            // Five petals round a bright heart, opening downwards, with two leaves at the top.
+            for (dx, dy) in [
+                (0.0f32, 4.5f32),
+                (-4.3, 1.4),
+                (4.3, 1.4),
+                (-2.6, -3.6),
+                (2.6, -3.6),
+            ] {
+                for y in -3..=3 {
+                    for x in -3..=3 {
+                        let d = ((x * x + y * y) as f32).sqrt();
+                        if d <= 2.6 {
+                            let level = if d < 1.2 {
+                                2
+                            } else if d < 2.0 {
+                                1
+                            } else {
+                                0
+                            };
+                            p.push((
+                                (dx + x as f32).round() as i32,
+                                (dy + y as f32).round() as i32,
+                                Ink::Petal(level),
+                            ));
+                        }
+                    }
+                }
+            }
+            for y in -1..=1 {
+                for x in -1..=1 {
+                    p.push((x, y, Ink::Petal(3)));
+                }
+            }
+            for (x, y) in [
+                (-1, -9),
+                (-2, -9),
+                (-3, -8),
+                (1, -10),
+                (2, -10),
+                (3, -9),
+                (0, -8),
+                (0, -7),
+            ] {
+                p.push((x, y, Ink::Metal(LEAF)));
+            }
+        }
         Kind::Lantern => {
             // A small cage of gilt round a lit pane, with a cap and a finial.
             for (y, half) in [(-10, 0), (-9, 1), (-8, 3), (-7, 4)] {
@@ -209,9 +263,18 @@ pub fn paint(kind: Kind, chain: u32, angle: f32, step: u32, flare: f32) -> Paint
     // Every point of the chain and the fixture, by position in fixture coordinates.
     let mut at = std::collections::HashMap::new();
     for y in 0..chain as i32 {
-        // Links alternating face-on and edge-on.
         let local = y - hang as i32;
-        if (y / 2) % 2 == 0 {
+        if kind == Kind::Bloom {
+            // A vine that wanders a pixel either way, with a leaf now and then.
+            let x = if (y / 5) % 2 == 0 { 0 } else { 1 };
+            at.insert((x, local), (0, Ink::Metal(VINE)));
+            if y % 11 == 5 {
+                let side = if (y / 11) % 2 == 0 { -1 } else { 1 };
+                at.insert((x + side, local), (0, Ink::Metal(LEAF)));
+                at.insert((x + 2 * side, local - 1), (0, Ink::Metal(LEAF)));
+            }
+        } else if (y / 2) % 2 == 0 {
+            // Links alternating face-on and edge-on.
             at.insert((-1, local), (0, Ink::Metal(DARK)));
             at.insert((1, local), (0, Ink::Metal(DEEP)));
         } else {
@@ -247,6 +310,12 @@ pub fn paint(kind: Kind, chain: u32, angle: f32, step: u32, flare: f32) -> Paint
                     color.put_pixel(px, py, surface([120, 84, 40]));
                     let k = 0.45 + 0.1 * (hash(x as u32, step) % 3) as f32 + 0.3 * flare;
                     glow.put_pixel(px, py, Rgba(scale([255, 170, 80], k)));
+                }
+                Ink::Petal(level) => {
+                    color.put_pixel(px, py, surface([40, 90, 84]));
+                    let breathe = 0.08 * (hash(i as u32 / 9, step / 3) % 3) as f32;
+                    let k = 0.4 + 0.18 * f32::from(level) + breathe + 0.35 * flare;
+                    glow.put_pixel(px, py, Rgba(scale([110, 255, 210], k)));
                 }
                 Ink::Flame(level) => {
                     // The tip flickers: some steps it is a pixel short, some a pixel tall.

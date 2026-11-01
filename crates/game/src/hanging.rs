@@ -104,6 +104,16 @@ fn feel(kind: Kind) -> Feel {
             stiffness: 30.0,
             lean: 0.22,
         },
+        Kind::Bloom => Feel {
+            light: Light2d {
+                color: Color::srgb_u8(0x70, 0xff, 0xd0).to_linear(),
+                radius: 120.0,
+                strength: 1.0,
+                glow: 0.9,
+            },
+            stiffness: 24.0,
+            lean: 0.26,
+        },
     }
 }
 
@@ -137,9 +147,13 @@ fn blank(chain: u32, images: &mut Assets<Image>) -> Handle<Image> {
     ))
 }
 
-/// Spawns the room's chandeliers and lanterns.
+/// Spawns the room's chandeliers, lanterns and blooms.
 pub fn spawn(commands: &mut Commands, images: &mut Assets<Image>, room: &Room) {
-    let kinds = [("chandelier", Kind::Chandelier), ("lantern", Kind::Lantern)];
+    let kinds = [
+        ("chandelier", Kind::Chandelier),
+        ("lantern", Kind::Lantern),
+        ("bloom", Kind::Bloom),
+    ];
     for (name, kind) in kinds {
         for (i, def) in room.entities_of(name).enumerate() {
             let read = || -> Result<(u32, Light2d), ParseError> {

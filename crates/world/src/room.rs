@@ -33,7 +33,7 @@ use std::fmt;
 pub const CRACKED: &str = "cracked";
 
 /// The kinds of entity the Lure can take hold of: lights that hang.
-pub const LURE_KINDS: [&str; 2] = ["chandelier", "lantern"];
+pub const LURE_KINDS: [&str; 3] = ["chandelier", "lantern", "bloom"];
 
 /// Width and height of one tile, in pixels.
 pub const TILE: i32 = 16;
@@ -304,7 +304,7 @@ impl Room {
         (self.width as i32 * TILE, self.height as i32 * TILE)
     }
 
-    /// Where the Lure can take hold, in pixels with y down: every chandelier and lantern.
+    /// Where the Lure can take hold, in pixels with y down: every chandelier, lantern and bloom.
     pub fn lure_points(&self) -> Vec<(f32, f32)> {
         self.entities
             .iter()

@@ -1075,7 +1075,9 @@ fn roast() -> Piece {
             crackling[if dy > 0.5 { 2 } else { 1 }]
         }
     });
-    c.disc(28.0, 9.5, 3.5, 3.0, |_, dy| crackling[if dy < -0.4 { 0 } else { 1 }]);
+    c.disc(28.0, 9.5, 3.5, 3.0, |_, dy| {
+        crackling[if dy < -0.4 { 0 } else { 1 }]
+    });
     c.px(31, 9, crackling[2]);
     c.px(26, 7, crackling[3]);
     // The apple, and the legs tucked under.
@@ -1094,14 +1096,26 @@ fn fruit_pyramid() -> Piece {
     c.rect(8, 19, 9, 23, GILT[1]);
     c.block(4, 24, 13, 25, GILT);
     // Rows of fruit, narrowing to one; the right of each row is spoiling.
-    let fresh = [[176, 52, 58], [190, 140, 60], [120, 140, 60], [150, 60, 120]];
+    let fresh = [
+        [176, 52, 58],
+        [190, 140, 60],
+        [120, 140, 60],
+        [150, 60, 120],
+    ];
     let rotten: C = [70, 54, 34];
     let mut i = 0;
-    for (row, (x0, count)) in [(2, 5), (4, 4), (6, 3), (8, 2), (10, 1)].into_iter().enumerate() {
+    for (row, (x0, count)) in [(2, 5), (4, 4), (6, 3), (8, 2), (10, 1)]
+        .into_iter()
+        .enumerate()
+    {
         let y = 14.5 - row as f32 * 3.0;
         for k in 0..count {
             let x = x0 as f32 - 0.5 + k as f32 * 3.0 + 1.5;
-            let col = if k == count - 1 && count > 1 { rotten } else { fresh[i % 4] };
+            let col = if k == count - 1 && count > 1 {
+                rotten
+            } else {
+                fresh[i % 4]
+            };
             i += 1;
             c.disc(x, y, 1.7, 1.7, |dx, dy| {
                 if dx < -0.2 && dy < -0.2 {
@@ -1132,10 +1146,18 @@ fn game_rack() -> Piece {
     for (x, len) in [(8, 14), (13, 18), (18, 12)] {
         c.line((x, 2), (x, 5), [40, 30, 24]);
         c.disc(x as f32 + 0.5, 9.0, 2.6, 4.2, |dx, dy| {
-            feather[if dx > 0.3 { 2 } else if dy < -0.5 { 0 } else { 1 }]
+            feather[if dx > 0.3 {
+                2
+            } else if dy < -0.5 {
+                0
+            } else {
+                1
+            }]
         });
         c.line((x, 13), (x, 13 + len - 10), feather[2]);
-        c.disc(x as f32 + 0.5, (13 + len - 9) as f32, 1.5, 1.5, |_, _| feather[3]);
+        c.disc(x as f32 + 0.5, (13 + len - 9) as f32, 1.5, 1.5, |_, _| {
+            feather[3]
+        });
         // A tail feather sticking up past the tie.
         c.px(x + 1, 3, feather[0]);
     }
@@ -1171,7 +1193,13 @@ fn range(step: u32) -> Piece {
     // Pots on the hob, one with its lid rattling.
     c.block(4, 4, 13, 8, iron);
     c.rect(3, 4, 14, 4, iron[0]);
-    c.block(19, 2, 30, 8, [[124, 84, 60], [90, 58, 42], [66, 42, 32], [44, 28, 22]]);
+    c.block(
+        19,
+        2,
+        30,
+        8,
+        [[124, 84, 60], [90, 58, 42], [66, 42, 32], [44, 28, 22]],
+    );
     let lift = if (step / 2).is_multiple_of(4) { 1 } else { 0 };
     c.rect(18, 1 - lift, 31, 1 - lift, iron[0]);
     c.px(24, 0, iron[0]);

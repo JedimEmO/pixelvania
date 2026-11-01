@@ -460,7 +460,11 @@ fn hanging() -> Result<()> {
     use assetgen::hanging::{Kind, paint};
     let out = root().join("target/hanging");
     std::fs::create_dir_all(&out)?;
-    for (kind, name) in [(Kind::Chandelier, "chandelier"), (Kind::Lantern, "lantern")] {
+    for (kind, name) in [
+        (Kind::Chandelier, "chandelier"),
+        (Kind::Lantern, "lantern"),
+        (Kind::Bloom, "bloom"),
+    ] {
         let frames: Vec<_> = [
             (0.0, 0, 0.0),
             (0.12, 1, 0.0),

@@ -272,6 +272,13 @@ The feast is next to the Arrival on the map, up the grand stair, and gives the S
     a rack of game birds hung by their feet, and an iron range with its firebox glowing,
     dressed through the banquet hall, the long table, the kitchens, the larder and the Glutton's hall.
 
+## The gardens
+
+The gardens open off the Arrival too, from the bottom of the coat lift, and give the Lure.
+
+52. **Blooms.** A third kind of Lure point: a glowing flower hanging from a vine, lit cyan-green,
+    for the gardens to teach the Lure with, low and close together.
+
 
 ## For the director
 

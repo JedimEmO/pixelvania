@@ -52,6 +52,7 @@ fn frame(kind: assetgen::hanging::Kind) -> (Vec2, f32) {
     match kind {
         assetgen::hanging::Kind::Chandelier => (Vec2::new(27.0, 19.0), 4.0),
         assetgen::hanging::Kind::Lantern => (Vec2::new(9.0, 13.0), 0.0),
+        assetgen::hanging::Kind::Bloom => (Vec2::new(10.0, 10.0), 1.0),
     }
 }
 
