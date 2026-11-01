@@ -315,7 +315,7 @@ pub fn foyer(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
         for i in 0..5 {
             far.line((x, 116), (x - 34 + i * 17, 84), 1, moulding);
         }
-        if n % 3 != 0 {
+        if !n.is_multiple_of(3) {
             far.rect(x, 140, 1, 186, glow);
         }
         // Panels on the leaves.
