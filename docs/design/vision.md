@@ -88,10 +88,9 @@ By the late game the palace is grey stone and vivid lamps,
 and the High is the only way to see the colour you remember.
 So the game makes the High more tempting exactly as it makes it less effective.
 
-This is a risky idea.
-A grey late game can feel dull rather than haunting,
-so we will prototype the fade early and keep it only if it lands.
-See the open questions in [plan](../plan.md).
+This was the riskiest idea in the design, since a grey late game can feel dull rather than haunting.
+The ballroom prototype showed it landing, so it stays;
+[progression](progression.md) sets how much colour each ability takes.
 
 ## Death
 

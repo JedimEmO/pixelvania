@@ -12,6 +12,7 @@ The [roadmap](roadmap.md) breaks the current milestones into steps.
 | [Vision](design/vision.md) | Theme, the feelings we aim for, world, abilities, the High and the Comedown |
 | [Game feel](design/game-feel.md) | Controls, movement, camera, how we tune |
 | [Combat](design/combat.md) | Weight, moves, weapons, enemies, bosses |
+| [Progression](design/progression.md) | The order of abilities and areas, upgrades, the fade's steps, the endings |
 | [Art direction](design/art-direction.md) | Resolution, the three-buffer renderer, rim light, palette, characters, effects |
 | [Audio and music](design/audio.md) | Musical direction, stems and mood mixing, the audio engine |
 | [Production](design/production.md) | The team, assets as code, rooms, music, the content budget |
@@ -83,12 +84,17 @@ music stems mixed by mood, and switches for the High, the Comedown and the progr
 Done when the room looks like the game we described, and you have listened to the music and signed off on its direction.
 This milestone also decides whether the progression fade stays.
 
+Done: the ballroom room is built and navigable, and the fade stays.
+It applies to lit surfaces after lighting, so it reads clearly while lamps and glows keep their colour.
+
 ### Vertical slice
 
-The ballroom, since it shows the most movement and the clearest version of the theme.
-Around twenty rooms, Lunge, Swoon and Lure, all three weapons,
-five enemy types and the ballroom's boss,
-Nectar, the High and the Comedown, lounges, the map and saving.
+The ballroom, since it shows the most movement and the clearest version of the theme,
+as a player would reach it in the order [progression](design/progression.md) sets out.
+Around twenty rooms, entered with the Lunge, Cling, Swoon and the Lure, all three weapons,
+five enemy types and the ballroom's boss, the Dancer, whose fight gives Plunge.
+Nectar, the High and the Comedown, lounges, the map and saving,
+rooms joined by doors in a world file, and the reachability checker.
 
 Done when playtesters finish it and, without being told, describe something close to the feeling we aimed for.
 If they describe a different feeling, that is the most useful result we can get at this point.
@@ -104,10 +110,6 @@ Then the Steam Deck checklist, a web demo, accessibility settings and localisati
 How to reach Astra.
 It is not installed as a command, an agent or a plugin on this machine,
 so its role on the team waits until we know what it is and how to call it.
-
-Whether the progression fade stays.
-It is the boldest idea in the design and the most likely to make the game feel dull.
-Decided by the one finished room.
 
 The title.
 Some candidates in the spirit of the game: *Small Hours*, *Last Call*, *Afterglow*.
