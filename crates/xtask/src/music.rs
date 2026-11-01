@@ -21,6 +21,19 @@ pub fn render() -> crate::Result<()> {
     println!("Waveforms: top = full loop at ±1; bottom = last/first 10 ms at ±0.2 (seam in red).");
     println!("Spectrograms: time left to right; 30 Hz at bottom, 16 kHz at top; -90..-18 dBFS.");
     println!("Diagnostics: {}", out.display());
+    let assets = crate::root().join("assets/music/feast");
+    let feast_out = out.join("feast");
+    fs::create_dir_all(&assets)?;
+    fs::create_dir_all(&feast_out)?;
+    let stems = music::render_feast();
+    println!("Feast: 120 BPM, G minor, 4/4, 32 bars");
+    for (name, pcm) in music::FEAST_STEMS.into_iter().zip(&stems) {
+        music::write_wav(&assets.join(format!("{name}.wav")), pcm)?;
+        diagnostics(name, pcm, &feast_out)?;
+    }
+    let mix = music::mix(&stems);
+    music::write_wav(&feast_out.join("full-mix.wav"), &mix)?;
+    diagnostics("full-mix", &mix, &feast_out)?;
     let assets = crate::root().join("assets/music/dancer");
     let out = out.join("dancer");
     fs::create_dir_all(&assets)?;

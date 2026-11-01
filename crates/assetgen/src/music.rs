@@ -677,6 +677,134 @@ pub fn render_doorman() -> [Pcm; 8] {
     )
 }
 
+pub const FEAST_STEMS: [&str; 5] = STEMS;
+
+/// The feast: 32 bars of harpsichord over a disco rhythm section in G minor, at the ballroom's
+/// tempo so the rooms' lights keep the beat. A baroque circle of fifths turns under a
+/// four-on-the-floor; cutlery and too many voices fill the room around it.
+pub fn render_feast() -> [Pcm; 5] {
+    let mut stems: [Signal; 5] = std::array::from_fn(|_| vec![[0.0; 2]; FRAMES]);
+    // i, iv, VII, III, VI, ii half-diminished, V7, i: a bar each.
+    let chords: [(u8, [u8; 3]); 8] = [
+        (43, [62, 67, 70]),
+        (48, [60, 63, 67]),
+        (41, [60, 65, 69]),
+        (46, [62, 65, 70]),
+        (39, [63, 67, 70]),
+        (45, [60, 63, 69]),
+        (50, [62, 66, 69]),
+        (43, [62, 67, 70]),
+    ];
+    let mut noise = Noise(0xfea5_7001);
+    for bar in 0..BARS {
+        let section = bar / 8;
+        let (root, chord) = chords[bar % 8];
+        let at = |b: f64| bar as f64 * 4.0 + b;
+
+        // Drums: four on the floor, a clap on two and four, open hats on the offbeats.
+        for b in 0..4 {
+            event(&mut stems[0], at(b as f64), 0.3, 0.0, |t| {
+                0.45 * (TAU * (50.0 * t + 1.6 * (1.0 - (-t / 0.02).exp()))).sin()
+                    * (-t / 0.12).exp()
+            });
+            if b % 2 == 1 {
+                let spread = [noise.next() * 0.004, noise.next() * 0.004];
+                for (i, d) in spread.into_iter().enumerate() {
+                    event_seconds(
+                        &mut stems[0],
+                        at(b as f64) * BEAT + 0.008 * i as f64 + d.abs(),
+                        0.16,
+                        0.15,
+                        |t| 0.12 * noise.next() * (-t / 0.03).exp(),
+                    );
+                }
+            }
+            event(&mut stems[0], at(b as f64 + 0.5), 0.2, 0.3, |t| {
+                0.05 * noise.next() * (-t / 0.06).exp()
+            });
+        }
+
+        // Bass: octaves in eighths, the disco bounce.
+        for step in 0..8 {
+            let note = root + if step % 2 == 0 { 0 } else { 12 };
+            event(&mut stems[1], at(step as f64 / 2.0), 0.22, 0.0, |t| {
+                let p = TAU * hz(note) * t;
+                0.28 * (p.sin() + 0.35 * (2.0 * p).sin() + 0.15 * (3.0 * p).sin())
+                    * (-t / 0.16).exp()
+            });
+        }
+
+        // Harmony: the harpsichord's continuo, a broken chord in sixteenths.
+        for step in 0..16 {
+            let note = chord[[0, 1, 2, 1][step % 4]] - 12 + if step >= 8 { 12 } else { 0 };
+            let pan = if step % 2 == 0 { -0.35 } else { 0.35 };
+            event(&mut stems[2], at(step as f64 / 4.0), 0.5, pan, |t| {
+                0.085 * pluck(note, t)
+            });
+        }
+
+        // Lead: a running figure through the chord, an octave up the second time round.
+        let tones: Vec<u8> = (0..3)
+            .flat_map(|o| chord.iter().map(move |n| n + 12 * o))
+            .collect();
+        let figure: [usize; 8] = if section % 2 == 0 {
+            [3, 2, 1, 2, 4, 3, 2, 3]
+        } else {
+            [5, 4, 3, 4, 3, 2, 1, 0]
+        };
+        let lift = if section >= 2 { 12 } else { 0 };
+        for (i, idx) in figure.into_iter().enumerate() {
+            let note = tones[idx] + lift;
+            event(&mut stems[3], at(i as f64 / 2.0), 0.45, 0.1, |t| {
+                0.12 * pluck(note, t)
+            });
+        }
+
+        // Texture: forks on plates, and voices talking over each other.
+        for step in 0..16 {
+            if noise.next() > 0.0 {
+                continue;
+            }
+            let pan = noise.next() * 0.9;
+            let pitch = 1.0 + 0.3 * noise.next();
+            event(&mut stems[4], at(step as f64 / 4.0), 0.12, pan, |t| {
+                0.04 * [(2100.0, 1.0), (3370.0, 0.6), (5230.0, 0.4)]
+                    .into_iter()
+                    .map(|(f, g)| g * (TAU * f * pitch * t).sin())
+                    .sum::<f64>()
+                    * (-t / 0.03).exp()
+            });
+        }
+        for step in 0..8 {
+            if noise.next() > -0.2 {
+                continue;
+            }
+            let pan = noise.next() * 0.9;
+            let pitch = 140.0 + 80.0 * (noise.next() + 1.0);
+            let vowel = 500.0 + 450.0 * (noise.next() + 1.0);
+            let len = 0.14 + 0.1 * (noise.next() + 1.0);
+            event(&mut stems[4], at(step as f64 / 2.0), len, pan, |t| {
+                let env = (t / 0.02).min(1.0) * ((len - t) / 0.04).clamp(0.0, 1.0);
+                0.035
+                    * env
+                    * (1..=8)
+                        .map(|n| {
+                            let h = pitch * (1.0 - 0.1 * t / len) * f64::from(n);
+                            let formant = (-((h - vowel) / 300.0).powi(2)).exp() + 0.15;
+                            formant * (TAU * h * t).sin()
+                        })
+                        .sum::<f64>()
+            });
+        }
+    }
+    finish(
+        stems,
+        [6500.0, 1000.0, 7000.0, 7500.0, 8000.0],
+        [25.0, 25.0, 140.0, 220.0, 160.0],
+        [0.06, 0.02, 0.18, 0.2, 0.3],
+    )
+}
+
 pub const GLUTTON_STEMS: [&str; 8] = [
     "drums",
     "bass",
@@ -1007,6 +1135,28 @@ mod tests {
                 assert!(
                     seam <= nearby + 2,
                     "glutton seam {seam}, nearby slope {nearby}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_feast_loops_with_headroom() {
+        let stems = render_feast();
+        assert!(levels(&mix(&stems)).1 <= -5.99);
+        for pcm in &stems {
+            assert_eq!(pcm.len(), FRAMES);
+            for c in 0..2 {
+                let seam = (i32::from(pcm[0][c]) - i32::from(pcm[FRAMES - 1][c])).abs();
+                let nearby = pcm[..441]
+                    .windows(2)
+                    .chain(pcm[pcm.len() - 441..].windows(2))
+                    .map(|w| (i32::from(w[1][c]) - i32::from(w[0][c])).abs())
+                    .max()
+                    .unwrap();
+                assert!(
+                    seam <= nearby + 2,
+                    "feast seam {seam}, nearby slope {nearby}"
                 );
             }
         }

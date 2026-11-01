@@ -5,7 +5,7 @@
 [room]
 name = pastry_room
 background = banquet 8a4a60
-music = ballroom muffled
+music = feast
 
 [legend]
 # stone

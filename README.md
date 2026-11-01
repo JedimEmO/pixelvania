@@ -119,7 +119,7 @@ The game generates the same seeded layers on room load.
 
 ## Ballroom music
 
-`cargo xtask music` renders five deterministic WAV stems to `assets/music/ballroom/`.
+`cargo xtask music` renders five deterministic WAV stems to `assets/music/ballroom/`, and the feast's to `assets/music/feast/`.
 The stems are not committed, being 54 MB of WAV; run it once after cloning, or the game plays without music.
 It also renders the bosses' themes beside them,
 and writes full mixes, each phase's mix, waveforms, loop-seam views and spectrograms to `target/music/`.

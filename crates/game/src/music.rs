@@ -112,7 +112,7 @@ mod stems {
     use std::error::Error;
 
     /// Every track, in the order they are decoded: the rooms' music first.
-    const TRACKS: [&str; 4] = ["ballroom", "dancer", "doorman", "glutton"];
+    const TRACKS: [&str; 5] = ["ballroom", "feast", "dancer", "doorman", "glutton"];
 
     pub(super) fn build(app: &mut App) {
         app.init_asset::<StemBytes>()
@@ -266,7 +266,7 @@ mod native {
     ];
     pub(super) fn catalog(name: &str) -> Option<(&'static [&'static str], f64)> {
         match name {
-            "ballroom" => Some((&STEMS, 120.0)),
+            "ballroom" | "feast" => Some((&STEMS, 120.0)),
             "dancer" => Some((&DANCER, 132.0)),
             "doorman" => Some((&DOORMAN, 104.0)),
             "glutton" => Some((&GLUTTON, 144.0)),

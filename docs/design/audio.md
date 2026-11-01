@@ -102,6 +102,17 @@ This sketch keeps a fixed playback rate, including during the Comedown.
 Silent stems keep their place when leaving the room, and returning fades them back in.
 Music is skipped on wasm. The sketch still needs a listening pass.
 
+## The feast
+
+`cargo xtask music` also renders the feast's room music: 64 seconds at the ballroom's 120 BPM,
+so the rooms' lights keep the beat, in G minor.
+A baroque circle of fifths, a bar a chord, turns under a four-on-the-floor:
+Gm, Cm, F, B♭, E♭, Am7♭5, D7, Gm.
+The five stems take the same mood roles as the ballroom's:
+drums with claps and open hats, octave disco bass, a harpsichord continuo in sixteenths,
+a running harpsichord figure as the lead, and cutlery and voices as the room.
+The service stair hears it through the wall. It still needs a listening pass.
+
 ## Boss themes
 
 A boss names its theme, and the encounter plays it in place of the room's music,

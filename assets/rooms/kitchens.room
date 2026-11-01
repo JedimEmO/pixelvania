@@ -6,7 +6,7 @@
 [room]
 name = kitchens
 background = cellars 8a3a18
-music = ballroom muffled
+music = feast
 
 [legend]
 # stone

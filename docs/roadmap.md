@@ -264,6 +264,8 @@ The feast is next to the Arrival on the map, up the grand stair, and gives the S
 48. **The banquet backdrop.** Damask walls hung with still lifes, a long table receding with its diners
     and candelabra, swags and game birds close by, and spoiled fruit and a spilled goblet at the edge.
     The feast's rooms use it, tinted red and gold; the stairs, kitchens and larder keep the cellars.
+49. **The feast's music.** Harpsichord over a disco rhythm section, at the ballroom's tempo:
+    a baroque circle of fifths over four-on-the-floor, with cutlery and voices as the room's texture.
 
 
 ## For the director
