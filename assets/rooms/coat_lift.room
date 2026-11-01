@@ -6,7 +6,7 @@
 [room]
 name = coat_lift
 background = cellars 8a5a30
-music = ballroom
+music = ballroom muffled
 
 [legend]
 # stone

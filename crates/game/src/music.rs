@@ -1,4 +1,8 @@
 //! Named room and encounter stems beneath the ducked music bus.
+//!
+//! A room names its music with `music = ballroom`, and `music = ballroom muffled` hears it
+//! through a wall: quieter, darker and drier. Walking from a muffled room into an open one
+//! fades the filter open, so the party comes into the room with the player.
 use bevy::prelude::*;
 
 pub struct MusicPlugin;
@@ -305,6 +309,23 @@ mod native {
     /// the warmth goes first, and the drums keep going to the end.
     const THIN: [f32; 5] = [0.0, -3.0, -8.0, -6.0, -12.0];
 
+    /// The mix heard through a wall: quieter, with the highs gone and almost no room in it.
+    fn muffled(m: Mix) -> Mix {
+        Mix {
+            db: m.db.map(|db| (db - 8.0).max(SILENT)),
+            cutoff: m.cutoff.min(650.0),
+            reverb: m.reverb * 0.3,
+            damping: 0.9,
+        }
+    }
+
+    /// A room's music: the track's name, and whether it is heard through a wall.
+    fn room_music(spec: &str) -> (String, bool) {
+        let mut words = spec.split_whitespace();
+        let name = words.next().unwrap_or_default().to_owned();
+        (name, words.any(|w| w == "muffled"))
+    }
+
     /// The mood's mix, thinned by the progression fade as it shows in that mood.
     fn thinned(mood: &str, fade: f32) -> Mix {
         let mut m = mix(mood);
@@ -462,11 +483,13 @@ mod native {
         mut music: NonSendMut<Music>,
         mut stems: ResMut<super::stems::Stems>,
     ) {
-        let room = active
+        let (room, through_wall) = active
             .as_ref()
             .and_then(|a| a.room.as_ref())
-            .and_then(|r| r.music.clone());
-        let wanted = encounter.track.clone().or(room);
+            .and_then(|r| r.music.as_deref())
+            .map(room_music)
+            .map_or((None, false), |(name, muffled)| (Some(name), muffled));
+        let wanted = encounter.track.clone().or(room.clone());
         if let Some(name) = &wanted
             && !music.attempted.contains(name)
         {
@@ -500,6 +523,14 @@ mod native {
                     if encounter.track.as_ref() == Some(name) {
                         player.phase = encounter.phase;
                     }
+                    let mix = if through_wall
+                        && encounter.track.is_none()
+                        && room.as_ref() == Some(name)
+                    {
+                        muffled(mix)
+                    } else {
+                        mix
+                    };
                     player.set_mix(volumes(name, player.phase, mix), mix);
                     if Some(name) == wanted.as_ref() {
                         ready = true;
@@ -537,6 +568,16 @@ mod native {
     #[cfg(test)]
     mod tests {
         use super::*;
+
+        #[test]
+        fn a_room_may_hear_its_music_through_a_wall() {
+            assert_eq!(room_music("ballroom"), ("ballroom".into(), false));
+            assert_eq!(room_music("ballroom muffled"), ("ballroom".into(), true));
+            let open = mix("neutral");
+            let through = muffled(open);
+            assert!(through.cutoff < open.cutoff);
+            assert!(through.db.iter().zip(open.db).all(|(m, o)| *m < o || *m == SILENT));
+        }
 
         #[test]
         fn paused_staging_keeps_stems_aligned_through_loops_and_moods() {

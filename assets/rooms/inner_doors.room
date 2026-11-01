@@ -4,7 +4,7 @@
 [room]
 name = inner_doors
 background = foyer 8a3040
-music = ballroom
+music = ballroom muffled
 
 [legend]
 # stone

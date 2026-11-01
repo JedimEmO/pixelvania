@@ -5,7 +5,7 @@
 [room]
 name = porters_lodge
 background = cellars 8a5a30
-music = ballroom
+music = ballroom muffled
 
 [legend]
 # stone

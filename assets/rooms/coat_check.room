@@ -5,7 +5,7 @@
 [room]
 name = coat_check
 background = foyer a06030
-music = ballroom
+music = ballroom muffled
 
 [legend]
 # stone

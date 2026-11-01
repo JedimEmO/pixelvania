@@ -8,7 +8,7 @@
 [room]
 name = grand_stair
 background = foyer a06030
-music = ballroom
+music = ballroom muffled
 
 [legend]
 # stone

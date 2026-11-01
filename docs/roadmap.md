@@ -227,8 +227,13 @@ the Lure as stand-ins until the feast and the gardens exist. [The Arrival's page
     a shove, a knock that runs along the floor, and a rush that only a Lunge passes.
     Bosses now share a `Boss` component for their bar, the shut doors, their music and their words,
     beaten bosses are kept in the save, and each pays two Favours the first time it falls.
-41. **The Arrival dressed.** Props, guests and light in every room, and its own backdrop of warm candlelight.
-42. **The music through the walls.** The Arrival hears the party muffled, as the vision asks.
+41. **The Arrival's backdrop.** A candlelit foyer: panelled walls, tall doors that stay shut,
+    a grand stair in the distance and columns with sconces.
+42. **The music through the walls.** `music = ballroom muffled` hears the party through a wall:
+    quieter, darker and drier. The Arrival is muffled, and the ballroom's wing opens it up.
+
+Still to do for the Arrival: its own music, which the Doorman also borrows from the Dancer for now,
+and a playtest of the Doorman and the coat lift.
 
 ## For the director
 

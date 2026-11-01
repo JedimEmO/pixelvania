@@ -5,7 +5,7 @@
 [room]
 name = doormans_hall
 background = foyer 8a3040
-music = ballroom
+music = ballroom muffled
 
 [legend]
 # stone

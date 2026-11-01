@@ -5,7 +5,7 @@
 [room]
 name = receiving_line
 background = foyer a06030
-music = ballroom
+music = ballroom muffled
 
 [legend]
 # stone

@@ -122,7 +122,8 @@ The stems are not committed, being 54 MB of WAV; run it once after cloning, or t
 It also writes a full mix, waveforms, loop-seam views and spectrograms to `target/music/`.
 The sketch is 64 seconds at 120 BPM in D minor;
 [the audio notes](docs/design/audio.md#ballroom-sketch) describe its form and instruments.
-`music = ballroom` selects it in a room's `[room]` section, including the arena.
+`music = ballroom` selects it in a room's `[room]` section, including the arena,
+and `music = ballroom muffled` hears it through a wall, as the Arrival does.
 On native builds, F4 changes the stem mix, filter and reverb over 1.5 seconds.
 Music fades out in other rooms and stays silent without an audio device.
 The web build plays the stems as OGG Vorbis: the web workflow renders them and encodes them with ffmpeg.
