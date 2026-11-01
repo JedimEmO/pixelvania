@@ -13,9 +13,9 @@ Start with [the plan](docs/plan.md), which links to the design pages.
 cargo dev
 ```
 
-The game starts in the antechamber, whose door leads into the ballroom, the first room at final quality:
-a dance floor, an orchestra pit, a lantern-lit shaft, a gilt gallery and a lounge,
-joined by chandeliers to swing from with the Lure.
+The game is the vertical slice: twenty rooms of the ballroom, starting in the antechamber,
+with the Dancer waiting on the stage and the cellar beneath it where the slice ends.
+`cargo xtask map` draws them all; Select shows the ones you have visited.
 The rooms of the game are listed in `assets/world.ron` and joined by doors in their room files.
 Start or Tab steps through every room, then the feel lab and the combat lab.
 

@@ -106,3 +106,14 @@ fn the_alcove_needs_the_lure() {
     assert!(!r.lounges.contains("ballroom:alcove"), "{r:?}");
     assert!(r.traps.is_empty(), "{r:?}");
 }
+
+/// With the Plunge, the floor under the stage opens and the slice can be finished.
+#[test]
+fn with_the_plunge_every_room_is_reached() {
+    let (world, rooms) = load();
+    let mut abilities = Progress::slice_start().abilities;
+    abilities.insert(Ability::Plunge);
+    let r = check_world(&world, &rooms, &MoveTuning::default(), &abilities);
+    assert_eq!(r.rooms.len(), world.rooms.len(), "{r:?}");
+    assert!(r.traps.is_empty(), "{r:?}");
+}

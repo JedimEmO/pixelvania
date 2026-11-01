@@ -144,7 +144,12 @@ Then the slice's content:
 21. **Two more guests.** Done, by Codex. The spinner pirouettes across floors and hurts on contact,
     then stands dizzy; the toaster keeps its distance and throws coupes in an arc,
     which a swing destroys in flight.
-22. **The rooms**: about twenty around the ballroom, ending at the stage and the cellar below it.
+22. **The rooms.** Done, by an agent: twenty rooms around the ballroom, placed on the world map,
+    with loops and shortcuts, four lounges, a Carnation, a Goblet, ten clusters of Nectar,
+    cracked floors with rewards under them, guests of all five kinds, and the Dancer on the stage
+    over the cellar where the slice ends. The reachability checker finds every room, pickup and lounge
+    with the slice's abilities, the cellar once the Plunge is found, and no trap at any step;
+    it now follows a body that arrives in mid-air until it lands.
 23. **The Dancer.** Done, by Codex: 450 health and 150 poise, in three phases, the waltz, the frenzy
     and burning out, each change staged; a boss bar with its name; a finisher of its own.
     A moment after it falls the room's cracked floor gives way and the Plunge is found.

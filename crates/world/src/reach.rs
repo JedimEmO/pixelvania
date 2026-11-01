@@ -414,7 +414,17 @@ pub fn explore(room: &Room, t: &MoveTuning, abilities: Abilities, start: (f32, f
     let c = Controller::standing_at(start.0, start.1, W, H, abilities);
     let mut seen: HashMap<Node, ()> = HashMap::new();
     let mut queue = VecDeque::new();
-    if let End::At(node, c) = ex.settle(c) {
+    // Arriving over open air, through a floor or a ceiling, the body first falls.
+    let mut c = c;
+    if !c.body.on_ground(room) {
+        c.tick(room, t, Controls::default(), DT);
+    }
+    let first = if c.body.on_ground(room) {
+        ex.settle(c)
+    } else {
+        ex.fly(c, 0.0, false, false, None)
+    };
+    if let End::At(node, c) = first {
         seen.insert(node, ());
         queue.push_back((node, c));
     }
