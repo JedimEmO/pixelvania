@@ -1,0 +1,103 @@
+// The slice's words: what the guests who talk say, the Host's cards, and the scenes' lines.
+// docs/design/story.md is where these are decided; keep the two in step.
+// A guest's `lines` are tried from last to first: the last whose `when` abilities have all been
+// found is the one spoken. `look` picks the guest's rig: light, medium, heavy, spinner or toaster.
+(
+    guests: {
+        "attendant": (
+            name: "The attendant",
+            look: "light",
+            lines: [
+                (when: [], say: [
+                    "Ticket? No? Nobody keeps their ticket.",
+                    "I have hung every coat in this house. Not one has been asked for back.",
+                    "Go on through. They are all through there.",
+                ]),
+                (when: [Lunge], say: [
+                    "In a hurry. Everyone is, the first night.",
+                    "It passes.",
+                ]),
+                (when: [Lure], say: [
+                    "You have the look of someone who has seen the chandeliers up close.",
+                    "Mind the moths. They never stop either.",
+                ]),
+            ],
+        ),
+        "partner": (
+            name: "The partner",
+            look: "medium",
+            lines: [
+                (when: [], say: [
+                    "You're going to see her. Of course you are.",
+                    "I kept up with her for... I don't know. A long time. Then I couldn't.",
+                    "She never notices when you stop. She just finds someone new.",
+                ]),
+                (when: [Plunge], say: [
+                    "The music stopped. I heard it stop.",
+                    "I thought I would be glad.",
+                ]),
+            ],
+        ),
+        "bandleader": (
+            name: "The bandleader",
+            look: "heavy",
+            lines: [
+                (when: [], say: [
+                    "One more, she said. One more and then we'll all go to bed.",
+                    "That was the last request I took.",
+                    "Listen. Can you hear them? I can always hear them.",
+                ]),
+                (when: [Plunge], say: [
+                    "The tempo's gone. Who's keeping time?",
+                ]),
+            ],
+        ),
+        "wallflower": (
+            name: "The wallflower",
+            look: "spinner",
+            lines: [
+                (when: [], say: [
+                    "I'm going to ask her. Tonight. In a moment.",
+                    "Once I have had a little air.",
+                ]),
+                (when: [Swoon], say: [
+                    "It goes to your head, doesn't it. The height. All of it.",
+                ]),
+                (when: [Plunge], say: [
+                    "She isn't dancing any more? Then I've missed it.",
+                    "Well. There will be another.",
+                ]),
+            ],
+        ),
+        "card_player": (
+            name: "The card player",
+            look: "toaster",
+            lines: [
+                (when: [], say: [
+                    "Sit, sit. Stakes are low. Everything is low, by now.",
+                    "You can bank what you win, at the lounges. Or drink it. Most drink it.",
+                    "Drink it and the room comes alive again. For a while. Less each time.",
+                ]),
+                (when: [Lure], say: [
+                    "I used to play for the chandeliers. Imagine. Climbing for them.",
+                ]),
+            ],
+        ),
+    },
+    cards: {
+        "antechamber": "You are expected. Do come through.  - H.",
+        "cloakroom": "Leave whatever you came in with. You will not need it.  - H.",
+        "champagne_cellar": "Take what you like. There is always more.  - H.",
+        "mirror_corridor": "Look how well you are doing.  - H.",
+        "green_room": "She has been waiting for a partner who can keep up. Can you?  - H.",
+        "cellar": "Still here? How lovely. The night is young.  - H.",
+    },
+    waking: "You are late.",
+    ending: "The night goes on.",
+    dancer: (
+        waltz: "There you are. Dance with me.",
+        frenzy: "Faster. Faster!",
+        burning_out: "Don't let it stop. Don't let it stop.",
+        fall: "Was it lovely? Tell me it was lovely.",
+    ),
+)

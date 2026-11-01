@@ -25,6 +25,7 @@ mod progress;
 mod projectiles;
 mod render;
 mod rooms;
+mod story;
 mod travel;
 mod tuning;
 
@@ -80,6 +81,7 @@ fn main() -> AppExit {
             projectiles::ProjectilesPlugin,
             map::MapPlugin,
             levels::LevelsPlugin,
+            story::StoryPlugin,
         ))
         .run()
 }

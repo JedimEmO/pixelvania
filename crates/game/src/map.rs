@@ -21,7 +21,8 @@ pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, load_rooms)
+        app.init_resource::<FirstVisits>()
+            .add_systems(Startup, load_rooms)
             .add_systems(Update, (visit, toggle, redraw).chain());
     }
 }
@@ -44,8 +45,16 @@ fn load_rooms(mut commands: Commands, assets: Res<AssetServer>) {
     commands.insert_resource(WorldRooms(rooms));
 }
 
+/// Rooms entered for the first time ever, waiting for their titles to be shown.
+#[derive(Resource, Default)]
+pub struct FirstVisits(pub Vec<String>);
+
 /// Notes each room of the world the player enters.
-fn visit(active: Res<ActiveRoom>, mut progress: ResMut<PlayerProgress>) {
+fn visit(
+    active: Res<ActiveRoom>,
+    mut progress: ResMut<PlayerProgress>,
+    mut first: ResMut<FirstVisits>,
+) {
     if active.room.is_none() || progress.0.visited.contains(&active.name) {
         return;
     }
@@ -55,6 +64,7 @@ fn visit(active: Res<ActiveRoom>, mut progress: ResMut<PlayerProgress>) {
         .any(|r| r.name == active.name)
     {
         progress.0.visited.insert(active.name.clone());
+        first.0.push(active.name.clone());
     }
 }
 

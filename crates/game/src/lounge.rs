@@ -34,7 +34,8 @@ impl Plugin for LoungePlugin {
             .add_systems(
                 FixedUpdate,
                 rest.in_set(crate::input::TickSet::Simulate)
-                    .after(crate::combat::SimulateBodies),
+                    .after(crate::combat::SimulateBodies)
+                    .after(crate::story::Talk),
             );
     }
 }
@@ -266,6 +267,7 @@ fn rest(
     mut last: ResMut<LastLounge>,
     mut indulgence: ResMut<crate::indulge::Indulgence>,
     mut menu: ResMut<crate::levels::LoungeMenu>,
+    dialogue: Res<crate::story::Dialogue>,
     mut lounges: Query<&mut Lounge>,
     mut players: Query<(&Player, &mut Fighting)>,
     mut was_up: Local<bool>,
@@ -274,7 +276,7 @@ fn rest(
     let up = input.0.y > 0.6;
     let pressed = up && !*was_up;
     *was_up = up;
-    if !pressed {
+    if !pressed || crate::story::talking(&dialogue) {
         return;
     }
     for (p, mut f) in &mut players {
