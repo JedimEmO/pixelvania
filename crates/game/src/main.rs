@@ -7,6 +7,7 @@ mod boss;
 mod camera;
 mod combat;
 mod devtools;
+mod edges;
 mod effects;
 mod encounter;
 mod enemies;
@@ -89,6 +90,6 @@ fn main() -> AppExit {
             encounter::EncounterPlugin,
             ambience::AmbiencePlugin,
         ))
-        .add_plugins((props::PropsPlugin, prompt::PromptPlugin))
+        .add_plugins((props::PropsPlugin, prompt::PromptPlugin, edges::EdgesPlugin))
         .run()
 }

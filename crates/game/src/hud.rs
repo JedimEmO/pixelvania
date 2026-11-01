@@ -1,6 +1,6 @@
 //! The player's health, poise and Nectar, as thin bars in the top-left corner.
 //!
-//! The bars are drawn into the glow buffer, so the room's lighting never hides them,
+//! The bars are drawn into the overlay buffer, over the room, its lighting and its foreground,
 //! and follow the view each frame. They are placeholders until the game has a real HUD.
 
 use bevy::camera::visibility::RenderLayers;
@@ -9,7 +9,7 @@ use bevy::sprite::Anchor;
 
 use crate::combat::Fighting;
 use crate::player::Player;
-use crate::render::{CameraFocus, GLOW_LAYER, HEIGHT, WIDTH};
+use crate::render::{CameraFocus, HEIGHT, OVERLAY_LAYER, WIDTH};
 
 pub struct HudPlugin;
 
@@ -43,7 +43,7 @@ fn spawn(mut commands: Commands) {
             Sprite::from_color(Color::srgb(0.12, 0.1, 0.16), Vec2::new(LENGTH, h)),
             Anchor::TOP_LEFT,
             Transform::default(),
-            RenderLayers::layer(GLOW_LAYER),
+            RenderLayers::layer(OVERLAY_LAYER),
             Track(dy),
         ));
         commands.spawn((
@@ -51,7 +51,7 @@ fn spawn(mut commands: Commands) {
             Sprite::from_color(color, Vec2::new(LENGTH, h)),
             Anchor::TOP_LEFT,
             Transform::default(),
-            RenderLayers::layer(GLOW_LAYER),
+            RenderLayers::layer(OVERLAY_LAYER),
             Track(dy),
         ));
     }

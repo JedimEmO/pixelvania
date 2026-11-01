@@ -277,7 +277,7 @@ impl Banner {
             },
             TextLayout::justify(Justify::Center),
             TextColor(Color::srgb(1.0, 0.85, 0.6)),
-            RenderLayers::layer(GLOW_LAYER),
+            RenderLayers::layer(crate::render::OVERLAY_LAYER),
             Transform::from_xyz(0.0, 0.0, 6.0),
         )
     }
@@ -355,6 +355,6 @@ fn show_banner(
         let top = focus.0.round() + Vec2::new(0.0, HEIGHT as f32 / 2.0 - 40.0);
         t.translation = top.extend(6.0);
         let fade = ((BANNER_TIME - b.age) / 0.6).min(1.0);
-        color.0 = Color::srgb(1.0 * fade, 0.85 * fade, 0.6 * fade);
+        color.0 = Color::srgba(1.0, 0.85, 0.6, fade);
     }
 }

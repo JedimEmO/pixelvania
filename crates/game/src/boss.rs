@@ -418,7 +418,7 @@ fn spawn_hud(mut commands: Commands) {
             ),
             Anchor::CENTER_LEFT,
             Transform::default(),
-            RenderLayers::layer(crate::render::GLOW_LAYER),
+            RenderLayers::layer(crate::render::OVERLAY_LAYER),
         ));
     }
     commands.spawn((
@@ -431,7 +431,7 @@ fn spawn_hud(mut commands: Commands) {
         TextColor(Color::srgb(1.0, 0.82, 0.4)),
         TextLayout::justify(Justify::Center),
         Transform::default(),
-        RenderLayers::layer(crate::render::GLOW_LAYER),
+        RenderLayers::layer(crate::render::OVERLAY_LAYER),
     ));
 }
 fn hud(

@@ -12,7 +12,6 @@ use crate::boss::{BossDefeated, Dancer};
 use crate::combat::Fighting;
 use crate::music::Encounter;
 use crate::player::Player;
-use crate::render::GLOW_LAYER;
 
 pub struct EncounterPlugin;
 
@@ -83,7 +82,7 @@ fn speech(text: &str, at: Vec2) -> impl Bundle {
             ..default()
         },
         TextColor(Color::srgb(1.0, 0.6, 0.8)),
-        RenderLayers::layer(GLOW_LAYER),
+        RenderLayers::layer(crate::render::OVERLAY_LAYER),
         Transform::from_translation((at + Vec2::Y * 78.0).round().extend(6.0)),
     )
 }
@@ -132,6 +131,6 @@ fn fade_speech(
             continue;
         }
         let k = ((SPEECH_TIME - s.age) / 0.6).min(1.0);
-        color.0 = Color::srgb(k, 0.6 * k, 0.8 * k);
+        color.0 = Color::srgba(1.0, 0.6, 0.8, k);
     }
 }

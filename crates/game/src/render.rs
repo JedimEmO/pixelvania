@@ -2,7 +2,8 @@
 //!
 //! The world renders at 640 x 360. The colour buffer holds what things look
 //! like, the light buffer how lit each pixel is, and the glow buffer additive light on top.
-//! Separate background and foreground buffers hold scenery with its own distant lighting.
+//! Separate background and foreground buffers hold scenery with its own distant lighting,
+//! and an overlay buffer holds the HUD, drawn over everything else.
 //! A composite pass combines them and scales the result to the window by a whole number.
 //!
 //! Each buffer is one pixel larger than the screen on every side. The cameras sit on whole
@@ -42,6 +43,9 @@ pub const GLOW_LAYER: usize = 2;
 const SCREEN_LAYER: usize = 3;
 pub const BACKGROUND_LAYER: usize = 4;
 pub const FOREGROUND_LAYER: usize = 5;
+/// The HUD and anything else that must read over the whole picture:
+/// drawn last, over the foreground, the mood's grade and the curtain between rooms.
+pub const OVERLAY_LAYER: usize = 6;
 
 /// The light buffer stores light divided by this, so a pixel can be lit to twice full brightness.
 const LIGHT_RANGE: f32 = 2.0;
@@ -151,19 +155,21 @@ fn setup(
     let glow = images.add(target_image());
     let background = images.add(target_image());
     let foreground = images.add(target_image());
+    let overlay = images.add(target_image());
 
     let ambient = lighting.ambient * (1.0 / LIGHT_RANGE);
     let buffers = [
-        (background.clone(), BACKGROUND_LAYER, Color::NONE, -5),
-        (foreground.clone(), FOREGROUND_LAYER, Color::NONE, -4),
-        (color.clone(), 0, Color::NONE, -3),
+        (background.clone(), BACKGROUND_LAYER, Color::NONE, -6),
+        (foreground.clone(), FOREGROUND_LAYER, Color::NONE, -5),
+        (color.clone(), 0, Color::NONE, -4),
         (
             light.clone(),
             LIGHT_LAYER,
             Color::LinearRgba(ambient.with_alpha(1.0)),
-            -2,
+            -3,
         ),
-        (glow.clone(), GLOW_LAYER, Color::BLACK, -1),
+        (glow.clone(), GLOW_LAYER, Color::BLACK, -2),
+        (overlay.clone(), OVERLAY_LAYER, Color::NONE, -1),
     ];
     for (image, layer, clear, order) in buffers {
         commands.spawn((
@@ -190,6 +196,7 @@ fn setup(
         glow,
         background,
         foreground,
+        overlay,
     });
     commands.insert_resource(Composite(material.clone()));
     commands.spawn((
@@ -285,6 +292,8 @@ struct CompositeMaterial {
     background: Handle<Image>,
     #[texture(5)]
     foreground: Handle<Image>,
+    #[texture(6)]
+    overlay: Handle<Image>,
 }
 
 impl Material2d for CompositeMaterial {

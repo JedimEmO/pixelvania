@@ -1,4 +1,4 @@
-// Combines the colour, light and glow buffers and scales them to the window.
+// Combines the colour, light, glow, scenery and overlay buffers and scales them to the window.
 //
 // Everything is read with textureLoad, one texel per game pixel, so nothing is filtered.
 // The pixel position alone decides which game pixel a window pixel shows.
@@ -22,6 +22,7 @@ struct CompositeParams {
 @group(2) @binding(3) var glow_tex: texture_2d<f32>;
 @group(2) @binding(4) var background_tex: texture_2d<f32>;
 @group(2) @binding(5) var foreground_tex: texture_2d<f32>;
+@group(2) @binding(6) var overlay_tex: texture_2d<f32>;
 
 const SIZE: vec2<f32> = vec2(640.0, 360.0);
 
@@ -99,5 +100,8 @@ fn fragment(in: FragmentIn) -> @location(0) vec4<f32> {
     out = max(mix(vec3(luma), out, params.saturation), vec3(0.0));
     // The curtain drawn between rooms: 0 open, 1 black.
     out *= 1.0 - params.curtain;
+    // The HUD, over everything: neither the fade, the mood nor the curtain touches it.
+    let overlay = textureLoad(overlay_tex, clamp_texel(p), 0);
+    out = overlay.rgb + out * (1.0 - overlay.a);
     return vec4(out, 1.0);
 }

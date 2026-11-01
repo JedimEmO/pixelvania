@@ -8,7 +8,7 @@
 use bevy::camera::visibility::RenderLayers;
 use bevy::prelude::*;
 
-use crate::render::GLOW_LAYER;
+use crate::render::OVERLAY_LAYER;
 
 pub struct PromptPlugin;
 
@@ -86,7 +86,7 @@ impl Prompt {
                 ..default()
             },
             TextColor(Color::srgb(1.0, 0.88, 0.7)),
-            RenderLayers::layer(GLOW_LAYER),
+            RenderLayers::layer(OVERLAY_LAYER),
             Transform::from_translation(at.extend(5.0)),
             Visibility::Hidden,
         )
