@@ -59,6 +59,25 @@ pub fn render() -> crate::Result<()> {
         diagnostics(&format!("phase-{}", phase + 1), &mix, &out)?;
     }
     println!("Doorman diagnostics: {}", out.display());
+    let assets = crate::root().join("assets/music/glutton");
+    let out = crate::root().join("target/music/glutton");
+    fs::create_dir_all(&assets)?;
+    fs::create_dir_all(&out)?;
+    let stems = music::render_glutton();
+    println!("Glutton: 144 BPM, A minor, 4/4, 32 bars");
+    for (name, pcm) in music::GLUTTON_STEMS.into_iter().zip(&stems) {
+        music::write_wav(&assets.join(format!("{name}.wav")), pcm)?;
+        diagnostics(name, pcm, &out)?;
+    }
+    for (phase, count) in music::GLUTTON_LAYERS.into_iter().enumerate() {
+        let layers: [Pcm; 8] = std::array::from_fn(|i| {
+            if i < count { stems[i].clone() } else { vec![[0; 2]; music::GLUTTON_FRAMES] }
+        });
+        let mix = music::mix(&layers);
+        music::write_wav(&out.join(format!("phase-{}.wav", phase + 1)), &mix)?;
+        diagnostics(&format!("phase-{}", phase + 1), &mix, &out)?;
+    }
+    println!("Glutton diagnostics: {}", out.display());
     Ok(())
 }
 

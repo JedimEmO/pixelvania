@@ -258,6 +258,9 @@ The feast is next to the Arrival on the map, up the grand stair, and gives the S
     the long table and its lounge, the pastry room, the Glutton's hall and the afters with the Swoon.
     The Swoon and the Jeroboam moved there from the ballroom, and the balcony gained planters
     so the ballroom's wing can be left with Cling alone. The gourmand, a guest in the afters and two cards are new.
+47. **The Glutton.** The feast's boss: a swipe of a magnum, a hop whose landing shakes the floor,
+    and from 60% a gorge that heals him until three blows make him choke. Under 25% he cannot eat
+    and hops back to back. The rig gained a belly for him, and he fights to his own galop.
 
 
 ## For the director

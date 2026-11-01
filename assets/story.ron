@@ -171,6 +171,10 @@
             phases: ["Name?", "You're not on the list.", "Nobody leaves. Everyone's inside."],
             fall: "Go on through, then. They all do.",
         ),
+        "glutton": (
+            phases: ["Hungry? There's plenty.", "More. Bring more.", "I can't stop. I don't know how."],
+            fall: "Is that all? Is there no more?",
+        ),
         "dancer": (
             phases: [
                 "There you are. Dance with me.",

@@ -121,7 +121,7 @@ The game generates the same seeded layers on room load.
 
 `cargo xtask music` renders five deterministic WAV stems to `assets/music/ballroom/`.
 The stems are not committed, being 54 MB of WAV; run it once after cloning, or the game plays without music.
-It also renders the Dancer's and the Doorman's themes beside them,
+It also renders the bosses' themes beside them,
 and writes full mixes, each phase's mix, waveforms, loop-seam views and spectrograms to `target/music/`.
 The sketch is 64 seconds at 120 BPM in D minor;
 [the audio notes](docs/design/audio.md#ballroom-sketch) describe its form and instruments.

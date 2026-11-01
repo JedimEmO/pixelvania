@@ -117,4 +117,9 @@ The list is timpani with the three knocks of his staff, a dotted bass and a door
 Impatience adds a harmonium in the same dotted rhythm, brass stabs on the offbeats and a marching snare.
 Closing time adds a mocking fanfare, an octave up in the third section,
 over a ticking clock and a hand bell calling last orders.
-Neither theme has had a listening pass.
+The Glutton's is a galop, 32 bars at 144 BPM in A minor.
+Appetite is an oom-pah tuba, galloping drums and a harpsichord's broken chords.
+Seconds adds cutlery that is never quite in time, a brass tune with a can-can's leer,
+and a babble of voices talking over each other.
+Too much adds an organ that will not let go and a low churning drone, with a sour cluster every other bar.
+None of the three themes has had a listening pass.

@@ -115,6 +115,15 @@ fn temper(class: Class) -> Temper {
             health: 560.0,
             poise: 140.0,
         },
+        // So is the Glutton's.
+        Class::Glutton => Temper {
+            reach: 70.0,
+            rest: 1.0,
+            speed: 45.0,
+            notice: 300.0,
+            health: 640.0,
+            poise: 160.0,
+        },
         Class::Heavy => Temper {
             reach: 44.0,
             rest: 2.2,
@@ -130,7 +139,7 @@ fn weight(class: Class) -> WeightClass {
     match class {
         Class::Light | Class::Spinner => WeightClass::Light,
         Class::Medium | Class::Toaster => WeightClass::Medium,
-        Class::Heavy | Class::Doorman => WeightClass::Heavy,
+        Class::Heavy | Class::Doorman | Class::Glutton => WeightClass::Heavy,
     }
 }
 
@@ -201,6 +210,7 @@ pub fn spawn_guest(
         Class::Spinner => weapons.guest_spinner.clone(),
         Class::Toaster => weapons.guest_toaster.clone(),
         Class::Doorman => weapons.boss_doorman.clone(),
+        Class::Glutton => weapons.boss_glutton.clone(),
     };
     let look = Look::new(rig(class), images);
     let image = look.image.clone();
@@ -312,7 +322,11 @@ fn tick(
     players: Query<(&Player, &Fighting), Without<Guest>>,
     mut guests: Query<
         (Entity, &mut Guest, &mut Fighting),
-        (Without<Player>, Without<crate::doorman::Doorman>),
+        (
+            Without<Player>,
+            Without<crate::doorman::Doorman>,
+            Without<crate::glutton::Glutton>,
+        ),
     >,
 ) {
     let Some(room) = &active.room else { return };
@@ -490,8 +504,14 @@ pub(crate) fn animate(
                 _ => anim::swing::Phase::Recovery,
             };
             let t = f.combat.attacker.phase_tick() as f64 / 120.0;
-            match (g.class, crate::doorman::move_of(f.combat.attacker.attack())) {
-                (Class::Doorman, Some(m)) => Some(anim::guest::doorman_pose(m, phase, t)),
+            let attack = f.combat.attacker.attack();
+            match (
+                g.class,
+                crate::doorman::move_of(attack),
+                crate::glutton::move_of(attack),
+            ) {
+                (Class::Doorman, Some(m), _) => Some(anim::guest::doorman_pose(m, phase, t)),
+                (Class::Glutton, _, Some(m)) => Some(anim::guest::glutton_pose(m, phase, t)),
                 _ => anim::guest::loop_pose(g.class, phase, t),
             }
         } else {

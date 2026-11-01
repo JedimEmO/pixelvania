@@ -15,16 +15,19 @@ pub enum Class {
     Toaster,
     /// The Arrival's boss: a towering doorman in livery, with a staff.
     Doorman,
+    /// The feast's boss: a vast guest in a burst waistcoat, swinging a magnum.
+    Glutton,
 }
 
 impl Class {
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 7] = [
         Self::Light,
         Self::Medium,
         Self::Heavy,
         Self::Spinner,
         Self::Toaster,
         Self::Doorman,
+        Self::Glutton,
     ];
 
     pub fn name(self) -> &'static str {
@@ -35,6 +38,7 @@ impl Class {
             Self::Spinner => "spinner",
             Self::Toaster => "toaster",
             Self::Doorman => "doorman",
+            Self::Glutton => "glutton",
         }
     }
 
@@ -45,6 +49,7 @@ impl Class {
             Self::Medium | Self::Toaster => 1.0,
             Self::Heavy => 1.25,
             Self::Doorman => 1.5,
+            Self::Glutton => 1.45,
         }
     }
 
@@ -56,6 +61,7 @@ impl Class {
             Self::Spinner => Weapon::Handle,
             Self::Toaster => Weapon::Coupe,
             Self::Doorman => Weapon::Spear,
+            Self::Glutton => Weapon::Bottle,
         }
     }
 
@@ -66,6 +72,7 @@ impl Class {
             Self::Medium | Self::Toaster => (12, 34),
             Self::Heavy => (18, 43),
             Self::Doorman => (22, 52),
+            Self::Glutton => (32, 50),
         }
     }
 }
@@ -111,6 +118,7 @@ pub fn rig(class: Class) -> Rig {
     let wide = match class {
         Class::Heavy => 1.35,
         Class::Doorman => 1.3,
+        Class::Glutton => 1.42,
         _ => 1.0,
     };
     let measurements = Measurements {
@@ -153,6 +161,11 @@ pub fn rig(class: Class) -> Rig {
             [hex(0xd88a7a), hex(0xa04a44), hex(0x6a2a2c), hex(0x3a171c)],
             [hex(0x4a2024), hex(0x34161a), hex(0x240f12), hex(0x240f12)],
         ),
+        // Crimson velvet, stained darker.
+        Class::Glutton => (
+            [hex(0xe0907a), hex(0xb04838), hex(0x7a2424), hex(0x461218)],
+            [hex(0x5a1c1c), hex(0x3e1416), hex(0x2a0e10), hex(0x2a0e10)],
+        ),
         // Bottle-green velvet, nearly black.
         Class::Heavy => (
             [hex(0x9cc49a), hex(0x5c8a62), hex(0x335a3c), hex(0x1c3424)],
@@ -189,6 +202,14 @@ pub fn rig(class: Class) -> Rig {
             [hex(0x6a3a36), hex(0x4a2426), hex(0x2e1618), hex(0x1c0e10)],
             [hex(0xf2d58c), hex(0xd0aa5c), hex(0xa07c38), hex(0x705424)],
         ),
+        // A gold waistcoat, its buttons long gone.
+        Class::Glutton => (
+            Hat::None,
+            Mask::None,
+            Hair::None,
+            [hex(0x7a5a2a), hex(0x52381a), hex(0x342210), hex(0x1e140a)],
+            [hex(0xf8e0a0), hex(0xd8b468), hex(0xb08a40), hex(0x7a5c28)],
+        ),
         Class::Heavy => (
             Hat::TopHat,
             Mask::None,
@@ -199,8 +220,14 @@ pub fn rig(class: Class) -> Rig {
     };
     Rig {
         measurements,
-        skirt: if class == Class::Spinner { 12.0 } else { 0.0 },
+        // The Glutton's coat hangs round him like a bell.
+        skirt: match class {
+            Class::Spinner => 12.0,
+            Class::Glutton => 16.0,
+            _ => 0.0,
+        },
         tails: if class == Class::Toaster { 14.0 } else { 0.0 },
+        belly: if class == Class::Glutton { 7.5 } else { 0.0 },
         hat,
         mask,
         hair,
@@ -351,6 +378,136 @@ pub fn doorman_pose(m: DoormanMove, phase: crate::swing::Phase, t: f64) -> Pose 
                 fx: 7.0,
                 fy: -17.0,
                 bx: -4.0,
+                by: -15.0,
+                sa: 90.0,
+                ..Pose::default()
+            }
+        }
+    }
+}
+
+/// The Glutton's attacks, in the order of his frame data: the swipe, the hop and its landing,
+/// and the gorge.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GluttonMove {
+    /// A wide swing of the magnum. Telegraphed by the bottle drawn back over the shoulder.
+    Swipe,
+    /// A belly-first hop at the player. Telegraphed by a deep, wobbling crouch.
+    Hop,
+    /// The hop coming down: the floor shakes out both ways.
+    Land,
+    /// He stops to eat, and heals until he is made to choke. Telegraphed by the hand to the mouth.
+    Gorge,
+}
+
+/// The Glutton's pose for a move, `t` seconds into its phase, at the player's size.
+pub fn glutton_pose(m: GluttonMove, phase: crate::swing::Phase, t: f64) -> Pose {
+    use crate::swing::Phase;
+    match (m, phase) {
+        (GluttonMove::Swipe, Phase::Windup) => {
+            // The bottle goes back over the shoulder, and wavers there.
+            let k = (t / 0.3).min(1.0);
+            Pose {
+                lean: -4.0 * k,
+                fx: 2.0 - 8.0 * k,
+                fy: -24.0 - 10.0 * k + (t * 30.0).sin() * k,
+                bx: 6.0,
+                by: -18.0,
+                sa: -150.0 * k,
+                ffx: 2.0,
+                fbx: -5.0,
+                ..Pose::default()
+            }
+        }
+        (GluttonMove::Swipe, Phase::Active) => Pose {
+            lean: 6.0,
+            crouch: 2.0,
+            fx: 16.0,
+            fy: -16.0,
+            bx: -2.0,
+            by: -18.0,
+            sa: 40.0,
+            ffx: 6.0,
+            fbx: -6.0,
+            ..Pose::default()
+        },
+        (GluttonMove::Hop, Phase::Windup) => {
+            // Sinking into his knees, the whole body wobbling.
+            let k = (t / 0.5).min(1.0);
+            let wobble = (t * TAU * 3.0).sin();
+            Pose {
+                crouch: 6.0 * k + wobble,
+                lean: 2.0 + wobble,
+                fx: 11.0,
+                fy: -20.0 + wobble,
+                bx: -11.0,
+                by: -20.0 - wobble,
+                sa: -60.0,
+                ffx: 5.0,
+                fbx: -6.0,
+                ..Pose::default()
+            }
+        }
+        (GluttonMove::Hop, Phase::Active) => Pose {
+            // In the air: arms up, knees tucked.
+            lean: 4.0,
+            fx: 9.0,
+            fy: -38.0,
+            bx: -9.0,
+            by: -38.0,
+            sa: -90.0,
+            ffx: 4.0,
+            ffy: -6.0,
+            fbx: -4.0,
+            fby: -6.0,
+            ..Pose::default()
+        },
+        (GluttonMove::Land, Phase::Windup | Phase::Active) => Pose {
+            crouch: 6.0,
+            lean: 5.0,
+            fx: 10.0,
+            fy: -13.0,
+            bx: -8.0,
+            by: -13.0,
+            sa: 90.0,
+            ffx: 7.0,
+            fbx: -7.0,
+            ..Pose::default()
+        },
+        (GluttonMove::Gorge, Phase::Windup) => Pose {
+            // A hand to the mouth.
+            lean: -2.0,
+            fx: 5.0,
+            fy: -30.0,
+            bx: -4.0,
+            by: -16.0,
+            sa: -90.0,
+            ..Pose::default()
+        },
+        (GluttonMove::Gorge, Phase::Active) => {
+            // Chewing, with his head down and the hand going back and forth.
+            let chew = (t * TAU * 3.0).sin();
+            Pose {
+                lean: 2.0,
+                crouch: 1.0 + chew * 0.5,
+                hx: 1.0,
+                fx: 5.0 + chew,
+                fy: -29.0 + 2.0 * chew,
+                bx: 2.0,
+                by: -16.0,
+                sa: -90.0,
+                ..Pose::default()
+            }
+        }
+        (_, Phase::Recovery) => {
+            // Short of breath, a hand on his belly.
+            let breathe = (t * TAU * 1.1).sin();
+            Pose {
+                lean: -2.0,
+                crouch: 2.0 + breathe,
+                fx: 7.0,
+                fy: -14.0,
+                bx: -3.0,
                 by: -15.0,
                 sa: 90.0,
                 ..Pose::default()
@@ -530,6 +687,16 @@ mod tests {
                     for phase in [Phase::Windup, Phase::Active, Phase::Recovery] {
                         for i in 0..4 {
                             poses.push(doorman_pose(m, phase, i as f64 / 6.0));
+                        }
+                    }
+                }
+            }
+            if class == Class::Glutton {
+                use GluttonMove::*;
+                for m in [Swipe, Hop, Land, Gorge] {
+                    for phase in [Phase::Windup, Phase::Active, Phase::Recovery] {
+                        for i in 0..4 {
+                            poses.push(glutton_pose(m, phase, i as f64 / 6.0));
                         }
                     }
                 }

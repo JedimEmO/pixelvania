@@ -677,6 +677,252 @@ pub fn render_doorman() -> [Pcm; 8] {
     )
 }
 
+pub const GLUTTON_STEMS: [&str; 8] = [
+    "drums",
+    "bass",
+    "harpsichord",
+    "cutlery",
+    "brass",
+    "voices",
+    "organ",
+    "belly",
+];
+/// How many of the Glutton's stems play in each of his phases: appetite, seconds, too much.
+pub const GLUTTON_LAYERS: [usize; 3] = [3, 6, 8];
+pub const GLUTTON_BPM: f64 = 144.0;
+pub const GLUTTON_FRAMES: usize = (44100.0 * 60.0 / GLUTTON_BPM * 128.0 + 0.5) as usize;
+
+/// A harpsichord's pluck: bright, odd-heavy and quick to fade.
+fn pluck(note: u8, t: f64) -> f64 {
+    let f = hz(note);
+    (1..=7)
+        .map(|n| {
+            let n = f64::from(n);
+            let odd = if n as u32 % 2 == 1 { 1.0 } else { 0.6 };
+            odd * (TAU * f * n * t).sin() / n * (-t * (2.5 + n) / 0.9).exp()
+        })
+        .sum()
+}
+
+/// Thirty-two bars of a galop in A minor, for the guest who cannot stop.
+/// Appetite is an oom-pah tuba, galloping drums and a harpsichord; seconds brings cutlery,
+/// a brass tune with a can-can's leer and a babble of voices; too much an organ that will not
+/// let go and a low churning in the belly, with a sour cluster every other bar.
+pub fn render_glutton() -> [Pcm; 8] {
+    let mut stems: [Signal; 8] = std::array::from_fn(|_| vec![[0.0; 2]; GLUTTON_FRAMES]);
+    let beat = 60.0 / GLUTTON_BPM;
+    let am = (45, [57, 60, 64]);
+    let dm = (50, [57, 62, 65]);
+    let e7 = (40, [56, 59, 62]);
+    let f = (41, [57, 60, 65]);
+    let chords = [am, am, dm, dm, e7, e7, am, am, f, f, dm, dm, e7, e7, am, e7];
+    // The tune, a bar at a time: beat, length, note.
+    let tune: [&[(f64, f64, u8)]; 8] = [
+        &[
+            (0.0, 0.5, 69),
+            (0.5, 0.5, 72),
+            (1.0, 0.5, 76),
+            (1.5, 0.5, 72),
+            (2.0, 1.0, 81),
+            (3.0, 1.0, 76),
+        ],
+        &[
+            (0.0, 0.5, 77),
+            (0.5, 0.5, 76),
+            (1.0, 0.5, 74),
+            (1.5, 0.5, 72),
+            (2.0, 2.0, 76),
+        ],
+        &[
+            (0.0, 0.5, 74),
+            (0.5, 0.5, 77),
+            (1.0, 0.5, 81),
+            (1.5, 0.5, 77),
+            (2.0, 1.0, 86),
+            (3.0, 1.0, 81),
+        ],
+        &[
+            (0.0, 0.5, 79),
+            (0.5, 0.5, 77),
+            (1.0, 0.5, 76),
+            (1.5, 0.5, 74),
+            (2.0, 2.0, 77),
+        ],
+        &[
+            (0.0, 0.5, 76),
+            (0.5, 0.5, 80),
+            (1.0, 0.5, 83),
+            (1.5, 0.5, 80),
+            (2.0, 1.0, 88),
+            (3.0, 1.0, 83),
+        ],
+        &[
+            (0.0, 0.5, 86),
+            (0.5, 0.5, 84),
+            (1.0, 0.5, 83),
+            (1.5, 0.5, 80),
+            (2.0, 2.0, 83),
+        ],
+        &[
+            (0.0, 0.5, 81),
+            (0.5, 0.5, 76),
+            (1.0, 0.5, 72),
+            (1.5, 0.5, 69),
+            (2.0, 1.0, 76),
+            (3.0, 1.0, 72),
+        ],
+        &[(0.0, 1.0, 69), (1.0, 1.0, 64), (2.0, 2.0, 57)],
+    ];
+    let mut noise = Noise(0x6107_7015);
+    for bar in 0..32 {
+        let (root, chord) = chords[bar % 16];
+        let at = |b: f64| (bar as f64 * 4.0 + b) * beat;
+
+        // Drums: a galop. Kick on one and three, snare on two and four, hats on every eighth.
+        for b in 0..4 {
+            if b % 2 == 0 {
+                event_seconds(&mut stems[0], at(b as f64), 0.3, 0.0, |t| {
+                    0.42 * (TAU * (52.0 * t + 1.8 * (1.0 - (-t / 0.025).exp()))).sin()
+                        * (-t / 0.11).exp()
+                });
+            } else {
+                event_seconds(&mut stems[0], at(b as f64), 0.2, -0.1, |t| {
+                    0.2 * (noise.next() + 0.5 * (TAU * 200.0 * t).sin()) * (-t / 0.06).exp()
+                });
+            }
+            for half in [0.0, 0.5] {
+                event_seconds(&mut stems[0], at(b as f64 + half), 0.06, 0.35, |t| {
+                    0.05 * noise.next() * (-t / 0.012).exp()
+                });
+            }
+        }
+
+        // Bass: a tuba's oom on one and three, root then fifth.
+        for (b, note) in [(0.0, root), (2.0, root + 7)] {
+            let len = beat * 0.7;
+            event_seconds(&mut stems[1], at(b), len, 0.0, |t| {
+                let env = (t / 0.02).min(1.0) * ((len - t) / 0.05).clamp(0.0, 1.0);
+                0.3 * env * brass(note, t, 0.55)
+            });
+        }
+
+        // Harpsichord: the pah on two and four, and a broken chord running in eighths.
+        for b in [1.0, 3.0] {
+            for (v, note) in chord.into_iter().enumerate() {
+                event_seconds(
+                    &mut stems[2],
+                    at(b + v as f64 * 0.012),
+                    0.6,
+                    (v as f64 - 1.0) * 0.3,
+                    |t| 0.08 * pluck(note, t),
+                );
+            }
+        }
+        for step in 0..8 {
+            let note = chord[[0, 1, 2, 1, 0, 2, 1, 2][step]] + 12;
+            event_seconds(&mut stems[2], at(step as f64 / 2.0), 0.4, -0.4, |t| {
+                0.05 * pluck(note, t)
+            });
+        }
+
+        // Cutlery: forks on plates, never quite in time.
+        for step in 0..16 {
+            if noise.next() > 0.25 {
+                continue;
+            }
+            let pan = noise.next() * 0.8;
+            let pitch = 1.0 + 0.25 * noise.next();
+            let late = 0.02 * (noise.next() + 1.0);
+            event_seconds(
+                &mut stems[3],
+                at(step as f64 / 4.0) + late,
+                0.12,
+                pan,
+                |t| {
+                    0.07 * [(2100.0, 1.0), (3370.0, 0.6), (5230.0, 0.4)]
+                        .into_iter()
+                        .map(|(f, g)| g * (TAU * f * pitch * t).sin())
+                        .sum::<f64>()
+                        * (-t / 0.035).exp()
+                },
+            );
+        }
+
+        // Brass: the tune, the second time through an octave down and leering.
+        let drop = if bar % 16 >= 8 { 12 } else { 0 };
+        for &(b, len, note) in tune[bar % 8] {
+            let note = note - drop;
+            let len = len * beat * 0.92;
+            event_seconds(&mut stems[4], at(b), len, 0.15, |t| {
+                let env = (t / 0.02).min(1.0) * ((len - t) / 0.05).clamp(0.0, 1.0);
+                0.1 * env * brass(note, t, 0.8)
+            });
+        }
+
+        // Voices: too many of them, talking over each other with their mouths full.
+        for step in 0..8 {
+            if noise.next() > 0.2 {
+                continue;
+            }
+            let pan = noise.next() * 0.9;
+            let pitch = 150.0 + 70.0 * (noise.next() + 1.0);
+            let vowel = 500.0 + 450.0 * (noise.next() + 1.0);
+            let len = 0.12 + 0.08 * (noise.next() + 1.0);
+            event_seconds(&mut stems[5], at(step as f64 / 2.0), len, pan, |t| {
+                let glide = 1.0 - 0.15 * t / len;
+                let env = (t / 0.015).min(1.0) * ((len - t) / 0.03).clamp(0.0, 1.0);
+                0.05 * env
+                    * (1..=8)
+                        .map(|n| {
+                            let h = pitch * glide * f64::from(n);
+                            let formant = (-((h - vowel) / 300.0).powi(2)).exp() + 0.15;
+                            formant * (TAU * h * t).sin()
+                        })
+                        .sum::<f64>()
+            });
+        }
+
+        // Organ: the chord held a whole bar, swelling.
+        let len = beat * 4.0;
+        for (v, note) in chord.into_iter().enumerate() {
+            event_seconds(&mut stems[6], at(0.0), len, (v as f64 - 1.0) * 0.4, |t| {
+                let p = TAU * hz(note) * t;
+                let env = (t / 0.4).min(1.0) * ((len - t) / 0.1).clamp(0.0, 1.0);
+                0.05 * env
+                    * (p.sin()
+                        + 0.5 * (2.0 * p).sin()
+                        + 0.35 * (3.0 * p).sin()
+                        + 0.2 * (4.0 * p).sin())
+            });
+        }
+
+        // Belly: a low churn under everything, and every other bar a sour cluster.
+        event_seconds(&mut stems[7], at(0.0), len, 0.0, |t| {
+            let wobble = 1.0 + 0.04 * (TAU * 1.7 * t).sin();
+            0.2 * (TAU * 41.0 * wobble * t).sin() * (0.6 + 0.4 * (TAU * 0.9 * t).sin())
+        });
+        if bar % 2 == 1 {
+            for (v, note) in [root + 12, root + 13, root + 18].into_iter().enumerate() {
+                event_seconds(
+                    &mut stems[7],
+                    at(3.0),
+                    beat * 1.2,
+                    (v as f64 - 1.0) * 0.5,
+                    |t| 0.06 * brass(note, t, 0.7) * (-t / 0.3).exp(),
+                );
+            }
+        }
+    }
+    finish(
+        stems,
+        [
+            6000.0, 900.0, 7500.0, 9000.0, 4500.0, 3200.0, 3000.0, 1600.0,
+        ],
+        [30.0, 25.0, 150.0, 1200.0, 200.0, 140.0, 110.0, 25.0],
+        [0.06, 0.02, 0.18, 0.25, 0.16, 0.3, 0.22, 0.1],
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -730,6 +976,37 @@ mod tests {
                 assert!(
                     seam <= nearby + 2,
                     "doorman seam {seam}, nearby slope {nearby}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn glutton_layers_have_headroom() {
+        let stems = render_glutton();
+        for count in GLUTTON_LAYERS {
+            let layers: [Pcm; 8] = std::array::from_fn(|i| {
+                if i < count {
+                    stems[i].clone()
+                } else {
+                    vec![[0; 2]; GLUTTON_FRAMES]
+                }
+            });
+            assert!(levels(&mix(&layers)).1 <= -5.99);
+        }
+        for pcm in &stems {
+            assert_eq!(pcm.len(), GLUTTON_FRAMES);
+            for c in 0..2 {
+                let seam = (i32::from(pcm[0][c]) - i32::from(pcm[GLUTTON_FRAMES - 1][c])).abs();
+                let nearby = pcm[..441]
+                    .windows(2)
+                    .chain(pcm[pcm.len() - 441..].windows(2))
+                    .map(|w| (i32::from(w[1][c]) - i32::from(w[0][c])).abs())
+                    .max()
+                    .unwrap();
+                assert!(
+                    seam <= nearby + 2,
+                    "glutton seam {seam}, nearby slope {nearby}"
                 );
             }
         }

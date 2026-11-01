@@ -1,7 +1,7 @@
 // The Glutton's hall: where the feast ends up. He has been eating since before anyone arrived.
 //
 // The boss's arena, with two low platforms to stand on when he lands.
-// The Jeroboam stands on the table at the back. East is the room after.
+// The Jeroboam waits on the platform by the door. East is the room after.
 [room]
 name = gluttons_hall
 background = ballroom 6a1418

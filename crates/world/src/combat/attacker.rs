@@ -251,7 +251,8 @@ impl Attacker {
         }
     }
 
-    pub(crate) fn interrupt(&mut self) {
+    /// Ends the attack in progress at once, as a stagger does, or a brain that moves on to the next.
+    pub fn interrupt(&mut self) {
         *self = Self::default();
     }
 }

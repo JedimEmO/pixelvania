@@ -1,0 +1,86 @@
+// The Glutton's moves, in ticks at 120 Hz. His brain in crates/game/src/glutton.rs picks which to
+// start, ends the hop when he lands and starts the landing then, and stops the gorge when he chokes.
+// Hitboxes are relative to the middle of his feet, facing right, y up negative.
+(
+    name: "boss-glutton",
+    charge_ticks: 120,
+    combo: (
+        // The swipe: the magnum swung wide from over the shoulder.
+        (
+        windup: 50, active: 12, recovery: 80, cancel_window: 4,
+        hitboxes: [(rect: (x: 4.0, y: -62.0, w: 78.0, h: 56.0), ticks: None)],
+        damage: 16.0, poise_damage: 34.0, hit_stop: 0.11,
+        knockback: (240.0, -120.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+        // The hop: a deep, wobbling crouch, then up and at the player. No hit of its own;
+        // the brain ends it when he lands, which starts the landing.
+        (
+        windup: 66, active: 240, recovery: 1, cancel_window: 0,
+        hitboxes: [],
+        damage: 0.0, poise_damage: 0.0, hit_stop: 0.0,
+        knockback: (0.0, 0.0), launches: false,
+        weight: Heavy, armour: true, step: None,
+        chain: None, air_hang: 0,
+    ),
+        // The landing: his weight on the floor under him, and the floor shaking out both ways,
+        // growing; be in the air when it passes.
+        (
+        windup: 1, active: 26, recovery: 72, cancel_window: 4,
+        hitboxes: [
+            (rect: (x: -32.0, y: -34.0, w: 64.0, h: 34.0), ticks: Some((start: 0, end: 6))),
+            (rect: (x: -110.0, y: -10.0, w: 220.0, h: 10.0), ticks: Some((start: 2, end: 10))),
+            (rect: (x: -200.0, y: -10.0, w: 400.0, h: 10.0), ticks: Some((start: 8, end: 18))),
+            (rect: (x: -290.0, y: -10.0, w: 580.0, h: 10.0), ticks: Some((start: 16, end: 26))),
+        ],
+        damage: 18.0, poise_damage: 30.0, hit_stop: 0.1,
+        knockback: (150.0, -200.0), launches: false,
+        weight: Heavy, armour: true, step: None,
+        chain: None, air_hang: 0,
+    ),
+    ),
+    // The gorge: he stops to eat, healing, until three blows make him choke.
+    charged: (
+        windup: 40, active: 210, recovery: 50, cancel_window: 0,
+        hitboxes: [],
+        damage: 0.0, poise_damage: 0.0, hit_stop: 0.0,
+        knockback: (0.0, 0.0), launches: false,
+        weight: Heavy, armour: true, step: None,
+        chain: None, air_hang: 0,
+    ),
+    rising: (
+        windup: 50, active: 12, recovery: 80, cancel_window: 4,
+        hitboxes: [(rect: (x: 4.0, y: -62.0, w: 78.0, h: 56.0), ticks: None)],
+        damage: 16.0, poise_damage: 34.0, hit_stop: 0.11,
+        knockback: (240.0, -120.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    air: (
+        (
+        windup: 50, active: 12, recovery: 80, cancel_window: 4,
+        hitboxes: [(rect: (x: 4.0, y: -62.0, w: 78.0, h: 56.0), ticks: None)],
+        damage: 16.0, poise_damage: 34.0, hit_stop: 0.11,
+        knockback: (240.0, -120.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+        (
+        windup: 50, active: 12, recovery: 80, cancel_window: 4,
+        hitboxes: [(rect: (x: 4.0, y: -62.0, w: 78.0, h: 56.0), ticks: None)],
+        damage: 16.0, poise_damage: 34.0, hit_stop: 0.11,
+        knockback: (240.0, -120.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+    ),
+    pogo: (
+        windup: 50, active: 12, recovery: 80, cancel_window: 4,
+        hitboxes: [(rect: (x: 4.0, y: -62.0, w: 78.0, h: 56.0), ticks: None)],
+        damage: 16.0, poise_damage: 34.0, hit_stop: 0.11,
+        knockback: (240.0, -120.0), launches: false,
+        weight: Heavy, armour: false, step: None,
+        chain: None, air_hang: 0,
+    ),
+)

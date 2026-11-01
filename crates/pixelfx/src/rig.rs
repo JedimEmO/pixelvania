@@ -537,6 +537,9 @@ pub struct Rig {
     pub skirt: f64,
     /// Length of two trailing silk ribbons.
     pub ribbons: f64,
+    /// Radius of a belly pushed out in front of the waist; zero omits it.
+    /// Not in the JavaScript original.
+    pub belly: f64,
     // Costume parts are not in the JavaScript original.
     pub hat: Hat,
     pub mask: Mask,
@@ -556,6 +559,7 @@ impl Default for Rig {
             tails: 0.0,
             skirt: 0.0,
             ribbons: 0.0,
+            belly: 0.0,
             hat: Hat::None,
             mask: Mask::None,
             hair: Hair::None,
@@ -1516,6 +1520,17 @@ impl Rig {
         let mut r = Raster::new(self.light);
         r.clip = clip;
         r.body(&s);
+        if self.belly > 0.0 {
+            r.frame = 1;
+            let waist = s.b[1];
+            r.ellipsoid(
+                add(waist.t, mv(waist.r, [self.belly * 0.45, 0.0, 0.0])),
+                waist.r,
+                [self.belly, self.belly * 1.05, self.belly * 1.1],
+                2,
+                0,
+            );
+        }
         r.costume(&s, self);
         if self.skirt > 0.0 {
             r.frame = 0;

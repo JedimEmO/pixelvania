@@ -112,7 +112,7 @@ mod stems {
     use std::error::Error;
 
     /// Every track, in the order they are decoded: the rooms' music first.
-    const TRACKS: [&str; 3] = ["ballroom", "dancer", "doorman"];
+    const TRACKS: [&str; 4] = ["ballroom", "dancer", "doorman", "glutton"];
 
     pub(super) fn build(app: &mut App) {
         app.init_asset::<StemBytes>()
@@ -254,11 +254,22 @@ mod native {
     const DOORMAN: [&str; 8] = [
         "drums", "bass", "bells", "organ", "stabs", "march", "lead", "clock",
     ];
+    const GLUTTON: [&str; 8] = [
+        "drums",
+        "bass",
+        "harpsichord",
+        "cutlery",
+        "brass",
+        "voices",
+        "organ",
+        "belly",
+    ];
     pub(super) fn catalog(name: &str) -> Option<(&'static [&'static str], f64)> {
         match name {
             "ballroom" => Some((&STEMS, 120.0)),
             "dancer" => Some((&DANCER, 132.0)),
             "doorman" => Some((&DOORMAN, 104.0)),
+            "glutton" => Some((&GLUTTON, 144.0)),
             _ => None,
         }
     }
@@ -269,6 +280,7 @@ mod native {
         match name {
             "dancer" => Some((&[0, 1, 2, 2, 2, 3, 4, 0], [3, 5, 8])),
             "doorman" => Some((&[0, 1, 2, 2, 2, 0, 3, 4], [3, 6, 8])),
+            "glutton" => Some((&[0, 1, 2, 4, 3, 4, 2, 4], [3, 6, 8])),
             _ => None,
         }
     }
@@ -722,6 +734,12 @@ mod native {
                 volumes("doorman", 3, high).len(),
                 catalog("doorman").unwrap().0.len()
             );
+            assert_eq!(
+                volumes("glutton", 3, high).len(),
+                catalog("glutton").unwrap().0.len()
+            );
+            let gorging = volumes("glutton", 2, high);
+            assert_eq!(gorging.iter().filter(|db| **db > SILENT).count(), 6);
             // The Comedown drops his drums and his march, and keeps the bass and the bells.
             let down = volumes("doorman", 3, mix("the Comedown"));
             assert_eq!((down[0], down[5]), (SILENT, SILENT));

@@ -15,6 +15,7 @@ mod ending;
 mod enemies;
 mod fade;
 mod fire;
+mod glutton;
 mod hanging;
 mod hud;
 mod indulge;
@@ -98,6 +99,7 @@ fn main() -> AppExit {
             edges::EdgesPlugin,
             ending::EndingPlugin,
             doorman::DoormanPlugin,
+            glutton::GluttonPlugin,
         ))
         .run()
 }
