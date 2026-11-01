@@ -43,6 +43,8 @@ jobs:
       # 8 MB instead of 150 MB of WAV, so the WAVs are encoded and left out of the site.
       - name: Render the music
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg > /dev/null
           cargo xtask music
           for wav in assets/music/*/*.wav; do
             ffmpeg -loglevel error -y -i "$wav" -c:a libvorbis -q:a 4 "${wav%.wav}.ogg"
