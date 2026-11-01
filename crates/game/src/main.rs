@@ -2,6 +2,7 @@
 
 pub mod audio;
 mod backdrop;
+mod boss;
 mod camera;
 mod combat;
 mod devtools;
@@ -66,6 +67,7 @@ fn main() -> AppExit {
             devtools::DevToolsPlugin,
         ))
         .add_plugins((
+            boss::BossPlugin,
             lure::LurePlugin,
             hanging::HangingPlugin,
             fade::FadePlugin,

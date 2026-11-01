@@ -12,6 +12,7 @@
 //! F4 cycles the mood of combat: neutral, the High and the Comedown.
 //! F6 steps the progression fade (see the `fade` module), and `PIXELVANIA_FADE=0.5` starts there.
 //! Keys 7/8/9/0/minus spawn light/medium/heavy/spinner/toaster guests.
+//! B spawns the Dancer; `PIXELVANIA_BOSS=dancer` spawns it at startup.
 //! `PIXELVANIA_GUEST` accepts the same class names for a startup spawn.
 //! F5 shows hurtboxes, active hitboxes, and health and poise bars; `PIXELVANIA_BOXES=1` starts with them on.
 //! `PIXELVANIA_MOOD=high` or `comedown` starts in that mood, and `PIXELVANIA_SPAWN=40,13`
@@ -189,6 +190,7 @@ fn spawn_guests(
     players: Query<&Player>,
     weapons: Option<Res<crate::combat::Weapons>>,
     active: Res<crate::rooms::ActiveRoom>,
+    progress: Res<crate::progress::PlayerProgress>,
     mut images: ResMut<Assets<Image>>,
     mut frame: Local<u32>,
 ) {
@@ -206,6 +208,18 @@ fn spawn_guests(
         _ => None,
     }
     .filter(|_| *frame == 30);
+    if !progress.0.has(world::Ability::Plunge)
+        && (keys.just_pressed(KeyCode::KeyB)
+            || (*frame == 30 && std::env::var("PIXELVANIA_BOSS").as_deref() == Ok("dancer")))
+    {
+        let b = &p.ctrl.body;
+        let x = b.x as f32 + b.w as f32 / 2.0 + p.ctrl.facing as f32 * 80.0;
+        let feet = (x, (b.y + b.h) as f32);
+        let body = world::Body::new(x.round() as i32 - 9, feet.1 as i32 - 51, 18, 51);
+        if !body.collides_at(room, 0, 0) {
+            crate::boss::spawn_dancer(&mut commands, feet, &weapons, &mut images);
+        }
+    }
     for (key, class) in [
         (KeyCode::Digit7, Class::Light),
         (KeyCode::Digit8, Class::Medium),
@@ -245,6 +259,7 @@ fn draw_boxes(
         &crate::combat::Fighting,
         Option<&Player>,
         Option<&crate::enemies::Guest>,
+        Option<&crate::boss::Dancer>,
     )>,
 ) {
     use crate::combat::HasBody;
@@ -262,8 +277,12 @@ fn draw_boxes(
             color,
         );
     };
-    for (f, p, g) in &fighters {
-        let Some(body) = p.map(HasBody::body).or(g.map(HasBody::body)) else {
+    for (f, p, g, b) in &fighters {
+        let Some(body) = p
+            .map(HasBody::body)
+            .or(g.map(HasBody::body))
+            .or(b.map(HasBody::body))
+        else {
             continue;
         };
         let hurt = world::combat::Rect::from_body(body);

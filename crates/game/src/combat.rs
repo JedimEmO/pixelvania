@@ -141,6 +141,7 @@ pub struct Weapons {
     pub guest_heavy: Handle<WeaponAsset>,
     pub guest_spinner: Handle<WeaponAsset>,
     pub guest_toaster: Handle<WeaponAsset>,
+    pub boss_dancer: Handle<WeaponAsset>,
 }
 
 impl Weapons {
@@ -165,6 +166,7 @@ fn load_weapons(mut commands: Commands, assets: Res<AssetServer>) {
         guest_heavy: assets.load("combat/guest-heavy.ron"),
         guest_spinner: assets.load("combat/guest-spinner.ron"),
         guest_toaster: assets.load("combat/guest-toaster.ron"),
+        boss_dancer: assets.load("combat/boss-dancer.ron"),
     });
 }
 
@@ -245,6 +247,12 @@ impl HasBody for Player {
     }
 }
 
+impl HasBody for crate::boss::Dancer {
+    fn body(&self) -> &Body {
+        &self.ctrl.body
+    }
+}
+
 impl HasBody for crate::enemies::Guest {
     fn body(&self) -> &Body {
         &self.ctrl.body
@@ -285,12 +293,23 @@ pub(crate) fn resolve_contacts(
         &mut Fighting,
         Option<&Player>,
         Option<&crate::enemies::Guest>,
+        Option<&crate::boss::Dancer>,
     )>,
 ) {
+    let blocked: Vec<u64> = fighters
+        .iter()
+        .filter_map(|(e, f, _, _, b)| {
+            b.filter(|b| !b.finishable(f.combat.health))
+                .map(|_| combat_id(e))
+        })
+        .collect();
     let mut rows: Vec<(u64, u32, Mut<Fighting>, Body, [Rect; 1])> = fighters
         .iter_mut()
-        .filter_map(|(e, f, p, g)| {
-            let body = *p.map(HasBody::body).or(g.map(HasBody::body))?;
+        .filter_map(|(e, f, p, g, b)| {
+            let body = *p
+                .map(HasBody::body)
+                .or(g.map(HasBody::body))
+                .or(b.map(HasBody::body))?;
             Some((combat_id(e), f.team, f, body, [Rect::from_body(&body)]))
         })
         .collect();
@@ -314,6 +333,7 @@ pub(crate) fn resolve_contacts(
     for e in &events {
         if let CombatEvent::Hit(h) = e
             && staggered.contains(&h.target)
+            && !blocked.contains(&h.target)
             && views
                 .iter()
                 .any(|v| v.id == h.attacker && v.team == PLAYER_TEAM)
@@ -419,25 +439,26 @@ fn swing_effects(
         &Transform,
         Option<&Player>,
         Option<&crate::enemies::Guest>,
+        Option<&crate::boss::Dancer>,
     )>,
     mut fx: MessageWriter<SpawnFx>,
     active: Res<crate::rooms::ActiveRoom>,
     mut images: ResMut<Assets<Image>>,
     mut sfx: MessageWriter<PlaySfx>,
 ) {
-    for (mut f, t, player, guest) in &mut fighters {
+    for (mut f, t, player, guest, boss) in &mut fighters {
         let phase = f.combat.attacker.phase();
         let started = phase == Phase::Active && f.last_phase != Phase::Active;
         // A guest's wind-up opens with a glint at its weapon hand: the warning before the blow.
-        if let Some(g) = guest
+        if (guest.is_some() || boss.is_some())
             && phase == Phase::Windup
             && f.last_phase != Phase::Windup
             && let Some(facing) = f.combat.attacker.facing()
         {
-            let k = g.class.scale() as f32;
-            let (x, y) = match g.class {
-                anim::guest::Class::Spinner => (15.0, 27.0),
-                anim::guest::Class::Toaster => (7.0, 43.0),
+            let k = guest.map_or(1.5, |g| g.class.scale() as f32);
+            let (x, y) = match guest.map(|g| g.class) {
+                Some(anim::guest::Class::Spinner) => (15.0, 27.0),
+                Some(anim::guest::Class::Toaster) => (7.0, 43.0),
                 _ => (8.0, 26.0),
             };
             let at = t.translation.truncate() + Vec2::new(facing as f32 * x * k, y * k);
@@ -480,7 +501,7 @@ fn swing_effects(
                 pitch: 0.85,
                 ..PlaySfx::new(Sfx::SwingHeavy)
             },
-            _ if heavy => PlaySfx::new(Sfx::SwingHeavy),
+            _ if heavy || boss.is_some() => PlaySfx::new(Sfx::SwingHeavy),
             _ => PlaySfx::new(Sfx::SwingLight),
         };
         sfx.write(PlaySfx {
@@ -535,7 +556,14 @@ fn swing_effects(
                 crate::fire::ignite(&mut commands, &mut images, room, x, -feet.y);
             }
         }
-        if player.is_some() || guest.is_some() {
+        if boss.is_some() {
+            req.options.radius = 48.0;
+            req.options.palette = [0x691740, 0xc3296d, 0xff459e, 0xffd65c, 0xffedab, 0xffffff]
+                .into_iter()
+                .map(pixelfx::color::hex)
+                .collect();
+        }
+        if player.is_some() || guest.is_some() || (boss.is_some() && id == AttackId::Combo1) {
             fx.write(req);
         }
     }
@@ -576,6 +604,7 @@ fn impact(
         &mut Fighting,
         Option<&Player>,
         Option<&crate::enemies::Guest>,
+        Option<&crate::boss::Dancer>,
     )>,
     mut fx: MessageWriter<SpawnFx>,
     mut shake: ResMut<Shake>,
@@ -616,8 +645,11 @@ fn impact(
         }
     };
     let body_of = |id: u64| -> Option<(Body, bool)> {
-        let (_, _, p, g) = fighters.get(Entity::from_bits(id)).ok()?;
-        let body = *p.map(HasBody::body).or(g.map(HasBody::body))?;
+        let (_, _, p, g, b) = fighters.get(Entity::from_bits(id)).ok()?;
+        let body = *p
+            .map(HasBody::body)
+            .or(g.map(HasBody::body))
+            .or(b.map(HasBody::body))?;
         Some((body, p.is_some()))
     };
     let mut flashes: Vec<(u64, f32)> = Vec::new();
@@ -631,7 +663,7 @@ fn impact(
                 let bottle = fighters
                     .get(Entity::from_bits(h.attacker))
                     .ok()
-                    .and_then(|(_, _, p, _)| p)
+                    .and_then(|(_, _, p, _, _)| p)
                     .is_some_and(|p| p.carried == crate::player::Carried::Jeroboam);
                 impact_sound(match h.weight {
                     _ if bottle => Sfx::BottleHit,
@@ -723,6 +755,9 @@ fn impact(
         }
     }
     for f in std::mem::take(&mut log.1) {
+        let boss = fighters
+            .get(Entity::from_bits(f.target))
+            .is_ok_and(|r| r.4.is_some());
         if let Some((body, _)) = body_of(f.target) {
             let feet = Vec2::new(
                 body.x as f32 + body.w as f32 / 2.0,
@@ -735,7 +770,15 @@ fn impact(
                 .iter()
                 .map(|&c| pixelfx::color::hex(c))
                 .collect();
-            nectar.options.light = 1.6;
+            nectar.options.light = if boss { 2.0 } else { 1.6 };
+            if boss {
+                nectar.options.radius *= 2.5;
+                nectar.options.palette =
+                    [0x6a3516, 0xb36b20, 0xe8a932, 0xffd65c, 0xffedab, 0xffffff]
+                        .into_iter()
+                        .map(pixelfx::color::hex)
+                        .collect();
+            }
             fx.write(nectar);
         }
         shake.kick(Vec2::new(f.direction as f32, -0.6), 6.0);
@@ -743,16 +786,16 @@ fn impact(
         impact_sound(Sfx::Finisher);
         duck.write(Duck);
         flashes.push((f.target, 0.15));
-        slow.left = FINISHER_SLOW.0;
-        slow.speed = FINISHER_SLOW.1;
+        slow.left = if boss { 1.0 } else { FINISHER_SLOW.0 };
+        slow.speed = if boss { 0.15 } else { FINISHER_SLOW.1 };
     }
     for (id, secs) in flashes {
-        if let Ok((_, mut f, _, _)) = fighters.get_mut(Entity::from_bits(id)) {
+        if let Ok((_, mut f, _, _, _)) = fighters.get_mut(Entity::from_bits(id)) {
             f.flash = f.flash.max(secs);
         }
     }
     for id in splats {
-        if let Ok((_, mut f, p, g)) = fighters.get_mut(Entity::from_bits(id)) {
+        if let Ok((_, mut f, p, g, _)) = fighters.get_mut(Entity::from_bits(id)) {
             let x = p.map(|p| p.ctrl.body.x).or(g.map(|g| g.ctrl.body.x));
             f.splat = 0.3;
             f.splat_x = x;

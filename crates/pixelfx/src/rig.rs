@@ -501,6 +501,7 @@ pub enum Hat {
     None,
     TopHat,
     Plume,
+    Feathers,
 }
 
 /// Pale carnival masks attached to the head bone.
@@ -534,6 +535,8 @@ pub struct Rig {
     pub tails: f64,
     /// Flared skirt length; zero omits it.
     pub skirt: f64,
+    /// Length of two trailing silk ribbons.
+    pub ribbons: f64,
     // Costume parts are not in the JavaScript original.
     pub hat: Hat,
     pub mask: Mask,
@@ -552,6 +555,7 @@ impl Default for Rig {
             core: [hex(0x6e707c), hex(0x4b4d58), hex(0x34353f), hex(0x34353f)],
             tails: 0.0,
             skirt: 0.0,
+            ribbons: 0.0,
             hat: Hat::None,
             mask: Mask::None,
             hair: Hair::None,
@@ -751,6 +755,23 @@ impl Raster {
                     );
                 }
                 self.ellipsoid(at([0.0, 4.6, 0.0]), head.r, mul([3.9, 0.8, 3.9], k), 27, 4);
+            }
+            Hat::Feathers => {
+                self.ellipsoid(at([0.0, 3.5, 0.0]), head.r, mul([4.3, 1.0, 4.0], k), 27, 4);
+                for i in -2..=2 {
+                    let fan = i as f64;
+                    let middle = at([-3.0 - fan.abs(), 10.0, fan * 2.8]);
+                    self.sweep(at([0.0, 3.5, fan]), middle, 0.7 * k, 1.5 * k, 27, 4, 0.0);
+                    self.sweep(
+                        middle,
+                        at([-6.0 - fan.abs(), 17.0 - fan.abs() * 2.0, fan * 4.2]),
+                        1.5 * k,
+                        0.15 * k,
+                        27,
+                        4,
+                        0.0,
+                    );
+                }
             }
             Hat::Plume => {
                 self.ellipsoid(at([-0.5, 3.6, 0.0]), head.r, mul([4.3, 2.0, 3.6], k), 27, 3);
@@ -1507,6 +1528,24 @@ impl Rig {
                     [3.5 + 9.5 * u, 0.7, 3.0 + 5.0 * u],
                     30,
                     3,
+                );
+            }
+        }
+        if self.ribbons > 0.0 {
+            r.frame = 0;
+            let hip = s.b[0];
+            for side in [-1.0, 1.0] {
+                let at = |v| add(hip.t, mv(hip.r, v));
+                let middle = at([-self.ribbons * 0.55, -3.0, side * 7.0]);
+                r.sweep(at([-2.0, 3.0, side * 3.0]), middle, 1.8, 1.4, 31, 4, 0.0);
+                r.sweep(
+                    middle,
+                    at([-self.ribbons, -12.0, side * 11.0]),
+                    1.4,
+                    0.5,
+                    31,
+                    3,
+                    0.0,
                 );
             }
         }

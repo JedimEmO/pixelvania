@@ -7,6 +7,7 @@
 
 use std::f64::consts::{PI, TAU};
 
+pub mod boss;
 pub mod guest;
 pub mod swing;
 
