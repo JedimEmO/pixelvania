@@ -41,7 +41,8 @@ Weapon frame data in `assets/combat/` reloads while the game runs, with the `dev
 | Plunge: in the air, dive straight down; breaks cracked floors | Right bumper (RB, R1) | M |
 | Next weapon: the sabre, the Jeroboam, the candelabrum | North (Y, Triangle) | L |
 | Next room, for testing: each room of the world, the feel lab, the combat lab | Start | Tab |
-| Back to the spawn point, and the guests back to theirs | Select | R |
+| The map of the rooms visited; pauses the game. In a test room, back to the spawn point | Select | V |
+| Back to the spawn point, and the guests back to theirs | | R |
 
 Hold down while falling to fall faster, and press into a wall while falling to slide down it.
 Press up beside a lounge, a velvet chaise under a standing lamp, to rest:
@@ -80,6 +81,7 @@ the costumed guests among them;
 `cargo xtask rig player` renders every pose of the player's animation, one row per state.
 `cargo xtask golden` renders reference frames from the JavaScript original, which needs Node and git;
 the golden tests themselves run without either.
+`cargo xtask map` draws every room of the world at its place on the map to `target/map.png`.
 `cargo xtask reach` walks the world with each step of the progression's abilities, using the real movement,
 and lists the rooms, pickups and lounges it reaches and any way in with no way out.
 `cargo xtask hanging` renders the chandelier and the lantern, at rest, swung and flared, to `target/hanging/`.

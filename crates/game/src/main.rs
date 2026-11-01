@@ -15,6 +15,7 @@ mod indulge;
 mod input;
 mod lounge;
 mod lure;
+mod map;
 mod music;
 mod player;
 mod plunge;
@@ -74,6 +75,7 @@ fn main() -> AppExit {
             indulge::IndulgePlugin,
             plunge::PlungePlugin,
             projectiles::ProjectilesPlugin,
+            map::MapPlugin,
         ))
         .run()
 }

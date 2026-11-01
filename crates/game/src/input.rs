@@ -67,6 +67,11 @@ pub struct Toast;
 #[action_output(bool)]
 pub struct Lure;
 
+/// Opens and closes the map. In a test room outside the world, puts the player back at the spawn.
+#[derive(InputAction)]
+#[action_output(bool)]
+pub struct OpenMap;
+
 /// Indulge: tap to heal with Nectar, hold to start a High.
 #[derive(InputAction)]
 #[action_output(bool)]
@@ -111,6 +116,7 @@ pub struct TickInput {
     pub indulge_held: bool,
     /// These were pressed this frame. Read in `Update`, not by the tick.
     pub reset_pressed: bool,
+    pub map_pressed: bool,
     pub switch_weapon_pressed: bool,
     pub next_room_pressed: bool,
 }
@@ -200,9 +206,14 @@ fn spawn_controls(mut commands: Commands) {
             --
             Action::<Reset>::new()
             Bindings [
+                Binding(KeyCode::KeyR)
+            ]
+            --
+            Action::<OpenMap>::new()
+            Bindings [
                 Binding(GamepadButton::Select)
                 --
-                Binding(KeyCode::KeyR)
+                Binding(KeyCode::KeyV)
             ]
         ]
     });
@@ -214,6 +225,7 @@ pub fn collect(
     jump: Single<(&Action<Jump>, &ActionEvents)>,
     lunge: Single<&ActionEvents, With<Action<Lunge>>>,
     reset: Single<&ActionEvents, With<Action<Reset>>>,
+    map: Single<&ActionEvents, With<Action<OpenMap>>>,
     attack: Single<(&Action<Attack>, &ActionEvents)>,
     toast: Single<&ActionEvents, With<Action<Toast>>>,
     lure: Single<(&Action<Lure>, &ActionEvents)>,
@@ -228,6 +240,7 @@ pub fn collect(
     input.jump_pressed |= events.contains(ActionEvents::START);
     input.lunge_pressed |= lunge.contains(ActionEvents::START);
     input.reset_pressed = reset.contains(ActionEvents::START);
+    input.map_pressed = map.contains(ActionEvents::START);
     let (held, events) = *attack;
     input.attack_held = **held;
     input.attack_pressed |= events.contains(ActionEvents::START);

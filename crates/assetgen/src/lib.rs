@@ -6,6 +6,7 @@
 pub mod backgrounds;
 pub mod furniture;
 pub mod hanging;
+pub mod map;
 #[cfg(feature = "sfx")]
 pub mod music;
 #[cfg(feature = "sfx")]

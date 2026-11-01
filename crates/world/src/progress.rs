@@ -152,6 +152,8 @@ pub struct Progress {
     pub goblets: u32,
     /// Floors broken by the Plunge, as `room:x,y` in tiles, so they stay broken.
     pub broken: BTreeSet<String>,
+    /// Rooms the player has been in, for the map.
+    pub visited: BTreeSet<String>,
 }
 
 impl Progress {

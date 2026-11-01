@@ -141,10 +141,15 @@ Then the slice's content:
     and dives on through; broken tiles are kept in the progress record and stay broken.
     The reachability checker counts cracked floors as open once the Plunge is found.
     Not yet: the Plunge as an attack on guests below.
-21. **Two more guests**: a spinning dancer and a guest who throws glasses.
+21. **Two more guests.** Done, by Codex. The spinner pirouettes across floors and hurts on contact,
+    then stands dizzy; the toaster keeps its distance and throws coupes in an arc,
+    which a swing destroys in flight.
 22. **The rooms**: about twenty around the ballroom, ending at the stage and the cellar below it.
 23. **The Dancer**, the ballroom's boss, whose fight ends with the stage floor giving way.
-24. **The map.**
+24. **The map.** Done. Select opens it and pauses the game: every room visited,
+    drawn from its own tiles at its place on the world map, the lounges marked in gold,
+    and the player a blinking dot. Rooms visited are kept in the progress record.
+    `cargo xtask map` draws the whole world to an image.
 
 ## For the director
 

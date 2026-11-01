@@ -464,6 +464,45 @@ fn hanging() -> Result<()> {
     Ok(())
 }
 
+/// Draws the whole world map, every room shown, to `target/map.png`.
+fn map() -> Result<()> {
+    let assets = root().join("assets");
+    let world = world::World::parse(&std::fs::read_to_string(assets.join("world.ron"))?)?;
+    let mut rooms = std::collections::BTreeMap::new();
+    for r in &world.rooms {
+        let src = std::fs::read_to_string(assets.join(format!("rooms/{}.room", r.name)))?;
+        rooms.insert(
+            r.name.clone(),
+            world::Room::parse(&src).map_err(|e| e.to_string())?,
+        );
+    }
+    let shown = world.rooms.iter().map(|r| r.name.clone()).collect();
+    let b = assetgen::map::bounds(&world, &rooms);
+    let scale = 2;
+    let size = (
+        ((b.2 - b.0 + 8) * scale) as u32,
+        ((b.3 - b.1 + 8) * scale) as u32,
+    );
+    let view = assetgen::map::MapView {
+        world: &world,
+        rooms: &rooms,
+        shown: &shown,
+        current: None,
+        player: None,
+        dot: false,
+    };
+    let img = assetgen::map::draw(
+        &view,
+        size,
+        scale as u32,
+        ((b.0 + b.2) / 2, (b.1 + b.3) / 2),
+    );
+    let out = root().join("target/map.png");
+    img.save(&out)?;
+    println!("wrote {} ({} rooms)", out.display(), world.rooms.len());
+    Ok(())
+}
+
 /// Walks the world with each step of the progression's abilities and prints what it reaches.
 fn reach() -> Result<()> {
     use world::reach::{check_world, progression_steps};
@@ -520,6 +559,7 @@ fn main() -> Result<()> {
         Some("tiles") if args.len() == 1 => tiles::render(),
         Some("hanging") if args.len() == 1 => hanging(),
         Some("reach") if args.len() == 1 => reach(),
+        Some("map") if args.len() == 1 => map(),
         Some("backgrounds") if args.len() == 1 => {
             #[path = "backgrounds.rs"]
             mod backgrounds;
@@ -543,7 +583,7 @@ fn main() -> Result<()> {
             fx(id, seed, &out)
         }
         _ => Err(
-            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player|guests] | tiles | hanging | reach | sfx | golden"
+            "usage: cargo xtask fx <id> [--seed N] [--out DIR] | rig [stock|player|guests] | tiles | hanging | reach | map | sfx | golden"
                 .into(),
         ),
     }
