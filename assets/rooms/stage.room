@@ -1,0 +1,64 @@
+// The stage, where the Dancer is fought.
+//
+// Enter from the green room on the left. The middle of the stage floor is cracked;
+// when the fight ends it gives way, and the fall leads to the cellar below.
+[room]
+name = stage
+background = ballroom
+music = ballroom
+
+[legend]
+# stone
+= wood
+v velvet
+x cracked
+
+[tiles]
+##################################################
+##################################################
+##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv##
+##vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv##
+##vvv........................................vvv##
+##vvv........................................vvv##
+##vvv........................................vvv##
+##vvv........................................vvv##
+##vvv........................................vvv##
+##vvv........................................vvv##
+##vvv........................................vvv##
+##vvv........................................vvv##
+##vvv........................................vvv##
+##vvv........................................vvv##
+##vvv........................................vvv##
+##vvv........................................vvv##
+##..............................................##
+##..............................................##
+##=======................................=======##
+##..............................................##
+##..............................................##
+##..............................................##
+................................................##
+................................................##
+................................................##
+##################xxxxxxxxxxxxxxx#################
+##################xxxxxxxxxxxxxxx#################
+###################.............##################
+###################.............##################
+########################...#######################
+########################...#######################
+########################...#######################
+
+[entities]
+door 0 22 h=3 id=west to=green_room:east
+door 24 31 w=3 id=bottom to=cellar:top
+chandelier 15 13
+chandelier 35 13
+boss 36 25 kind=dancer
+light 8 24.5 radius=70 strength=1.1 color=ff5aa0 glow=0.8 pulse=0.9
+light 14 24.5 radius=70 strength=1.1 color=ffc070 glow=0.8 pulse=0.9
+light 20 24.5 radius=70 strength=1.1 color=ff5aa0 glow=0.8 pulse=0.9
+light 26 24.5 radius=70 strength=1.1 color=ffc070 glow=0.8 pulse=0.9
+light 32 24.5 radius=70 strength=1.1 color=ff5aa0 glow=0.8 pulse=0.9
+light 38 24.5 radius=70 strength=1.1 color=ffc070 glow=0.8 pulse=0.9
+light 25 9 radius=200 strength=0.9 color=b070ff glow=0.3
+light 15 19 radius=130 strength=0.7 color=ff5aa0 glow=0.3
+light 35 19 radius=130 strength=0.7 color=ffc070 glow=0.3

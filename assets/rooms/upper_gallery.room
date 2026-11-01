@@ -1,0 +1,51 @@
+// The upper gallery: portraits above the antechamber.
+//
+// Enter from the balcony at the bottom left. The door at the bottom right opens into the ballroom's alcove.
+// Climb the portrait ledges, or swing from the chandelier, to the walkways at the top:
+// west to the card room, east to the crystal gallery.
+[room]
+name = upper_gallery
+background = ballroom
+music = ballroom
+
+[legend]
+# stone
+g gilt
+
+[tiles]
+############################################
+############################################
+............................................
+............................................
+............................................
+ggggggggggg......................ggggggggggg
+##........................................##
+##........................................##
+##............ggggg.......................##
+##........................................##
+##........................................##
+##......................gggggg............##
+##........................................##
+##..........................................
+##..........................................
+##...........gggggg.........................
+....................................########
+....................................########
+....................................########
+############################################
+############################################
+############################################
+############################################
+############################################
+
+[entities]
+door 0 16 h=3 id=west to=balcony:east_high
+door 0 2 h=3 id=northwest to=card_room:east
+door 43 2 h=3 id=east to=crystal_gallery:west
+door 43 13 h=3 id=east_low to=ballroom:alcove
+chandelier 23 3
+guest 28 19 class=medium
+guest 38 5 class=light
+light 8 16 radius=100 strength=0.8 color=ffc070 glow=0.6
+light 39 13 radius=110 strength=0.9 color=ff5aa0 glow=0.6
+light 5 3 radius=80 strength=0.7 color=b070ff glow=0.6
