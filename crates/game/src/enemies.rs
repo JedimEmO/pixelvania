@@ -165,6 +165,7 @@ pub fn spawn_guest(
             lunge: false,
             swoon: false,
             cling: false,
+            lure: false,
         },
     );
     ctrl.facing = -1;
@@ -411,6 +412,7 @@ pub(crate) fn animate(
                 lunging: false,
                 swooning: false,
                 run_speed: g.tuning.run_speed,
+                rope: None,
             },
             dt,
         );

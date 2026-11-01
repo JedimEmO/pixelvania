@@ -29,6 +29,9 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
+/// The kinds of entity the Lure can take hold of: lights that hang.
+pub const LURE_KINDS: [&str; 2] = ["chandelier", "lantern"];
+
 /// Width and height of one tile, in pixels.
 pub const TILE: i32 = 16;
 
@@ -281,6 +284,29 @@ impl Room {
     /// Size of the room in pixels.
     pub fn pixel_size(&self) -> (i32, i32) {
         (self.width as i32 * TILE, self.height as i32 * TILE)
+    }
+
+    /// Where the Lure can take hold, in pixels with y down: every chandelier and lantern.
+    pub fn lure_points(&self) -> Vec<(f32, f32)> {
+        self.entities
+            .iter()
+            .filter(|e| LURE_KINDS.contains(&e.kind.as_str()))
+            .map(EntityDef::pixel_pos)
+            .collect()
+    }
+
+    /// Whether a straight line between two points, in pixels, crosses no solid tile.
+    pub fn clear_line(&self, from: (f32, f32), to: (f32, f32)) -> bool {
+        let (dx, dy) = (to.0 - from.0, to.1 - from.1);
+        let steps = (dx.abs().max(dy.abs()) / 4.0).ceil().max(1.0) as i32;
+        (0..=steps).all(|i| {
+            let k = i as f32 / steps as f32;
+            let (x, y) = (from.0 + dx * k, from.1 + dy * k);
+            !self.is_solid(
+                (x.floor() as i32).div_euclid(TILE),
+                (y.floor() as i32).div_euclid(TILE),
+            )
+        })
     }
 
     /// Entities of one kind.

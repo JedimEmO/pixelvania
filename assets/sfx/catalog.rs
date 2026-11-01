@@ -16,4 +16,6 @@ sfx_catalog! {
     Lunge => "lunge",
     Footstep => "footstep",
     GuestWindup => "guest_windup",
+    LureCatch => "lure_catch",
+    LureRelease => "lure_release",
 }

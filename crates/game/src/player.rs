@@ -403,6 +403,11 @@ pub(crate) fn animate(
                 lunging: c.lunging > 0.0,
                 swooning: p.swooning,
                 run_speed: tuning.movement.run_speed,
+                rope: c.rope.map(|r| {
+                    let h = c.hands();
+                    let d = Vec2::new(r.anchor.0 - h.0, r.anchor.1 - h.1).normalize_or(Vec2::NEG_Y);
+                    (d.x, d.y)
+                }),
             },
             dt,
         );
@@ -618,6 +623,15 @@ pub(crate) fn react(
         if ev.lunged {
             set_shape(j.lunge_stretch);
             pulse(0.15, 0.35, 70);
+        }
+        if ev.lured.is_some() {
+            sfx.write(crate::audio::PlaySfx::new(crate::audio::Sfx::LureCatch));
+            // Pulled long towards the light for a moment.
+            set_shape((0.85, 1.18));
+            pulse(0.1, 0.45, 60);
+        }
+        if ev.released && !ev.jumped {
+            sfx.write(crate::audio::PlaySfx::new(crate::audio::Sfx::LureRelease));
         }
     }
 }

@@ -10,6 +10,7 @@ mod enemies;
 mod fire;
 mod hud;
 mod input;
+mod lure;
 mod music;
 mod player;
 mod render;
@@ -55,5 +56,6 @@ fn main() -> AppExit {
             effects::EffectsPlugin,
             devtools::DevToolsPlugin,
         ))
+        .add_plugins(lure::LurePlugin)
         .run()
 }

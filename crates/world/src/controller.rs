@@ -1,4 +1,4 @@
-//! The player's movement: running, jumping, the Lunge, the Swoon and the Cling.
+//! The player's movement: running, jumping, the Lunge, the Swoon, the Cling and the Lure.
 //!
 //! [`Controller::tick`] advances one fixed tick. It takes the input as the tick sees it
 //! and returns what happened, so the game can squash the sprite, kick dust or rumble.
@@ -68,6 +68,27 @@ pub struct MoveTuning {
 
     /// A landing faster than this counts as hard: the sprite squashes and the pad rumbles.
     pub hard_landing_speed: f32,
+
+    /// How far away a light can be for the Lure to reach it.
+    pub lure_range: f32,
+    /// Half the angle, in radians, of the cone around the aim in which a light can be picked.
+    pub lure_cone: f32,
+    /// The rope reels in at this speed until it is `lure_swing_length` long.
+    pub lure_reel_speed: f32,
+    pub lure_swing_length: f32,
+    /// Up and down on the stick climb and lower along the rope, within these lengths.
+    pub lure_min_length: f32,
+    pub lure_climb_speed: f32,
+    /// Acceleration along the swing from the stick, for pumping.
+    pub lure_pump: f32,
+    pub lure_max_speed: f32,
+    /// Letting go multiplies the speed by this, so a release flings.
+    pub lure_release_boost: f32,
+    /// Upward speed of a jump off the rope.
+    pub lure_jump_speed: f32,
+    /// A rope snapping taut that would take more speed than this keeps the speed instead,
+    /// turned along the swing.
+    pub lure_snap_keep: f32,
 }
 
 impl Default for MoveTuning {
@@ -106,6 +127,17 @@ impl Default for MoveTuning {
             wall_jump_lock: 0.12,
             wall_coyote: 0.08,
             hard_landing_speed: 370.0,
+            lure_range: 190.0,
+            lure_cone: 0.75,
+            lure_reel_speed: 420.0,
+            lure_swing_length: 96.0,
+            lure_min_length: 36.0,
+            lure_climb_speed: 110.0,
+            lure_pump: 520.0,
+            lure_max_speed: 560.0,
+            lure_release_boost: 1.12,
+            lure_jump_speed: 420.0,
+            lure_snap_keep: 40.0,
         }
     }
 }
@@ -116,6 +148,7 @@ pub struct Abilities {
     pub lunge: bool,
     pub swoon: bool,
     pub cling: bool,
+    pub lure: bool,
 }
 
 impl Abilities {
@@ -123,6 +156,7 @@ impl Abilities {
         lunge: true,
         swoon: true,
         cling: true,
+        lure: true,
     };
 }
 
@@ -139,12 +173,15 @@ pub struct Controls {
     pub attack_pressed: bool,
     pub attack_held: bool,
     pub parry_pressed: bool,
+    pub lure_pressed: bool,
+    pub lure_held: bool,
 }
 
 impl Controls {
     /// One line of an input recording: `x y flags`, where flags are `h` (jump held),
     /// `j` (jump pressed), `l` (Lunge pressed), `a` (attack pressed),
-    /// `b` (attack held) and `p` (parry pressed), or `-` for none.
+    /// `b` (attack held), `p` (parry pressed), `g` (Lure pressed) and `r` (Lure held),
+    /// or `-` for none.
     pub fn encode(&self) -> String {
         let mut flags = String::new();
         for (on, c) in [
@@ -154,6 +191,8 @@ impl Controls {
             (self.attack_pressed, 'a'),
             (self.attack_held, 'b'),
             (self.parry_pressed, 'p'),
+            (self.lure_pressed, 'g'),
+            (self.lure_held, 'r'),
         ] {
             if on {
                 flags.push(c);
@@ -180,6 +219,8 @@ impl Controls {
             attack_pressed: flags.contains('a'),
             attack_held: flags.contains('b'),
             parry_pressed: flags.contains('p'),
+            lure_pressed: flags.contains('g'),
+            lure_held: flags.contains('r'),
         })
     }
 }
@@ -194,6 +235,10 @@ pub struct Events {
     pub lunged: bool,
     /// Landed, with the downward speed just before landing.
     pub landed: Option<f32>,
+    /// The Lure took hold of the light at this point.
+    pub lured: Option<(f32, f32)>,
+    /// Let go of the Lure.
+    pub released: bool,
 }
 
 impl Events {
@@ -203,6 +248,8 @@ impl Events {
         self.swooned |= other.swooned;
         self.wall_jumped = self.wall_jumped.or(other.wall_jumped);
         self.lunged |= other.lunged;
+        self.lured = self.lured.or(other.lured);
+        self.released |= other.released;
         self.landed = match (self.landed, other.landed) {
             (Some(a), Some(b)) => Some(a.max(b)),
             (a, b) => a.or(b),
@@ -216,6 +263,18 @@ pub struct MovementLock {
     pub vx: f32,
     pub air_hang: bool,
     pub allow_lunge: bool,
+}
+
+/// How far above the top of the body the hands reach when hanging, in pixels.
+pub const HANDS_ABOVE: f32 = 8.0;
+
+/// The Lure's hold on a light.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Rope {
+    /// The light held, in pixels with y down.
+    pub anchor: (f32, f32),
+    /// The rope's length now, from the anchor to the body's hands.
+    pub length: f32,
 }
 
 /// The player's movement state.
@@ -232,6 +291,8 @@ pub struct Controller {
     pub wall: i32,
     /// Seconds left of the current Lunge, or 0.
     pub lunging: f32,
+    /// The Lure's rope while it holds a light.
+    pub rope: Option<Rope>,
     coyote: f32,
     jump_buffer: f32,
     jump_cut_done: bool,
@@ -256,6 +317,7 @@ impl Controller {
             grounded: false,
             wall: 0,
             lunging: 0.0,
+            rope: None,
             coyote: 0.0,
             jump_buffer: 0.0,
             jump_cut_done: true,
@@ -293,6 +355,13 @@ impl Controller {
         mut lock: Option<MovementLock>,
     ) -> Events {
         let mut ev = Events::default();
+        // On the rope an attack swings from it: the rope keeps the body, not the attack.
+        if self.rope.is_some() {
+            if let Some(l) = lock {
+                input.lunge_pressed &= l.allow_lunge;
+            }
+            lock = None;
+        }
         if let Some(lock) = lock {
             input.x = 0.0;
             input.y = 0.0;
@@ -354,6 +423,43 @@ impl Controller {
             self.facing = dir;
         }
 
+        // The Lure: take hold of a light, or let go of one.
+        if self.rope.is_some() && !input.lure_held {
+            self.release(t);
+            ev.released = true;
+        }
+        if input.lure_pressed
+            && self.abilities.lure
+            && self.rope.is_none()
+            && self.lunging <= 0.0
+            && let Some(anchor) = self.lure_target(room, t, input)
+        {
+            let length = distance(self.hands(), anchor);
+            self.rope = Some(Rope { anchor, length });
+            self.wall = 0;
+            self.swoon_ready = self.abilities.swoon;
+            self.swooning = false;
+            self.lunge_ready = self.abilities.lunge;
+            self.jump_cut_done = true;
+            ev.lured = Some(anchor);
+        }
+        if self.rope.is_some() {
+            self.wall = 0;
+            // Jumping off the rope, or Lunging off it, lets go.
+            if self.jump_buffer > 0.0 {
+                self.rope = None;
+                self.vy = self.vy.min(-t.lure_jump_speed);
+                self.jump_buffer = 0.0;
+                self.jump_cut_done = false;
+                self.grounded = false;
+                ev.jumped = true;
+                ev.released = true;
+            } else if input.lunge_pressed && self.lunge_ready && self.lunge_cooldown <= 0.0 {
+                self.rope = None;
+                ev.released = true;
+            }
+        }
+
         // The Lunge.
         if input.lunge_pressed && self.lunge_ready && self.lunge_cooldown <= 0.0 {
             let lunge_dir = if self.wall != 0 {
@@ -402,7 +508,9 @@ impl Controller {
             }
         }
 
-        if self.lunging > 0.0 {
+        if self.rope.is_some() {
+            self.swing(t, input, dir, dt);
+        } else if self.lunging > 0.0 {
             self.lunging = (self.lunging - dt).max(0.0);
             self.vy = 0.0;
             if self.lunging <= 0.0 {
@@ -429,18 +537,141 @@ impl Controller {
             self.lunging = 0.0;
         }
         if self.step_y(room, self.vy * dt, t.corner_correction) {
-            if airborne && self.vy > 0.0 {
+            if airborne && self.vy > 0.0 && self.rope.is_none() {
                 ev.landed = Some(self.vy);
                 self.grounded = true;
             }
             self.vy = 0.0;
         }
+        // A rope that loses sight of its light snaps.
+        if let Some(rope) = self.rope
+            && !room.clear_line(self.hands(), rope.anchor)
+        {
+            self.release(t);
+            ev.released = true;
+        }
         ev
+    }
+
+    /// Where the rope meets the body: the hands, raised above the head.
+    pub fn hands(&self) -> (f32, f32) {
+        let b = &self.body;
+        (
+            b.x as f32 + b.w as f32 / 2.0 + b.rem_x,
+            b.y as f32 - HANDS_ABOVE + b.rem_y,
+        )
+    }
+
+    /// The light the Lure would take hold of with this input, if any.
+    ///
+    /// The stick aims; with the stick at rest, the aim is up and forward.
+    /// Of the lights in reach, in sight and inside the cone around the aim,
+    /// the one closest to the aim wins, with nearer lights preferred a little.
+    /// Only lights above the hands count, since the rope can only hang from them.
+    pub fn lure_target(&self, room: &Room, t: &MoveTuning, input: Controls) -> Option<(f32, f32)> {
+        let (mut ax, mut ay) = (input.x, -input.y);
+        if (ax * ax + ay * ay).sqrt() < t.walk_threshold {
+            (ax, ay) = (self.facing as f32, -1.0);
+        }
+        let aim = ay.atan2(ax);
+        let hands = self.hands();
+        room.lure_points()
+            .into_iter()
+            .filter_map(|p| {
+                let (dx, dy) = (p.0 - hands.0, p.1 - hands.1);
+                let d = (dx * dx + dy * dy).sqrt();
+                if d > t.lure_range || dy > -8.0 {
+                    return None;
+                }
+                let off = angle_between(dy.atan2(dx), aim);
+                (off <= t.lure_cone && room.clear_line(hands, p))
+                    .then_some((off + 0.4 * d / t.lure_range, p))
+            })
+            .min_by(|a, b| a.0.total_cmp(&b.0))
+            .map(|(_, p)| p)
+    }
+
+    /// One tick on the rope: a pendulum under gravity, pumped by the stick,
+    /// reeling in to its swing length and climbed with up and down.
+    fn swing(&mut self, t: &MoveTuning, input: Controls, dir: i32, dt: f32) {
+        let Some(mut rope) = self.rope else { return };
+        let reeling = rope.length > t.lure_swing_length;
+        if reeling {
+            rope.length = (rope.length - t.lure_reel_speed * dt).max(t.lure_swing_length);
+        }
+        if input.y > t.down_threshold {
+            rope.length = (rope.length - t.lure_climb_speed * dt).max(t.lure_min_length);
+        } else if input.y < -t.down_threshold {
+            rope.length = (rope.length + t.lure_climb_speed * dt).min(t.lure_range);
+        }
+
+        let p = self.hands();
+        let (dx, dy) = (p.0 - rope.anchor.0, p.1 - rope.anchor.1);
+        let d = (dx * dx + dy * dy).sqrt().max(1.0);
+        if self.grounded && d < rope.length {
+            // Slack on the ground: walk as usual.
+            self.run(t, dir, dt);
+        } else {
+            // Pumping pushes along the swing, never along the rope.
+            let (tx, ty) = (dy / d, -dx / d);
+            self.vx += tx * dir as f32 * t.lure_pump * dt;
+            self.vy += ty * dir as f32 * t.lure_pump * dt;
+        }
+        self.vy += t.gravity * dt;
+
+        // Where the body would go, pulled back onto the rope's circle if it would stretch it.
+        let (nx, ny) = (p.0 + self.vx * dt, p.1 + self.vy * dt);
+        let (ex, ey) = (nx - rope.anchor.0, ny - rope.anchor.1);
+        let e = (ex * ex + ey * ey).sqrt().max(1.0);
+        if e > rope.length {
+            let before = (self.vx * self.vx + self.vy * self.vy).sqrt();
+            let k = rope.length / e;
+            let (cx, cy) = (rope.anchor.0 + ex * k, rope.anchor.1 + ey * k);
+            self.vx = (cx - p.0) / dt;
+            self.vy = (cy - p.1) / dt;
+            // A rope snapping taut turns the body's flight into the swing instead of stopping it,
+            // so momentum carries through a catch. Ordinary ticks on a taut rope lose almost
+            // nothing here and keep what the projection gives.
+            // The reel's own pull is not momentum to keep.
+            let after = (self.vx * self.vx + self.vy * self.vy).sqrt();
+            if !reeling && before - after > t.lure_snap_keep && after > 1.0 {
+                self.vx *= before / after;
+                self.vy *= before / after;
+            }
+        }
+        // When the reel stops, so does its pull along the rope; the swing keeps the rest.
+        if reeling && rope.length <= t.lure_swing_length {
+            let (ux, uy) = (dx / d, dy / d);
+            let radial = self.vx * ux + self.vy * uy;
+            if radial < 0.0 {
+                self.vx -= radial * ux;
+                self.vy -= radial * uy;
+            }
+        }
+        let speed = (self.vx * self.vx + self.vy * self.vy).sqrt();
+        if speed > t.lure_max_speed {
+            self.vx *= t.lure_max_speed / speed;
+            self.vy *= t.lure_max_speed / speed;
+        }
+        if self.vx.abs() > 1.0 {
+            self.facing = self.vx.signum() as i32;
+        }
+        self.rope = Some(rope);
+    }
+
+    /// Lets go of the rope, flung on by the swing.
+    fn release(&mut self, t: &MoveTuning) {
+        if self.rope.take().is_some() {
+            self.vx *= t.lure_release_boost;
+            self.vy *= t.lure_release_boost;
+            self.jump_cut_done = true;
+        }
     }
 
     /// Ends movement actions when a hit takes control of the body.
     pub fn stop_actions(&mut self) {
         self.lunging = 0.0;
+        self.rope = None;
         self.jump_buffer = 0.0;
         self.coyote = 0.0;
         self.wall_coyote = 0.0;
@@ -569,6 +800,16 @@ impl Controller {
     }
 }
 
+fn distance(a: (f32, f32), b: (f32, f32)) -> f32 {
+    ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2)).sqrt()
+}
+
+/// The unsigned difference between two angles, in radians, 0..=PI.
+fn angle_between(a: f32, b: f32) -> f32 {
+    let d = (a - b).rem_euclid(std::f32::consts::TAU);
+    d.min(std::f32::consts::TAU - d)
+}
+
 fn move_towards(from: f32, to: f32, step: f32) -> f32 {
     if (to - from).abs() <= step {
         to
@@ -592,6 +833,8 @@ mod tests {
             attack_pressed: true,
             attack_held: true,
             parry_pressed: true,
+            lure_pressed: true,
+            lure_held: false,
         };
         assert_eq!(Controls::decode(&c.encode()), Some(c));
         let none = Controls::default();

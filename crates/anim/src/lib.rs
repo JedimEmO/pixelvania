@@ -34,6 +34,8 @@ pub struct Motion {
     pub swooning: bool,
     /// Running speed, which sets the stride.
     pub run_speed: f32,
+    /// On the Lure's rope: the direction from the hands to the light, a unit vector with y down.
+    pub rope: Option<(f32, f32)>,
 }
 
 /// What the body is doing, which decides the pose.
@@ -51,10 +53,12 @@ pub enum State {
     Lunge,
     Swoon,
     WallSlide,
+    /// On the Lure's rope, both hands on it.
+    Hang,
 }
 
 impl State {
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 11] = [
         Self::Idle,
         Self::Run,
         Self::Turn,
@@ -65,6 +69,7 @@ impl State {
         Self::Lunge,
         Self::Swoon,
         Self::WallSlide,
+        Self::Hang,
     ];
 
     pub fn name(self) -> &'static str {
@@ -79,6 +84,7 @@ impl State {
             Self::Lunge => "lunge",
             Self::Swoon => "swoon",
             Self::WallSlide => "wall-slide",
+            Self::Hang => "hang",
         }
     }
 }
@@ -108,6 +114,9 @@ pub struct Animator {
     facing: i32,
     /// A foot came down during the last update.
     stepped: bool,
+    /// For [`State::Hang`]: the rope's direction, and the body's speed across it.
+    rope: (f64, f64),
+    swing: f64,
 }
 
 impl Default for Animator {
@@ -121,6 +130,8 @@ impl Default for Animator {
             was_grounded: true,
             facing: 1,
             stepped: false,
+            rope: (0.0, -1.0),
+            swing: 0.0,
         }
     }
 }
@@ -153,6 +164,11 @@ impl Animator {
         }
         // A wall slide faces away from the wall; everything else faces the way the body does.
         self.facing = if m.wall != 0 { -m.wall } else { m.facing };
+        if let Some((x, y)) = m.rope {
+            self.rope = (x as f64, y as f64);
+            // Speed across the rope, so the legs trail behind the swing.
+            self.swing = (m.vx * -y + m.vy * x) as f64;
+        }
 
         let next = self.pick(m);
         if next != self.state {
@@ -165,6 +181,9 @@ impl Animator {
     }
 
     fn pick(&self, m: Motion) -> State {
+        if m.rope.is_some() && !m.grounded {
+            return State::Hang;
+        }
         if m.lunging {
             return State::Lunge;
         }
@@ -201,7 +220,11 @@ impl Animator {
     /// The pose for this frame: the state's pose, after one in-between on a change.
     pub fn pose(&self) -> Pose {
         let step = (self.time * FPS + 1e-6).floor() / FPS;
-        let mut pose = pose_for(self.state, step, self.run_phase);
+        let mut pose = if self.state == State::Hang {
+            hang(self.rope, self.swing, self.facing)
+        } else {
+            pose_for(self.state, step, self.run_phase)
+        };
         if let Some(from) = &self.from
             && self.time < 1.0 / FPS
         {
@@ -340,6 +363,7 @@ pub fn pose_for(state: State, t: f64, phase: f64) -> Pose {
                 ..air()
             }
         }
+        State::Hang => hang((0.0, -1.0), 0.0, 1),
         State::WallSlide => Pose {
             lean: -2.0,
             crouch: 3.0,
@@ -354,6 +378,31 @@ pub fn pose_for(state: State, t: f64, phase: f64) -> Pose {
             fy: -18.0,
             ..air()
         },
+    }
+}
+
+/// Hanging from the Lure's rope: both hands up along the rope, the body tilted with it,
+/// and the legs trailing behind the swing. `rope` is the direction to the light, y down;
+/// `swing` the speed across the rope in pixels per second, positive clockwise on screen.
+fn hang(rope: (f64, f64), swing: f64, facing: i32) -> Pose {
+    let face = facing as f64;
+    // Into the rig's frame, where x points the way the body faces.
+    let (rx, ry) = (rope.0 * face, rope.1);
+    // Hands at the end of a reach from the shoulders, quantised to whole pixels.
+    let reach = |r: f64| (r * 15.0).round();
+    let trail = (-swing * face / 60.0).clamp(-6.0, 6.0).round();
+    Pose {
+        lean: (rx * 8.0).round(),
+        crouch: 1.0,
+        fx: 1.0 + reach(rx),
+        fy: -29.0 + reach(ry),
+        bx: -1.0 + reach(rx),
+        by: -29.0 + reach(ry),
+        ffx: 2.0 + trail,
+        ffy: -3.0,
+        fbx: -3.0 + trail,
+        fby: -6.0,
+        ..air()
     }
 }
 

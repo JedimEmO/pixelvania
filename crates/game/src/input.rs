@@ -62,7 +62,12 @@ pub struct Attack;
 #[action_output(bool)]
 pub struct Toast;
 
-/// Switches between the sabre and the Jeroboam.
+/// The Lure: a grapple that only takes hold of light. Held to stay on the rope.
+#[derive(InputAction)]
+#[action_output(bool)]
+pub struct Lure;
+
+/// Switches between the weapons.
 #[derive(InputAction)]
 #[action_output(bool)]
 pub struct SwitchWeapon;
@@ -89,6 +94,8 @@ pub struct TickInput {
     pub attack_held: bool,
     pub attack_pressed: bool,
     pub toast_pressed: bool,
+    pub lure_held: bool,
+    pub lure_pressed: bool,
     /// These were pressed this frame. Read in `Update`, not by the tick.
     pub reset_pressed: bool,
     pub switch_weapon_pressed: bool,
@@ -143,6 +150,13 @@ fn spawn_controls(mut commands: Commands) {
                 Binding(KeyCode::KeyK)
             ]
             --
+            Action::<Lure>::new()
+            Bindings [
+                Binding(GamepadButton::RightTrigger)
+                --
+                Binding(KeyCode::KeyI)
+            ]
+            --
             Action::<SwitchWeapon>::new()
             Bindings [
                 Binding(GamepadButton::North)
@@ -175,6 +189,7 @@ pub fn collect(
     reset: Single<&ActionEvents, With<Action<Reset>>>,
     attack: Single<(&Action<Attack>, &ActionEvents)>,
     toast: Single<&ActionEvents, With<Action<Toast>>>,
+    lure: Single<(&Action<Lure>, &ActionEvents)>,
     switch: Single<&ActionEvents, With<Action<SwitchWeapon>>>,
     next_room: Single<&ActionEvents, With<Action<NextRoom>>>,
 ) {
@@ -188,6 +203,9 @@ pub fn collect(
     input.attack_held = **held;
     input.attack_pressed |= events.contains(ActionEvents::START);
     input.toast_pressed |= toast.contains(ActionEvents::START);
+    let (held, events) = *lure;
+    input.lure_held = **held;
+    input.lure_pressed |= events.contains(ActionEvents::START);
     input.switch_weapon_pressed = switch.contains(ActionEvents::START);
     input.next_room_pressed = next_room.contains(ActionEvents::START);
 }
@@ -203,6 +221,8 @@ pub fn take_controls(mut input: ResMut<TickInput>, mut controls: ResMut<TickCont
         attack_pressed: std::mem::take(&mut input.attack_pressed),
         attack_held: input.attack_held,
         parry_pressed: std::mem::take(&mut input.toast_pressed),
+        lure_pressed: std::mem::take(&mut input.lure_pressed),
+        lure_held: input.lure_held,
     };
 }
 

@@ -69,8 +69,21 @@ And a first music sketch: the ballroom as 64 seconds of Italo disco at 120 BPM i
 five stems that the mood mixes: everything up in the High, drums and lead gone in the Comedown.
 Its stems are rendered, not committed: run `cargo xtask music` once after cloning.
 
-Next, once the director has played and listened: the *One finished room* milestone,
-a room of the ballroom at final quality, built from these pieces.
+## One finished room
+
+The director has played the combat lab and signed off on its feel.
+The next milestone is one room of the ballroom at final quality, built from these pieces,
+and these are its steps:
+
+10. **The Lure.** The grapple that only takes hold of light, on the right trigger,
+    aimed with the stick and swung from like a pendulum. In `world::controller`, with headless tests.
+11. **The chandelier.** A lit, painted chandelier hanging on its chain, the Lure's first anchor,
+    swaying when the player swings from it.
+12. **Costumed guests.** Masks, hats and hair on the rig, so guests stop reading as mannequins.
+13. **The progression fade.** The colour of surfaces drains with progress while light keeps its colour;
+    a switch in the dev tools, because this room decides whether the fade stays.
+14. **The room.** A tall ballroom hall built for the Lure, with chandeliers, a costumed crowd,
+    the backdrop and the music, at final quality.
 
 ## For the director
 

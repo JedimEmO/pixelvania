@@ -5,7 +5,7 @@ use std::{error::Error, f64::consts::TAU, fs, path::Path};
 pub const SAMPLE_RATE: u32 = 44_100;
 
 /// Recipe order also fixes each sound's noise seed.
-pub const SOUNDS: [(&str, &str, f64, f64); 16] = [
+pub const SOUNDS: [(&str, &str, f64, f64); 18] = [
     ("SwingLight", "swing_light", 0.16, -6.0),
     ("SwingHeavy", "swing_heavy", 0.30, -4.5),
     ("BottleSwing", "bottle_swing", 0.34, -4.5),
@@ -22,6 +22,8 @@ pub const SOUNDS: [(&str, &str, f64, f64); 16] = [
     ("Lunge", "lunge", 0.18, -6.0),
     ("Footstep", "footstep", 0.10, -16.0),
     ("GuestWindup", "guest_windup", 0.26, -9.0),
+    ("LureCatch", "lure_catch", 0.55, -7.0),
+    ("LureRelease", "lure_release", 0.22, -10.0),
 ];
 
 struct Noise(u32);
@@ -108,6 +110,18 @@ pub fn render(index: usize) -> Vec<i16> {
             "footstep" => 0.6 * body + 0.12 * tone(t, 480.0, 0.012),
             "guest_windup" => {
                 (TAU * (620.0 * t + 500.0 * t * t)).sin() * sweep + 0.08 * air * sweep
+            }
+            // The Lure takes hold: a plucked D and A in the ballroom's key, D minor,
+            // over a short snap of the rope going taut.
+            "lure_catch" => {
+                tone(t, 1174.66, 0.16)
+                    + 0.55 * tone(t, 1760.0, 0.11)
+                    + 0.2 * tone(t, 2349.32, 0.06)
+                    + 0.35 * crack
+                    + 0.25 * body
+            }
+            "lure_release" => {
+                0.7 * air * sweep + 0.1 * (TAU * (880.0 * t + 700.0 * t * t)).sin() * sweep
             }
             _ => unreachable!(),
         };
