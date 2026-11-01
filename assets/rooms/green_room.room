@@ -6,6 +6,7 @@
 // that nothing reaches but the Lure: swing up from the chandeliers.
 [room]
 name = green_room
+background = backstage 3c6040
 music = ballroom
 
 [legend]

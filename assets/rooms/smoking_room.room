@@ -4,7 +4,7 @@
 // Swing to it from either lantern. The floor under the shelf is cracked.
 [room]
 name = smoking_room
-background = ballroom
+background = ballroom 345a32
 music = ballroom
 
 [legend]

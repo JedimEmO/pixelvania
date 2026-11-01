@@ -4,7 +4,7 @@
 // Climb the tables and the hearth, then swing from the chandelier to the shelf.
 [room]
 name = card_room
-background = ballroom
+background = ballroom 7a4a20
 music = ballroom
 
 [legend]

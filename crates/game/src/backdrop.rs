@@ -1,4 +1,7 @@
 //! Room-selected, independently lit scenery with pixel-snapped parallax.
+//!
+//! A room picks a set from `assetgen::backgrounds` with `background = cellars`,
+//! and may tint its distance with a colour after the name: `background = ballroom 345a32`.
 
 use assetgen::backgrounds::{self, DEFAULT_LIGHT, DEFAULT_SEED};
 use bevy::asset::RenderAssetUsages;
@@ -39,18 +42,16 @@ fn rebuild(
         commands.entity(entity).despawn();
     }
     let Some(room) = &active.room else { return };
-    match room.background.as_deref() {
-        None => return,
-        Some("ballroom") => {}
-        Some(name) => {
-            warn!("unknown room background `{name}`");
-            return;
-        }
-    }
-    for (depth, layer) in backgrounds::ballroom(DEFAULT_SEED, DEFAULT_LIGHT)
-        .into_iter()
-        .enumerate()
-    {
+    let Some(spec) = &room.background else { return };
+    let Some((name, light)) = parse(spec) else {
+        warn!("cannot read the room background `{spec}`");
+        return;
+    };
+    let Some(layers) = backgrounds::set(name, DEFAULT_SEED, light) else {
+        warn!("unknown room background `{name}`");
+        return;
+    };
+    for (depth, layer) in layers.into_iter().enumerate() {
         let image = images.add(Image::new(
             Extent3d {
                 width: layer.image.width(),
@@ -70,7 +71,7 @@ fn rebuild(
         // Three copies cover the viewport and its margin even across the repeat boundary.
         for copy in -1..=1 {
             commands.spawn((
-                Name::new(format!("ballroom {} {copy}", layer.name)),
+                Name::new(format!("{name} {} {copy}", layer.name)),
                 Strip {
                     parallax: layer.parallax,
                     copy,
@@ -81,6 +82,24 @@ fn rebuild(
             ));
         }
     }
+}
+
+/// A room's `background`: a set's name, and the colour that tints its distance, if one follows,
+/// as in `ballroom 345a32`.
+fn parse(spec: &str) -> Option<(&str, [u8; 3])> {
+    let mut words = spec.split_whitespace();
+    let name = words.next()?;
+    let light = match words.next() {
+        None => DEFAULT_LIGHT,
+        Some(hex) => {
+            let v = u32::from_str_radix(hex.trim_start_matches('#'), 16).ok()?;
+            if hex.trim_start_matches('#').len() != 6 {
+                return None;
+            }
+            [(v >> 16) as u8, (v >> 8) as u8, v as u8]
+        }
+    };
+    words.next().is_none().then_some((name, light))
 }
 
 fn place(focus: Res<CameraFocus>, mut strips: Query<(&Strip, &mut Transform)>) {
@@ -97,5 +116,26 @@ fn place(focus: Res<CameraFocus>, mut strips: Query<(&Strip, &mut Transform)>) {
             .clamp(-18.0, 18.0)
             .round();
         transform.translation.y = snapped.y + vertical;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_background_names_a_set_and_may_tint_it() {
+        assert_eq!(parse("ballroom"), Some(("ballroom", DEFAULT_LIGHT)));
+        assert_eq!(
+            parse("cellars 345a32"),
+            Some(("cellars", [0x34, 0x5a, 0x32]))
+        );
+        assert_eq!(
+            parse("cellars #345a32"),
+            Some(("cellars", [0x34, 0x5a, 0x32]))
+        );
+        assert_eq!(parse("cellars 345a3"), None);
+        assert_eq!(parse("cellars green"), None);
+        assert_eq!(parse("cellars 345a32 more"), None);
     }
 }

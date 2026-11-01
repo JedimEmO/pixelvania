@@ -4,6 +4,7 @@
 // One card glows on the floor. Cling up the shaft to climb back. The flooded basin waits for later.
 [room]
 name = cellar
+background = cellars 2c3c70
 music = ballroom
 
 [legend]

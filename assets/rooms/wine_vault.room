@@ -3,6 +3,7 @@
 // Pass between the cloakroom and the champagne cellar. The floor by the west wall is cracked.
 [room]
 name = wine_vault
+background = cellars 6a2030
 music = ballroom
 
 [legend]

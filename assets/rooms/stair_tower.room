@@ -6,7 +6,7 @@
 // to the mirrored corridor at the top right.
 [room]
 name = stair_tower
-background = ballroom
+background = ballroom 34466e
 music = ballroom
 
 [legend]

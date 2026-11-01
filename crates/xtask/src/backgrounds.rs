@@ -1,4 +1,4 @@
-//! Ballroom strips and parallax contact sheets, using the runtime's seed and palette.
+//! Every backdrop set's strips and parallax contact sheets, using the runtime's seed and palette.
 
 use assetgen::backgrounds::{self, DEFAULT_LIGHT, DEFAULT_SEED, Layer};
 use image::{
@@ -22,20 +22,28 @@ fn preview(layers: &[Layer], camera: f32) -> RgbaImage {
 }
 
 pub fn render() -> crate::Result<()> {
-    let out = crate::root().join("target/backgrounds");
+    for name in backgrounds::SETS {
+        render_set(name)?;
+    }
+    Ok(())
+}
+
+fn render_set(name: &str) -> crate::Result<()> {
+    let out = crate::root().join("target/backgrounds").join(name);
     std::fs::create_dir_all(&out)?;
     let start = std::time::Instant::now();
-    let layers = backgrounds::ballroom(DEFAULT_SEED, DEFAULT_LIGHT);
-    println!("Ballroom generated in {:?}", start.elapsed());
+    let layers = backgrounds::set(name, DEFAULT_SEED, DEFAULT_LIGHT).expect("a known set");
+    println!("{name} generated in {:?}", start.elapsed());
     for layer in &layers {
-        layer.image.save(out.join(format!("{}.png", layer.name)))?;
+        let file = layer.name.replace(' ', "-");
+        layer.image.save(out.join(format!("{file}.png")))?;
         resize(
             &layer.image,
             backgrounds::WIDTH * 2,
             backgrounds::HEIGHT * 2,
             FilterType::Nearest,
         )
-        .save(out.join(format!("{}-2x.png", layer.name)))?;
+        .save(out.join(format!("{file}-2x.png")))?;
     }
     let mut sheet = RgbaImage::from_pixel(640 * 3, 360, Rgba([0, 0, 0, 255]));
     for (i, camera) in [0.0, 160.0, 640.0].into_iter().enumerate() {

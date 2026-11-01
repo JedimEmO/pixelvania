@@ -5,6 +5,7 @@
 // and the wine vault's door at the west end. A step in the trench lets a fall climb back out.
 [room]
 name = champagne_cellar
+background = cellars 6a5a30
 music = ballroom
 
 [legend]

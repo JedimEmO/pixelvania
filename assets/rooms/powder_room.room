@@ -3,7 +3,7 @@
 // A dead end off the balcony, its door high on the east wall. Climb the vanity and the shelf to get back up.
 [room]
 name = powder_room
-background = ballroom
+background = ballroom 8a4a70
 music = ballroom
 
 [legend]

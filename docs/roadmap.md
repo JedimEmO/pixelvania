@@ -206,7 +206,11 @@ the HUD sat under the foreground's drapes; and doors opened onto air.
 37. **Bodies in front of glows.** The player, the guests and the Dancer draw a black silhouette into the glow buffer,
     so a lamp behind them no longer shines through them.
 
-Known gaps: there is one backdrop, the ballroom's windows, behind every room (underground rooms have none).
+38. **Backdrops for the cellars and the backstage.** Brick vaults of wine racks and barrels under the ballroom,
+    and painted flats, fly lines and a catwalk behind the stage. A room may tint its backdrop's distance,
+    as `background = ballroom 345a32` turns the smoking room green.
+
+The slice has no known gaps left.
 
 ## For the director
 

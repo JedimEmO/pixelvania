@@ -5,7 +5,7 @@
 // and the fall leads to the cellar below.
 [room]
 name = stage
-background = ballroom
+background = backstage 6a2a4a
 music = ballroom
 
 [legend]

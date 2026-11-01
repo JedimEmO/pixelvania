@@ -3,6 +3,7 @@
 // Climb the catwalks from the bandstand's box up to the mirrored corridor, or drop back down.
 [room]
 name = fly_loft
+background = backstage 6a5030
 music = ballroom
 
 [legend]

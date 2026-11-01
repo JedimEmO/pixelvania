@@ -105,12 +105,14 @@ and whole rooms to `target/tiles/rooms/`, with native and nearest-neighbour 2x p
 `crates/assetgen` paints stone, wood, velvet and gilt from seeded five-colour ramps.
 The game uses the same painter when a room loads or reloads.
 
-## Ballroom backgrounds
+## Backgrounds
 
-`background = ballroom` in a room's `[room]` section selects generated parallax scenery.
-`cargo xtask backgrounds` writes each strip and three camera offsets to `target/backgrounds/`,
+`background = ballroom` in a room's `[room]` section selects generated parallax scenery:
+`ballroom`, `cellars` or `backstage`. A colour after the name tints its distance,
+as in `background = ballroom 345a32`; without one it is a dim wine-rose.
+`cargo xtask backgrounds` writes each set's strips and three camera offsets to `target/backgrounds/<set>/`,
 with native and nearest-neighbour 2x previews.
-The game generates the same seeded layers on room load, with dim wine-rose distant light.
+The game generates the same seeded layers on room load.
 
 ## Ballroom music
 

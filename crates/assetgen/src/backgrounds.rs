@@ -1,4 +1,9 @@
-//! Seeded ballroom silhouettes. Pixels carry their distant lighting, in sRGB.
+//! Seeded backdrop silhouettes: the ballroom's windows, the cellars' vaults and the backstage.
+//! Pixels carry their distant lighting, in sRGB.
+//!
+//! Each set is four repeating strips, farthest first, the last drawn in front of the room.
+//! A room picks one with `background = <set>` and may tint its distance with a colour after it,
+//! as in `background = ballroom 345a32`.
 
 use image::{Rgba, RgbaImage};
 
@@ -75,6 +80,22 @@ impl Canvas {
             bottom - top - radius,
             color,
         );
+    }
+
+    /// Courses of brick: mortar lines every six rows, and joints that stagger by half a brick.
+    /// No joint falls on the strip's first or last column, so its ends match.
+    fn bricks(&mut self, top: i32, bottom: i32, mortar: [u8; 4]) {
+        for y in top..bottom {
+            let course = (y - top) / 6;
+            if (y - top) % 6 == 5 {
+                self.rect(0, y, WIDTH as i32, 1, mortar);
+                continue;
+            }
+            let shift = if course % 2 == 0 { 4 } else { 12 };
+            for x in (shift..WIDTH as i32).step_by(16) {
+                self.pixel(x, y, mortar);
+            }
+        }
     }
 
     fn layer(self, name: &'static str, parallax: f32, foreground: bool) -> Layer {
@@ -249,6 +270,246 @@ pub fn ballroom(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
     ]
 }
 
+/// The backdrop sets a room can name.
+pub const SETS: [&str; 3] = ["ballroom", "cellars", "backstage"];
+
+/// The set with this name, or `None` if there is no such set.
+pub fn set(name: &str, seed: u32, light: [u8; 3]) -> Option<Vec<Layer>> {
+    match name {
+        "ballroom" => Some(ballroom(seed, light)),
+        "cellars" => Some(cellars(seed, light)),
+        "backstage" => Some(backstage(seed, light)),
+        _ => None,
+    }
+}
+
+/// The cellars: brick vaults of wine racks, heavy arches, barrels, and a cage lamp long out.
+pub fn cellars(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
+    let brick = tint([13, 11, 12], dominant_light, 18);
+    let mortar = tint([9, 8, 9], dominant_light, 8);
+    let rim = tint([22, 18, 18], dominant_light, 30);
+    let hollow = [5, 4, 6, 255];
+    let glass = tint([20, 24, 18], dominant_light, 44);
+    let mut far = Canvas::new(brick);
+    far.bricks(0, 330, mortar);
+    far.rect(0, 330, WIDTH as i32, 70, mortar);
+    far.rect(0, 328, WIDTH as i32, 2, rim);
+    for bay in 0..6 {
+        let x = 80 + bay * 160;
+        let n = noise(seed, 100 + bay as u32);
+        // An alcove of racks: bottle ends in rows, a few catching the light.
+        far.arch(x, 150, 104, 328, rim);
+        far.arch(x, 154, 96, 328, hollow);
+        for row in 0..((328 - 210) / 7) {
+            let y = 206 + row * 7;
+            for col in 0..12 {
+                let bx = x - 44 + col * 8;
+                if noise(seed, (bay * 400 + row * 20 + col) as u32) % 9 == 0 {
+                    continue;
+                }
+                far.rect(bx, y, 3, 3, mortar);
+                if noise(n, (row * 20 + col) as u32) % 7 == 0 {
+                    far.pixel(bx + 1, y + 1, glass);
+                }
+            }
+        }
+        // A crack down the wall between alcoves.
+        let cx = x + 70;
+        let mut y = 20 + (n % 60) as i32;
+        let mut dx = 0;
+        while y < 140 + (n % 50) as i32 {
+            far.pixel(cx + dx, y, mortar);
+            y += 1;
+            if noise(n, y as u32) % 4 == 0 {
+                dx = (dx
+                    + if noise(n, y as u32 + 7) % 2 == 0 {
+                        1
+                    } else {
+                        -1
+                    })
+                .clamp(-5, 5);
+            }
+        }
+    }
+
+    // The vault: piers with arches springing between them.
+    let mut middle = Canvas::new([0; 4]);
+    let dark = [8, 7, 9, 255];
+    let edge = tint([16, 13, 14], dominant_light, 16);
+    for pier in 0..3 {
+        let x = 160 + pier * 320;
+        middle.rect(x - 18, 60, 36, 300, dark);
+        middle.rect(x - 22, 56, 44, 8, edge);
+        middle.rect(x - 22, 340, 44, 20, edge);
+        middle.rect(x - 15, 64, 2, 276, edge);
+    }
+    for span in 0..3 {
+        let left = 160 + span * 320 + 18;
+        let right = left + 284;
+        let mid = (left + right) / 2;
+        for x in left..right {
+            let d = (x - mid) as f32 / 142.0;
+            let springing = (60.0 + 50.0 * d * d).round() as i32;
+            middle.rect(x, 0, 1, springing, dark);
+            middle.pixel(x, springing, edge);
+        }
+    }
+    // Barrels on their sides along the floor, two high in places.
+    for i in 0..9 {
+        let n = noise(seed, 200 + i);
+        let x = 40 + i as i32 * 106 + (n % 20) as i32;
+        let high = 1 + (n % 3 == 0) as i32;
+        for level in 0..high {
+            let cy = 344 - level * 26;
+            middle.ellipse(x, cy, 16, 13, dark);
+            middle.rect(x - 12, cy - 13, 1, 26, edge);
+            middle.rect(x + 11, cy - 13, 1, 26, edge);
+            middle.ellipse(x, cy, 3, 3, edge);
+        }
+    }
+
+    let mut near = Canvas::new([0; 4]);
+    let black = [5, 5, 7, 255];
+    let iron = [11, 10, 12, 255];
+    for x in [120, 600] {
+        near.rect(x - 14, 0, 28, 400, black);
+        near.rect(x - 18, 366, 36, 20, iron);
+        near.rect(x - 6, 0, 2, 366, iron);
+    }
+    // A cage lamp on a chain, unlit.
+    let lx = 360 + (noise(seed, 300) % 40) as i32;
+    let ly = 96 + (noise(seed, 301) % 30) as i32;
+    for y in (0..ly).step_by(3) {
+        near.rect(lx, y, 1, 2, iron);
+    }
+    near.rect(lx - 6, ly, 13, 2, iron);
+    for dx in [-6, -2, 2, 6] {
+        near.rect(lx + dx, ly + 2, 1, 16, iron);
+    }
+    near.rect(lx - 6, ly + 18, 13, 2, iron);
+    // Cobwebs in the vault's corners.
+    for (cx, dir) in [(134, 1), (586, -1)] {
+        for t in 0..14 {
+            near.line((cx, 10 + t * 3), (cx + dir * (14 - t) * 3, 10), 1, iron);
+        }
+    }
+
+    let mut front = Canvas::new([0; 4]);
+    // A crate and a bottle, close and out of focus, in the bottom corner.
+    front.rect(860, 330, 70, 70, [3, 3, 5, 255]);
+    front.rect(864, 334, 62, 2, [6, 5, 8, 255]);
+    front.rect(864, 360, 62, 2, [6, 5, 8, 255]);
+    front.rect(838, 300, 12, 100, [3, 3, 5, 255]);
+    front.rect(841, 280, 6, 20, [3, 3, 5, 255]);
+
+    vec![
+        far.layer("racks", 0.12, false),
+        middle.layer("vault", 0.32, false),
+        near.layer("pillars", 0.62, false),
+        front.layer("foreground", 1.18, true),
+    ]
+}
+
+/// Backstage: a brick wall hung with flats of painted scenery, fly lines and sandbags,
+/// a catwalk truss, and the edge of a drape.
+pub fn backstage(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
+    let brick = tint([12, 12, 15], dominant_light, 16);
+    let mortar = tint([8, 8, 10], dominant_light, 8);
+    let canvas = tint([20, 18, 22], dominant_light, 34);
+    let paint = tint([30, 30, 40], dominant_light, 46);
+    let shade = tint([15, 14, 18], dominant_light, 22);
+    let mut far = Canvas::new(brick);
+    far.bricks(0, 340, mortar);
+    far.rect(0, 340, WIDTH as i32, 60, mortar);
+    // Flats leaning on the wall: a moon, a row of trees, a doorway that leads nowhere.
+    for (i, x) in [90, 400, 720].into_iter().enumerate() {
+        let n = noise(seed, 400 + i as u32);
+        let (w, h) = (150 + (n % 40) as i32, 190 + (n % 50) as i32);
+        let top = 340 - h;
+        far.rect(x, top, w, h, canvas);
+        far.rect(x, top, w, 2, shade);
+        far.rect(x, top, 2, h, shade);
+        match i {
+            0 => {
+                far.ellipse(x + w / 2, top + 70, 40, 40, paint);
+                far.ellipse(x + w / 2 + 14, top + 62, 34, 36, canvas);
+            }
+            1 => {
+                for t in 0..5 {
+                    let tx = x + 15 + t * (w - 30) / 4;
+                    let th = 60 + (noise(n, t as u32) % 50) as i32;
+                    for row in 0..th {
+                        let half = row * 14 / th;
+                        far.rect(tx - half, top + h - 20 - th + row, half * 2 + 1, 1, paint);
+                    }
+                    far.rect(tx - 1, top + h - 20, 3, 14, paint);
+                }
+            }
+            _ => {
+                far.arch(x + w / 2, top + 30, 70, top + h - 10, paint);
+                far.arch(x + w / 2, top + 36, 58, top + h - 10, shade);
+            }
+        }
+        // A brace behind each flat, seen where it meets the floor.
+        far.line((x + w - 10, top + 20), (x + w + 30, 340), 2, shade);
+    }
+
+    let mut middle = Canvas::new([0; 4]);
+    let rope = tint([16, 15, 18], dominant_light, 14);
+    let bag = [9, 8, 11, 255];
+    // Fly lines down from the grid, each with a sandbag at its own height.
+    for i in 0..18 {
+        let n = noise(seed, 500 + i);
+        let x = 26 + i as i32 * 53 + (n % 9) as i32;
+        let y = 60 + (n % 200) as i32;
+        middle.rect(x, 0, 1, y, rope);
+        middle.ellipse(x, y + 8, 6, 9, bag);
+        middle.rect(x - 2, y - 2, 5, 2, rope);
+    }
+    // A batten with a drop half flown in, folded.
+    middle.rect(0, 40, WIDTH as i32, 3, bag);
+    for x in 300i32..560 {
+        let fold = ((x - 300) / 12) % 2;
+        let hem = 150 + ((x - 430).abs() / 10);
+        middle.rect(x, 43, 1, hem, if fold == 0 { bag } else { rope });
+    }
+
+    let mut near = Canvas::new([0; 4]);
+    let steel = [6, 6, 8, 255];
+    let lit = [11, 10, 13, 255];
+    // A catwalk truss across the top: two chords and a zigzag web.
+    near.rect(0, 70, WIDTH as i32, 3, steel);
+    near.rect(0, 92, WIDTH as i32, 3, steel);
+    near.rect(0, 69, WIDTH as i32, 1, lit);
+    for x in (10..WIDTH as i32 - 10).step_by(20) {
+        near.line((x, 73), (x + 10, 92), 1, steel);
+        near.line((x + 10, 73), (x + 20, 92), 1, steel);
+    }
+    // A ladder up to it.
+    for x in [250, 268] {
+        near.rect(x, 95, 3, 305, steel);
+    }
+    for y in (110..400).step_by(14) {
+        near.rect(250, y, 21, 2, steel);
+    }
+
+    let mut front = Canvas::new([0; 4]);
+    // The edge of a drape, in deep folds, out of focus.
+    for y in (0..400).step_by(2) {
+        let sway = ((y as f32 / 40.0).sin() * 3.0).round() as i32;
+        front.rect(900 + sway, y, 40, 2, [3, 3, 5, 255]);
+        front.rect(900 + sway, y, 3, 2, [6, 4, 7, 255]);
+        front.rect(918 + sway, y, 2, 2, [6, 4, 7, 255]);
+    }
+
+    vec![
+        far.layer("flats", 0.12, false),
+        middle.layer("fly lines", 0.32, false),
+        near.layer("catwalk", 0.62, false),
+        front.layer("foreground", 1.18, true),
+    ]
+}
+
 /// Horizontal texture offset shared by the runtime and the preview, rounded to whole pixels.
 pub fn scroll(camera_x: f32, parallax: f32) -> i32 {
     (camera_x * parallax).round() as i32
@@ -261,12 +522,20 @@ mod tests {
 
     #[test]
     fn deterministic_seeded_and_tinted() {
-        let a = ballroom(DEFAULT_SEED, DEFAULT_LIGHT);
-        assert_eq!(a, ballroom(DEFAULT_SEED, DEFAULT_LIGHT));
-        assert_ne!(a, ballroom(DEFAULT_SEED + 1, DEFAULT_LIGHT));
-        assert_ne!(a, ballroom(DEFAULT_SEED, [25, 65, 90]));
-        assert_eq!(a.iter().filter(|l| l.foreground).count(), 1);
-        for layer in a {
+        for name in SETS {
+            let set = |seed, light| super::set(name, seed, light).unwrap();
+            let a = set(DEFAULT_SEED, DEFAULT_LIGHT);
+            assert_eq!(a, set(DEFAULT_SEED, DEFAULT_LIGHT));
+            assert_ne!(a, set(DEFAULT_SEED + 1, DEFAULT_LIGHT), "{name}");
+            assert_ne!(a, set(DEFAULT_SEED, [25, 65, 90]), "{name}");
+            assert_eq!(a.iter().filter(|l| l.foreground).count(), 1);
+            check_palette(a);
+        }
+        assert!(super::set("nowhere", DEFAULT_SEED, DEFAULT_LIGHT).is_none());
+    }
+
+    fn check_palette(layers: Vec<Layer>) {
+        for layer in layers {
             let palette: HashSet<_> = layer.image.pixels().map(|p| p.0).collect();
             assert!(
                 palette.len() <= 8,
@@ -280,8 +549,11 @@ mod tests {
 
     #[test]
     fn horizontal_edges_match_for_every_layer_and_seed() {
-        for seed in [0, 1, DEFAULT_SEED, u32::MAX] {
-            for layer in ballroom(seed, DEFAULT_LIGHT) {
+        for (name, seed) in SETS
+            .iter()
+            .flat_map(|n| [0, 1, DEFAULT_SEED, u32::MAX].map(|s| (n, s)))
+        {
+            for layer in super::set(name, seed, DEFAULT_LIGHT).unwrap() {
                 assert_eq!(layer.image.dimensions(), (WIDTH, HEIGHT));
                 for y in 0..HEIGHT {
                     assert_eq!(
