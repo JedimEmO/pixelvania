@@ -8,7 +8,7 @@
 use std::f64::consts::TAU;
 
 use pixelfx::color::hex;
-use pixelfx::rig::{Measurements, Pose, Rig, Weapon};
+use pixelfx::rig::{Hair, Hat, Mask, Measurements, Pose, Rig, Weapon};
 
 /// A guest's weight class, which sets its size, weapon and how it takes a hit.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -128,8 +128,36 @@ pub fn rig(class: Class) -> Rig {
             [hex(0x2c3c2e), hex(0x1e2a20), hex(0x141c16), hex(0x141c16)],
         ),
     };
+    let (hat, mask, hair, costume, trim) = match class {
+        Class::Light => (
+            Hat::None,
+            Mask::Domino,
+            Hair::Bouffant,
+            [hex(0x72615a), hex(0x483b3c), hex(0x2c242b), hex(0x19161e)],
+            [hex(0xf1e4ca), hex(0xd5c8a9), hex(0xb1a084), hex(0x88755f)],
+        ),
+        Class::Medium => (
+            Hat::Plume,
+            Mask::Beak,
+            Hair::None,
+            [hex(0x64513b), hex(0x403223), hex(0x2a211c), hex(0x19151a)],
+            [hex(0xf0d9a2), hex(0xceaf72), hex(0xba985e), hex(0x987442)],
+        ),
+        Class::Heavy => (
+            Hat::TopHat,
+            Mask::None,
+            Hair::Long,
+            [hex(0x536150), hex(0x343e33), hex(0x222b24), hex(0x141b17)],
+            [hex(0xdfc593), hex(0xb79a66), hex(0x907444), hex(0x695333)],
+        ),
+    };
     Rig {
         measurements,
+        hat,
+        mask,
+        hair,
+        costume,
+        trim,
         shell,
         core,
         ..Rig::default()

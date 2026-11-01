@@ -493,6 +493,33 @@ impl RenderedPose {
         }
     }
 }
+/// Headwear attached to the head bone.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Hat {
+    #[default]
+    None,
+    TopHat,
+    Plume,
+}
+
+/// Pale carnival masks attached to the head bone.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Mask {
+    #[default]
+    None,
+    Domino,
+    Beak,
+}
+
+/// Hair silhouettes attached to the head bone.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Hair {
+    #[default]
+    None,
+    Bouffant,
+    Long,
+}
+
 /// Character proportions, body palette and lighting, independent of Bevy.
 #[derive(Clone, Debug)]
 pub struct Rig {
@@ -503,6 +530,14 @@ pub struct Rig {
     /// Length in pixels of a tailcoat's two tails hanging behind the hips; 0 for none.
     /// Not in the JavaScript original.
     pub tails: f64,
+    // Costume parts are not in the JavaScript original.
+    pub hat: Hat,
+    pub mask: Mask,
+    pub hair: Hair,
+    /// Light-to-dark cloth and hair ramp.
+    pub costume: [Color; 4],
+    /// Light-to-dark porcelain and gilt ramp for masks and hat accents.
+    pub trim: [Color; 4],
 }
 impl Default for Rig {
     fn default() -> Self {
@@ -512,6 +547,11 @@ impl Default for Rig {
             shell: [hex(0xe4e6ec), hex(0xb6b9c3), hex(0x868995), hex(0x5c5e6a)],
             core: [hex(0x6e707c), hex(0x4b4d58), hex(0x34353f), hex(0x34353f)],
             tails: 0.0,
+            hat: Hat::None,
+            mask: Mask::None,
+            hair: Hair::None,
+            costume: [hex(0x615344), hex(0x3d302b), hex(0x281f22), hex(0x17131b)],
+            trim: [hex(0xf0dfb5), hex(0xcbb587), hex(0xa28a63), hex(0x796344)],
         }
     }
 }
@@ -651,6 +691,143 @@ impl Raster {
             self.sweep(top, tip, 2.4, 1.3, 25, 1, 0.4);
         }
     }
+    /// Costume geometry uses head-local x forward, y up and z across the face.
+    fn costume(&mut self, s: &Solved, rig: &Rig) {
+        let head = s.b[3];
+        let k = rig.measurements.head_up / Measurements::default().head_up;
+        let at = |p: V| add(head.t, mv(head.r, mul(p, k)));
+        self.frame = 3;
+        // Parts 1–22 are body, 23–24 weapons and 25 tails. Materials 3–4 are cloth and trim.
+        match rig.hair {
+            Hair::None => {}
+            Hair::Bouffant => {
+                self.ellipsoid(at([-3.0, 5.0, 0.0]), head.r, mul([6.0, 6.0, 5.5], k), 26, 3);
+                self.ellipsoid(at([-3.0, 0.0, 0.0]), head.r, mul([3.5, 3.5, 3.6], k), 26, 3);
+            }
+            Hair::Long => {
+                self.ellipsoid(at([-1.8, 1.0, 0.0]), head.r, mul([3.4, 3.5, 3.4], k), 26, 3);
+                for side in [-2.0, 2.0] {
+                    self.sweep(
+                        at([-3.0, 0.0, side]),
+                        at([-5.0, -12.0, side]),
+                        2.5 * k,
+                        1.5 * k,
+                        26,
+                        3,
+                        0.3 * k,
+                    );
+                }
+            }
+        }
+        match rig.hat {
+            Hat::None => {}
+            Hat::TopHat => {
+                self.ellipsoid(at([0.0, 3.0, 0.0]), head.r, mul([5.8, 0.9, 5.0], k), 27, 3);
+                // Stacked flat ellipsoids give the crown straight sides and a flat top.
+                for i in 0..101 {
+                    let y = 4.0 + i as f64 * 0.12;
+                    let radius = 3.6 + i as f64 * 0.006;
+                    self.ellipsoid(
+                        at([0.0, y, 0.0]),
+                        head.r,
+                        mul([radius, 1.8, radius], k),
+                        27,
+                        3,
+                    );
+                }
+                self.ellipsoid(at([0.0, 4.6, 0.0]), head.r, mul([3.9, 0.8, 3.9], k), 27, 4);
+            }
+            Hat::Plume => {
+                self.ellipsoid(at([-0.5, 3.6, 0.0]), head.r, mul([4.3, 2.0, 3.6], k), 27, 3);
+                for side in [-1.0, 1.0] {
+                    self.sweep(
+                        at([4.8, 2.4, 0.0]),
+                        at([-4.0, 4.0, side * 4.8]),
+                        0.9 * k,
+                        1.4 * k,
+                        27,
+                        3,
+                        0.0,
+                    );
+                    self.sweep(
+                        at([-4.0, 4.0, side * 4.8]),
+                        at([-4.0, 3.0, -side * 4.8]),
+                        1.4 * k,
+                        1.4 * k,
+                        27,
+                        3,
+                        0.0,
+                    );
+                }
+                self.sweep(
+                    at([-2.0, 4.0, 2.0]),
+                    at([-6.0, 10.0, 2.0]),
+                    1.0 * k,
+                    2.0 * k,
+                    27,
+                    4,
+                    0.0,
+                );
+                self.sweep(
+                    at([-6.0, 10.0, 2.0]),
+                    at([-12.0, 13.0, 2.0]),
+                    2.0 * k,
+                    0.3 * k,
+                    27,
+                    4,
+                    0.5 * k,
+                );
+            }
+        }
+        if rig.mask != Mask::None {
+            self.ellipsoid(at([3.1, 0.5, 0.0]), head.r, mul([1.6, 2.0, 3.8], k), 28, 4);
+            match rig.mask {
+                Mask::None => {}
+                Mask::Domino => {
+                    for side in [-1.0, 1.0] {
+                        self.sweep(
+                            at([3.4, 0.5, side * 2.8]),
+                            at([4.0, 3.2, side * 6.2]),
+                            1.6 * k,
+                            0.35 * k,
+                            28,
+                            4,
+                            0.0,
+                        );
+                    }
+                }
+                Mask::Beak => {
+                    self.sweep(
+                        at([3.2, -0.8, 0.0]),
+                        at([8.0, -2.5, 0.0]),
+                        1.8 * k,
+                        1.2 * k,
+                        28,
+                        4,
+                        0.0,
+                    );
+                    self.sweep(
+                        at([8.0, -2.5, 0.0]),
+                        at([11.5, -5.0, 0.0]),
+                        1.2 * k,
+                        0.2 * k,
+                        28,
+                        4,
+                        0.0,
+                    );
+                }
+            }
+            for side in [-1.0, 1.0] {
+                self.ellipsoid(
+                    at([3.8, 0.8, side * 3.1]),
+                    head.r,
+                    mul([0.8, 0.7, 0.95], k),
+                    28,
+                    3,
+                );
+            }
+        }
+    }
     fn body(&mut self, s: &Solved) {
         let b = &s.b;
         self.frame = 0;
@@ -764,10 +941,11 @@ impl Raster {
         }
         for &i in &self.touched {
             if self.mat[i] != 2 {
-                self.color[i] = if self.mat[i] == 1 {
-                    rig.core[tones[i]]
-                } else {
-                    rig.shell[tones[i]]
+                self.color[i] = match self.mat[i] {
+                    1 => rig.core[tones[i]],
+                    3 => rig.costume[tones[i]],
+                    4 => rig.trim[tones[i]],
+                    _ => rig.shell[tones[i]],
                 };
             }
         }
@@ -1292,6 +1470,7 @@ impl Rig {
         let mut r = Raster::new(self.light);
         r.clip = clip;
         r.body(&s);
+        r.costume(&s, self);
         if self.tails > 0.0 {
             r.tails(&s, self.tails);
         }
