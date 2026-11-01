@@ -9,6 +9,7 @@
 //! the number keys 1 to 6 spawn each pixelfx effect there at any time.
 //! F2 pauses the game and F3, while paused, steps it one gameplay tick.
 //! F4 cycles the mood of combat: neutral, the High and the Comedown.
+//! F6 steps the progression fade (see the `fade` module), and `PIXELVANIA_FADE=0.5` starts there.
 //! The keys 7, 8 and 9 spawn a light, medium or heavy guest in front of the player,
 //! and `PIXELVANIA_GUEST=light`, `medium` or `heavy` spawns one there once the player stands.
 //! F5 shows hurtboxes, active hitboxes, and health and poise bars; `PIXELVANIA_BOXES=1` starts with them on.
@@ -471,6 +472,7 @@ mod panel {
         open: Res<Open>,
         mut tuning: ResMut<Tuning>,
         mut mood: ResMut<crate::combat::Mood>,
+        mut fade: ResMut<crate::fade::ProgressionFade>,
     ) -> Result {
         if !open.0 {
             return Ok(());
@@ -499,6 +501,7 @@ mod panel {
                         }
                     }
                 });
+                ui.add(egui::Slider::new(&mut fade.level, 0.0..=1.0).text("Progression fade (F6)"));
                 let m = &mut edited.movement;
                 ui.collapsing("Running", |ui| {
                     sliders!(ui, m, {
@@ -554,6 +557,21 @@ mod panel {
                         wall_jump_y: 0.0 => 600.0,
                         wall_jump_lock: 0.0 => 0.5,
                         wall_coyote: 0.0 => 0.3,
+                    });
+                });
+                ui.collapsing("Lure", |ui| {
+                    sliders!(ui, m, {
+                        lure_range: 50.0 => 400.0,
+                        lure_cone: 0.1 => 1.6,
+                        lure_reel_speed: 0.0 => 1200.0,
+                        lure_swing_length: 30.0 => 200.0,
+                        lure_min_length: 16.0 => 120.0,
+                        lure_climb_speed: 0.0 => 400.0,
+                        lure_pump: 0.0 => 1500.0,
+                        lure_max_speed: 200.0 => 1000.0,
+                        lure_release_boost: 0.8 => 1.6,
+                        lure_jump_speed: 0.0 => 700.0,
+                        lure_snap_keep: 0.0 => 400.0,
                     });
                 });
                 let c = &mut edited.camera;

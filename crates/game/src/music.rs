@@ -59,6 +59,21 @@ mod native {
             },
         }
     }
+    /// How far a full progression fade lowers each stem, in decibels:
+    /// the warmth goes first, and the drums keep going to the end.
+    const THIN: [f32; 5] = [0.0, -3.0, -8.0, -6.0, -12.0];
+
+    /// The mood's mix, thinned by the progression fade as it shows in that mood.
+    fn thinned(mood: &str, fade: f32) -> Mix {
+        let mut m = mix(mood);
+        // Whole twentieths, so a fade easing in does not retune the mix every frame.
+        let fade = (fade * 20.0).round() / 20.0;
+        for (db, thin) in m.db.iter_mut().zip(THIN) {
+            *db = (*db + thin * fade).max(SILENT);
+        }
+        m
+    }
+
     fn fade() -> Tween {
         Tween {
             duration: Duration::from_millis(1500),
@@ -164,6 +179,7 @@ mod native {
         audio: Option<NonSendMut<Audio>>,
         active: Option<Res<ActiveRoom>>,
         mood: Option<Res<Mood>>,
+        progression: Option<Res<crate::fade::ProgressionFade>>,
         mut music: NonSendMut<Music>,
     ) {
         let audible = active
@@ -171,7 +187,9 @@ mod native {
             .and_then(|a| a.room.as_ref())
             .and_then(|r| r.music.as_deref())
             == Some("ballroom");
-        let wanted = (audible, mix(mood.as_ref().map_or("neutral", |m| m.name)));
+        let mood = mood.map_or(Mood::ALL[0], |m| *m);
+        let shown = progression.map_or(0.0, |f| f.shown(&mood));
+        let wanted = (audible, thinned(mood.name, shown));
         if audible && !music.attempted {
             let Some(mut audio) = audio else { return };
             music.attempted = true;

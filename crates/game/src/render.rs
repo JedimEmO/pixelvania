@@ -89,6 +89,9 @@ pub struct Lighting {
     /// Colour saturation of the final frame: 1 as drawn, less towards grey, more richer.
     /// The mood sets it: the Comedown drains the world's colour, the High deepens it.
     pub saturation: f32,
+    /// How much colour the progression fade has taken from surfaces, 0 to 1.
+    /// Light and glow keep theirs, so a faded world is grey stone under vivid lamps.
+    pub fade: f32,
 }
 
 impl Default for Lighting {
@@ -99,6 +102,7 @@ impl Default for Lighting {
             rim: 0.55,
             background: Color::srgb_u8(0x1a, 0x16, 0x26).to_linear(),
             saturation: 1.0,
+            fade: 0.0,
         }
     }
 }
@@ -237,6 +241,7 @@ fn update_composite(
         light_range: LIGHT_RANGE,
         background: lighting.background.to_vec4(),
         saturation: lighting.saturation,
+        fade: lighting.fade,
     };
     // Only touch the asset when something changed, so it is not re-uploaded every frame.
     if materials
@@ -258,6 +263,7 @@ struct CompositeParams {
     light_range: f32,
     background: Vec4,
     saturation: f32,
+    fade: f32,
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Clone)]
