@@ -581,11 +581,18 @@ fn scenes(
     }
 }
 
-/// A room's name for its title: `card_room` becomes `The Card Room`.
+/// A room's name for its title: `card_room` becomes `The Card Room`,
+/// and `doormans_hall` becomes `The Doorman's Hall`.
 pub fn title(name: &str) -> String {
+    /// Words that are someone's, and lost their apostrophe in a file name.
+    const POSSESSIVE: [(&str, &str); 2] = [("doormans", "doorman's"), ("porters", "porter's")];
     let words: Vec<String> = name
         .split('_')
         .map(|w| {
+            let w = POSSESSIVE
+                .iter()
+                .find(|(plain, _)| *plain == w)
+                .map_or(w, |(_, owned)| owned);
             let mut c = w.chars();
             c.next()
                 .map(|f| f.to_uppercase().collect::<String>() + c.as_str())
@@ -628,5 +635,6 @@ mod tests {
         p.abilities.insert(Ability::Lure);
         assert!(attendant.say(&p)[0].starts_with("You have the look"));
         assert_eq!(title("card_room"), "The Card Room");
+        assert_eq!(title("doormans_hall"), "The Doorman's Hall");
     }
 }

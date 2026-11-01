@@ -1,0 +1,53 @@
+// The Doorman's hall: a wide hall before the inner doors, which the Doorman keeps.
+//
+// Enter from the grand stair on the west. The Doorman stands before the doors on the east,
+// and the doors stay shut while he stands. Low galleries on either side give room to get over a rush.
+[room]
+name = doormans_hall
+background = ballroom c07838
+music = ballroom
+
+[legend]
+# stone
+v velvet
+g gilt
+
+[tiles]
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv....................................................vv
+vv......ggggggg..........................ggggggg......vv
+vv....................................................vv
+vv....................................................vv
+........................................................
+........................................................
+........................................................
+########################################################
+########################################################
+########################################################
+
+[entities]
+door 0 22 h=3 id=west to=grand_stair:east_high
+door 55 22 h=3 id=east to=inner_doors:west
+boss 44 25 kind=doorman
+chandelier 28 7
+prop 4 25 kind=statue
+prop 51 25 kind=statue
+light 28 9 radius=200 strength=0.6 color=ffc070 glow=0.3
+light 52 21 radius=100 strength=0.6 color=ffb060 glow=0.4

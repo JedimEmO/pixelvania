@@ -1,0 +1,54 @@
+// The coat check: a counter, rails of coats, and a pair of dancing shoes left on the counter, still warm.
+//
+// The shoes give the Lunge. Landings climb the room to a gap too wide to jump;
+// Lunge across it to the high door east, into the coat lift.
+[room]
+name = coat_check
+background = ballroom c07838
+music = ballroom
+
+[legend]
+# stone
+= wood
+g gilt
+
+[tiles]
+========================================
+========================================
+==....................................==
+==....................................==
+==......................................
+==......................................
+==......................................
+==..........................gggggggggg==
+==....................................==
+==..............=====.................==
+==....................................==
+==....................................==
+==....................................==
+==.......=====........................==
+==....................................==
+==....................................==
+==....................................==
+==..............=====.................==
+......................................==
+......................................==
+......................................==
+########################################
+########################################
+########################################
+
+[entities]
+door 0 18 h=3 id=west to=grand_stair:east_low
+door 39 4 h=3 id=east to=coat_lift:west
+npc 7 21 id=attendant
+note 12 20 id=coat_check
+pickup 11 20 item=lunge
+prop 10 21 kind=counter
+prop 11 19.6 kind=shoes
+prop 24 21 kind=coat_rack
+prop 29 21 kind=coat_rack
+prop 34 21 kind=heap_of_coats
+prop 33 7 kind=coat_rack
+light 11 16 radius=110 strength=0.8 color=ffc070 glow=0.4
+light 32 4 radius=90 strength=0.5 color=ffb060 glow=0.3

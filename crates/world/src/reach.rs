@@ -498,7 +498,25 @@ pub fn check_world(
         };
         let Some(start) = start else { continue };
         out.rooms.insert(name.clone());
-        let reach = explore(room, t, movement, start);
+        let mut reach = explore(room, t, movement, start);
+        // An ability found inside may be the way out, as in a shaft whose floor holds Cling:
+        // the room is walked again with it, and is no trap if a door can then be reached.
+        if reach.doors.is_empty() {
+            let mut more = movement;
+            for p in &reach.pickups {
+                if let Some(crate::progress::Item::Ability(a)) = crate::progress::Item::parse(p) {
+                    more = crate::progress::Progress {
+                        abilities: [a].into(),
+                        ..Default::default()
+                    }
+                    .movement()
+                    .with(more);
+                }
+            }
+            if more != movement {
+                reach.doors = explore(room, t, more, start).doors;
+            }
+        }
         for p in &reach.pickups {
             out.pickups.insert(format!("{name}:{p}"));
         }

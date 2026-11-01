@@ -137,7 +137,7 @@ fn with_the_plunge_every_room_is_reached() {
     assert!(r.traps.is_empty(), "{r:?}");
 }
 
-/// A new game starts with nothing, and the slice hands out its abilities in order:
+/// A new game starts with nothing in the Arrival, and the night hands out its abilities in order:
 /// each step's pickups are reached with what was found before them and not sooner,
 /// every step opens more rooms, and no step leaves a way in without a way out.
 #[test]
@@ -146,12 +146,18 @@ fn the_slice_gives_its_abilities_in_order() {
     let t = MoveTuning::default();
     // What is found with the abilities so far, and the ability found next.
     let order: [(&[&str], Ability); 5] = [
-        (&["cloakroom:lunge"], Ability::Lunge),
+        // The Arrival: the Lunge in the coat check, Cling at the bottom of the coat lift.
+        (&["coat_check:lunge"], Ability::Lunge),
+        (&["coat_lift:cling", "porters_lodge:favour"], Ability::Cling),
+        // Past the Doorman, the ballroom's wing.
         (
-            &["champagne_cellar:jeroboam", "stair_tower:cling"],
-            Ability::Cling,
+            &[
+                "champagne_cellar:jeroboam",
+                "balcony:swoon",
+                "letter_room:favour",
+            ],
+            Ability::Swoon,
         ),
-        (&["balcony:swoon"], Ability::Swoon),
         (&["crystal_gallery:lure"], Ability::Lure),
         // The Dancer gives the Plunge, after the candelabrum.
         (&["ballroom:candelabrum"], Ability::Plunge),

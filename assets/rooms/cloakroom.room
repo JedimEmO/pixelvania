@@ -1,7 +1,7 @@
 // The cloakroom: coats nobody came back for, on rails stacked down a deep well.
 //
-// Drop from the antechamber's door at the top right down the rails to the counter at the bottom,
-// where the attendant still stands and a pair of dancing shoes, still warm, give the Lunge.
+// Drop from the antechamber's door at the top right down the rails to the empty counter at the bottom,
+// where a Favour was left among the tickets nobody came back for.
 // The way on to the wine vault is over a pit too wide to jump: Lunge across it.
 // A side door halfway down leads to the smoking room.
 [room]
@@ -60,11 +60,9 @@ v velvet
 door 39 3 h=3 id=east_high to=antechamber:west
 door 39 28 h=3 id=east_low to=wine_vault:west
 door 0 21 h=3 id=west to=smoking_room:east
-pickup 14 29.2 item=lunge
+pickup 14 29.2 item=favour
 note 17.5 30 id=cloakroom
-npc 6 31 id=attendant
 prop 13 31 kind=counter
-prop 14 29.625 kind=shoes
 prop 2.8 31 kind=coat_rack
 prop 19.5 31 kind=heap_of_coats
 prop 23.5 9 kind=coat_rack

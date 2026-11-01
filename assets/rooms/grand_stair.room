@@ -1,0 +1,114 @@
+// The grand stair: the house's hub, a tall well of landings that every way passes through.
+//
+// From the floor, steps climb to two landings, each by a pair of doors that will not open yet:
+// the feast's on the west and the gardens' on the east. Above the landings the walls are sheer.
+// Cling up the west wall to the music room's door and the gallery across the well;
+// cling up the east wall from the gallery to the Doorman's hall.
+// The letter room's door is high in the west wall, a Lunge from the platforms in the middle.
+[room]
+name = grand_stair
+background = ballroom c07838
+music = ballroom
+
+[legend]
+# stone
+v velvet
+g gilt
+
+[tiles]
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+..........................................vv
+..........................................vv
+..........................................vv
+vv..ggggg.................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv...........gggg.........................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv.................ggggg..................vv
+vv..........................................
+vv..........................................
+vv..........................................
+vv..........................ggggggggggg...vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+..........................................vv
+..........................................vv
+..........................................vv
+vv.....gggggggggggggggggggggggggggggggggggvv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vg........................................gv
+vg........................................gv
+vg........................................gv
+vg........................................gv
+vg........................................gv
+vvggggggggggg..................gggggggggggvv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv......gggggg................gggggg......vv
+vv........................................vv
+vv........................................vv
+vv........................................vv
+vv...............gggggggggg...............vv
+............................................
+............................................
+............................................
+############################################
+############################################
+############################################
+
+[entities]
+door 0 66 h=3 id=west_low to=receiving_line:east
+door 43 66 h=3 id=east_low to=coat_check:west
+door 0 42 h=3 id=west_mid to=music_room:east
+door 43 30 h=3 id=east_high to=doormans_hall:west
+door 0 18 h=3 id=west_top to=letter_room:east
+note 5 56 id=feast_doors
+note 38 56 id=garden_doors
+chandelier 22 52
+chandelier 22 12
+lantern 10 36
+lantern 34 22
+prop 6 57 kind=curtain
+prop 37 57 kind=curtain flip=1
+prop 12 69 kind=statue
+prop 31 69 kind=statue
+prop 20 45 kind=balustrade
+nectar 21 28.5
+light 22 54 radius=170 strength=0.6 color=ffc070 glow=0.3
+light 22 14 radius=170 strength=0.5 color=ffc070 glow=0.3
+light 4 52 radius=80 strength=0.5 color=ffb060 glow=0.3
+light 39 52 radius=80 strength=0.5 color=ffb060 glow=0.3
+light 36 30 radius=100 strength=0.6 color=ff5aa0 glow=0.4

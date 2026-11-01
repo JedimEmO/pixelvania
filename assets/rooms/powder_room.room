@@ -1,6 +1,7 @@
 // The powder room: mirrors, a vanity, and a Favour left on the shelves.
 //
-// A dead end off the balcony, its door high on the east wall. Climb the vanity and the shelf to get back up.
+// Where guests from the Arrival freshen up before the ballroom: the inner doors open on its floor
+// from the west, and its door to the balcony is high on the east wall, up the vanity and the shelf.
 [room]
 name = powder_room
 background = ballroom 8a4a70
@@ -29,9 +30,9 @@ vvgg..............gggggg..........vv
 vvgg..............................vv
 vvgg..............................vv
 vv......ggggggg...................vv
-vv......g.....g...................vv
-vv......g.....g...................vv
-vv......g.....g...................vv
+........g.....g...................vv
+........g.....g...................vv
+........g.....g...................vv
 ####################################
 ####################################
 ####################################
@@ -39,6 +40,7 @@ vv......g.....g...................vv
 
 [entities]
 door 35 6 h=3 id=east to=balcony:west
+door 0 16 h=3 id=west to=inner_doors:east
 pickup 20.5 11.5 item=favour
 chandelier 24 5
 prop 22 19 kind=vanity

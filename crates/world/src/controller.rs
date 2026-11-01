@@ -159,6 +159,17 @@ pub struct Abilities {
 }
 
 impl Abilities {
+    /// Every ability either set has.
+    pub fn with(self, other: Abilities) -> Abilities {
+        Abilities {
+            lunge: self.lunge || other.lunge,
+            swoon: self.swoon || other.swoon,
+            cling: self.cling || other.cling,
+            lure: self.lure || other.lure,
+            plunge: self.plunge || other.plunge,
+        }
+    }
+
     pub const ALL: Abilities = Abilities {
         lunge: true,
         swoon: true,

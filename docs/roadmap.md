@@ -212,6 +212,21 @@ the HUD sat under the foreground's drapes; and doors opened onto air.
 
 The slice has no known gaps left.
 
+## The Arrival
+
+The director chose one continuous night: a new game starts in the Arrival, and its grand stair leads,
+past the Doorman, into the ballroom's wing through the powder room. The ballroom keeps the Swoon and
+the Lure as stand-ins until the feast and the gardens exist. [The Arrival's page](design/arrival.md) has its rooms.
+
+39. **The Arrival blocked out.** Eleven rooms west of the ballroom: the vestibule where a new game wakes,
+    the receiving line, the porter's lodge, the grand stair, the coat check with the Lunge,
+    the coat lift with Cling at the bottom of its shaft, the music room's lounge, the portrait hall,
+    the letter room, the Doorman's hall and the inner doors. The ballroom's own Lunge and Cling became a Favour
+    and a Goblet. The reachability checker forgives a room whose way out is an ability found inside it.
+40. **The Doorman.** The Arrival's boss, before the inner doors, who teaches the Lunge through bodies.
+41. **The Arrival dressed.** Props, guests and light in every room, and its own backdrop of warm candlelight.
+42. **The music through the walls.** The Arrival hears the party muffled, as the vision asks.
+
 ## For the director
 
 Play the ballroom with a gamepad; `cargo run --bin pixelvania` starts there.

@@ -1,0 +1,48 @@
+// The inner doors: the last hall of the Arrival, where guests are let into the house proper.
+//
+// West is the Doorman's hall, east the powder room, and past it the balcony and the ballroom.
+[room]
+name = inner_doors
+background = ballroom c07838
+music = ballroom
+
+[legend]
+# stone
+v velvet
+g gilt
+
+[tiles]
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vv................................vv
+vv................................vv
+vv................................vv
+vv................................vv
+vv................................vv
+vv................................vv
+vv................................vv
+vv................................vv
+vv................................vv
+vv................................vv
+vv................................vv
+vv................................vv
+vv............ggggggggg...........vv
+vv................................vv
+vv................................vv
+vv................................vv
+....................................
+....................................
+....................................
+####################################
+####################################
+####################################
+
+[entities]
+door 0 18 h=3 id=west to=doormans_hall:east
+door 35 18 h=3 id=east to=powder_room:west
+note 18 13 id=inner_doors
+prop 6 21 kind=mirror
+prop 30 21 kind=mirror
+prop 18 21 kind=curtain
+light 18 10 radius=120 strength=0.6 color=ff5aa0 glow=0.4
+light 6 17 radius=80 strength=0.5 color=ffc070 glow=0.3

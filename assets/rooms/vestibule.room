@@ -1,0 +1,57 @@
+// The vestibule: the house's front hall, where a new game wakes.
+//
+// The front doors at the west end are shut, and stay shut until the end of the night.
+// A chaise waits by them with the Host's first card. The way on is east, to the receiving line.
+// The opening in the ceiling is where the portrait hall above drops back down: a way home, one way.
+[room]
+name = vestibule
+background = ballroom c07838
+music = ballroom
+
+[legend]
+# stone
+= wood
+g gilt
+
+[tiles]
+================...=========================
+================...=========================
+==........................................==
+==........................................==
+==........................................==
+==........................................==
+==........................................==
+==........................................==
+==........................................==
+==gg......................................==
+==gg......................................==
+==gg......................................==
+==gg....................====================
+==gg......................................==
+==gg......................................==
+==gg......................................==
+==gg......................................==
+==gg......................................==
+==gg........................................
+==gg........................................
+==gg........................................
+############################################
+############################################
+############################################
+
+[entities]
+door 43 18 h=3 id=east to=receiving_line:west
+door 16 0 w=3 id=top to=portrait_hall:bottom
+spawn 9 21
+lounge 9 21 id=chaise
+note 10.5 20 id=vestibule
+chandelier 22 6
+prop 5 21 kind=curtain
+prop 15 21 kind=potted_palm
+prop 30 21 kind=clock
+prop 36 21 kind=urn
+prop 32 12 kind=portrait
+prop 39 12 kind=candlestand
+nectar 28 11.5
+light 4 14 radius=120 strength=0.6 color=ffb060 glow=0.3
+light 22 8 radius=160 strength=0.5 color=ffc070 glow=0.2

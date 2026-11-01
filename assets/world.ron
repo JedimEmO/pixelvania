@@ -3,8 +3,19 @@
 // `pos` places a room's top-left tile on the world map, in tiles: rooms joined by a door
 // sit side by side there, so the door's opening lines up on both sides.
 (
-    start: "antechamber",
+    start: "vestibule",
     rooms: [
+        (name: "vestibule", area: "arrival", pos: Some((-344, 40))),
+        (name: "receiving_line", area: "arrival", pos: Some((-300, 40))),
+        (name: "porters_lodge", area: "arrival", pos: Some((-284, 64))),
+        (name: "grand_stair", area: "arrival", pos: Some((-236, -8))),
+        (name: "coat_check", area: "arrival", pos: Some((-192, 40))),
+        (name: "coat_lift", area: "arrival", pos: Some((-152, 36))),
+        (name: "music_room", area: "arrival", pos: Some((-300, 16))),
+        (name: "portrait_hall", area: "arrival", pos: Some((-364, 16))),
+        (name: "letter_room", area: "arrival", pos: Some((-300, -8))),
+        (name: "doormans_hall", area: "arrival", pos: Some((-192, 0))),
+        (name: "inner_doors", area: "arrival", pos: Some((-136, 4))),
         (name: "antechamber", area: "ballroom", pos: Some((0, 16))),
         (name: "ballroom", area: "ballroom", pos: Some((44, 0))),
         (name: "cloakroom", area: "ballroom", pos: Some((-40, 31))),

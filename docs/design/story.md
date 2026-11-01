@@ -3,11 +3,13 @@
 What happens in the game, who the player meets, and what they say.
 The [vision](vision.md) sets the theme and the rules: the story lives in the rooms,
 in a few lines of dialogue and in what the guests are doing, and it never preaches.
-This page holds the vertical slice's story in full and the shape of the rest.
+This page holds the vertical slice's story in full and the shape of the rest;
+[the Arrival](arrival.md) has the opening's rooms and words.
 
 ## The premise
 
-You wake on a chaise in an antechamber, late, alone, still dressed for the evening.
+You wake on a chaise in a vestibule, late, alone, still dressed for the evening.
+The front doors behind you are shut.
 Music comes through the wall. On the cushion beside you is a card:
 *You are expected. Do come through. — H.*
 
@@ -41,9 +43,9 @@ The order you find things in, and where.
 
 | Order | Find | Where | How it is staged |
 |---|---|---|---|
-| 1 | The Lunge | The cloakroom | A pair of dancing shoes left on the counter, still warm |
+| 1 | The Lunge | The Arrival's coat check | A pair of dancing shoes left on the counter, still warm |
 | 2 | The Jeroboam | The champagne cellar | The largest bottle in the racks, too heavy to drink from |
-| 3 | Cling | The stair tower | A pair of long silk gloves hung over the banister |
+| 3 | Cling | The Arrival's coat lift | A pair of long silk gloves hung over the cage, at the bottom of the shaft |
 | 4 | The Swoon | The balcony | At the rail, where the night air makes the head spin |
 | 5 | The Lure | The crystal gallery | A moth circling the first chandelier; it leads you to the light |
 | 6 | The candelabrum | The ballroom's alcove | Beside the lounge, still burning |
@@ -54,7 +56,7 @@ The order you find things in, and where.
 Each line is shown in a box at the bottom of the screen, a line at a time.
 Conditions are the abilities found; the last matching set is the one shown.
 
-### The attendant, in the cloakroom
+### The attendant, in the coat check
 
 A small, neat person behind the counter, handing coats to nobody.
 
@@ -125,8 +127,10 @@ With the Lure:
 
 ## The Host's cards
 
-- Antechamber, on the chaise: *You are expected. Do come through. — H.*
-- Cloakroom: *Leave whatever you came in with. You will not need it. — H.*
+- Vestibule, on the chaise: *You are expected. Do come through. — H.*
+- Coat check: *Leave whatever you came in with. You will not need it. — H.*
+- Antechamber: *You found your way in. They always do. — H.*
+- Cloakroom: *Nobody has come back for these. Nobody will. — H.*
 - Champagne cellar: *Take what you like. There is always more. — H.*
 - Mirrored corridor: *Look how well you are doing. — H.*
 - Green room: *She has been waiting for a partner who can keep up. Can you? — H.*
@@ -135,7 +139,7 @@ With the Lure:
 ## Staged moments
 
 Waking. A new game opens on black. The music is muffled, as through a wall.
-The picture fades up slowly on the antechamber, the player lying on the chaise,
+The picture fades up slowly on the vestibule, the player lying on the chaise,
 and the first card glows beside them. The controls come back when the player stands.
 
 The ballroom. The first time the player steps through its door, the music opens up,

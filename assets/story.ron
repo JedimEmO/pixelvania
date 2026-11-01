@@ -1,4 +1,4 @@
-// The slice's words: what the guests who talk say, the Host's cards, and the scenes' lines.
+// The night's words: what the guests who talk say, the Host's cards, and the scenes' lines.
 // docs/design/story.md is where these are decided; keep the two in step.
 // A guest's `lines` are tried from last to first: the last whose `when` abilities have all been
 // found is the one spoken. `look` picks the guest's rig: light, medium, heavy, spinner or toaster.
@@ -20,6 +20,40 @@
                 (when: [Lure], say: [
                     "You have the look of someone who has seen the chandeliers up close.",
                     "Mind the moths. They never stop either.",
+                ]),
+            ],
+        ),
+        "porter": (
+            name: "The porter",
+            look: "heavy",
+            lines: [
+                (when: [], say: [
+                    "Bags? No bags. Nobody brings anything.",
+                    "Nobody takes anything away, either.",
+                    "I keep the little door. He keeps the big one, up the stair.",
+                ]),
+                (when: [Cling], say: [
+                    "Up the stair, are you? He'll be at the inner doors. He always is.",
+                    "He lets everyone in. I have never seen him let anyone out.",
+                ]),
+                (when: [Plunge], say: [
+                    "Heard a floor go, somewhere. Doesn't happen often.",
+                    "Happens every night.",
+                ]),
+            ],
+        ),
+        "pianist": (
+            name: "The pianist",
+            look: "medium",
+            lines: [
+                (when: [], say: [
+                    "Request? I only know the one.",
+                    "I have played it so long I've forgotten how it ends. Perhaps it doesn't.",
+                    "Rest, if you like. Everyone rests here before they meet him.",
+                ]),
+                (when: [Swoon], say: [
+                    "You got past him. Then you've heard the real band.",
+                    "Don't tell me what they're like. I'd rather imagine.",
                 ]),
             ],
         ),
@@ -75,7 +109,7 @@
             lines: [
                 (when: [], say: [
                     "Sit, sit. Stakes are low. Everything is low, by now.",
-                    "You can bank what you win, at the lounges. Or drink it. Most drink it.",
+                    "Nectar's no good for anything but drinking. So drink it.",
                     "Drink it and the room comes alive again. For a while. Less each time.",
                 ]),
                 (when: [Lure], say: [
@@ -85,8 +119,14 @@
         ),
     },
     cards: {
-        "antechamber": "You are expected. Do come through.  - H.",
-        "cloakroom": "Leave whatever you came in with. You will not need it.  - H.",
+        "vestibule": "You are expected. Do come through.  - H.",
+        "coat_check": "Leave whatever you came in with. You will not need it.  - H.",
+        "feast_doors": "The feast is still being laid. Later, darling.  - H.",
+        "garden_doors": "The gardens are not yet in bloom. Patience is not your gift, is it?  - H.",
+        "letter_room": "Your invitation was never sent. You came anyway. How like you.  - H.",
+        "inner_doors": "Through here. Everyone is through here.  - H.",
+        "antechamber": "You found your way in. They always do.  - H.",
+        "cloakroom": "Nobody has come back for these. Nobody will.  - H.",
         "champagne_cellar": "Take what you like. There is always more.  - H.",
         "mirror_corridor": "Look how well you are doing.  - H.",
         "green_room": "She has been waiting for a partner who can keep up. Can you?  - H.",

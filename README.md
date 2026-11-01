@@ -13,7 +13,8 @@ Start with [the plan](docs/plan.md), which links to the design pages.
 cargo dev
 ```
 
-The game is the vertical slice: twenty rooms of the ballroom, starting in the antechamber,
+A new game starts in the Arrival, the house's front rooms, where the Lunge and Cling are found
+and the Doorman keeps the inner doors. Past him is the vertical slice: twenty rooms of the ballroom,
 with the Dancer waiting on the stage and the cellar beneath it where the slice ends.
 `cargo xtask map` draws them all; Select shows the ones you have visited.
 The rooms of the game are listed in `assets/world.ron` and joined by doors in their room files.
