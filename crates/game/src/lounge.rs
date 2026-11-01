@@ -30,7 +30,7 @@ impl Plugin for LoungePlugin {
     fn build(&self, app: &mut App) {
         let save = startup_save();
         app.insert_resource(LastLounge(save.as_ref().map(|s| s.lounge.clone())))
-            .add_systems(Update, (spawn, flicker))
+            .add_systems(Update, (spawn, flicker, wake_at_start))
             .add_systems(
                 FixedUpdate,
                 rest.in_set(crate::input::TickSet::Simulate)
@@ -70,6 +70,27 @@ fn save_path() -> Option<std::path::PathBuf> {
 #[cfg(target_arch = "wasm32")]
 fn save_path() -> Option<std::path::PathBuf> {
     None
+}
+
+/// Before the player has rested anywhere, a blackout wakes them where the game began:
+/// on the start room's lounge, once they have been in that room.
+fn wake_at_start(active: Res<ActiveRoom>, mut last: ResMut<LastLounge>) {
+    if last.0.is_some() {
+        return;
+    }
+    let Some(room) = &active.room else { return };
+    if room.name != crate::rooms::world().start {
+        return;
+    }
+    if let Some(id) = room
+        .entities_of("lounge")
+        .find_map(|d| d.props.get("id").cloned())
+    {
+        last.0 = Some(LoungeRef {
+            room: room.name.clone(),
+            id,
+        });
+    }
 }
 
 /// Whether a testing switch has picked how the game starts, so a save is not loaded.

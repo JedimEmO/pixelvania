@@ -307,6 +307,14 @@ fn spawn(
         .map(|(x, y)| (x * world::TILE as f32, y * world::TILE as f32))
         .or(lounge)
         .or_else(|| room.entities_of("spawn").next().map(|s| s.pixel_pos()))
+        // A room with no spawn point starts the player just inside its first door.
+        .or_else(|| {
+            let doors = room.doors().ok()?;
+            doors
+                .iter()
+                .find_map(|d| d.arrival(room))
+                .map(|(feet, _)| feet)
+        })
         .unwrap_or((32.0, 32.0));
     let ctrl = Controller::standing_at(x, y, SIZE.x, SIZE.y, Abilities::ALL);
     let player = Player {
@@ -357,7 +365,8 @@ fn spawn(
 
 /// Sends the player back to the spawn point on Reset. After lying defeated for a while,
 /// the player blacks out and wakes at the last lounge with a hangover, a Comedown that lasts
-/// until they rest; with no lounge rested at yet, they wake at the room's spawn point.
+/// until they rest. Before any rest they wake on the start room's lounge; in a test room
+/// that never visited it, at the room's spawn point.
 fn reset(
     mut commands: Commands,
     input: Res<TickInput>,
