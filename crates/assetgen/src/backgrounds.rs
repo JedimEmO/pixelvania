@@ -304,11 +304,11 @@ pub fn cellars(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
             let y = 206 + row * 7;
             for col in 0..12 {
                 let bx = x - 44 + col * 8;
-                if noise(seed, (bay * 400 + row * 20 + col) as u32) % 9 == 0 {
+                if noise(seed, (bay * 400 + row * 20 + col) as u32).is_multiple_of(9) {
                     continue;
                 }
                 far.rect(bx, y, 3, 3, mortar);
-                if noise(n, (row * 20 + col) as u32) % 7 == 0 {
+                if noise(n, (row * 20 + col) as u32).is_multiple_of(7) {
                     far.pixel(bx + 1, y + 1, glass);
                 }
             }
@@ -320,9 +320,9 @@ pub fn cellars(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
         while y < 140 + (n % 50) as i32 {
             far.pixel(cx + dx, y, mortar);
             y += 1;
-            if noise(n, y as u32) % 4 == 0 {
+            if noise(n, y as u32).is_multiple_of(4) {
                 dx = (dx
-                    + if noise(n, y as u32 + 7) % 2 == 0 {
+                    + if noise(n, y as u32 + 7).is_multiple_of(2) {
                         1
                     } else {
                         -1
@@ -358,7 +358,7 @@ pub fn cellars(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
     for i in 0..9 {
         let n = noise(seed, 200 + i);
         let x = 40 + i as i32 * 106 + (n % 20) as i32;
-        let high = 1 + (n % 3 == 0) as i32;
+        let high = 1 + n.is_multiple_of(3) as i32;
         for level in 0..high {
             let cy = 344 - level * 26;
             middle.ellipse(x, cy, 16, 13, dark);
