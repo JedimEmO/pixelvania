@@ -4,7 +4,7 @@
 // A Favour sits on a high shelf to the east, a Lunge from the landings.
 [room]
 name = porters_lodge
-background = ballroom c07838
+background = cellars 8a5a30
 music = ballroom
 
 [legend]

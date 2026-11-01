@@ -271,7 +271,7 @@ pub fn ballroom(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
 }
 
 /// The backdrop sets a room can name.
-pub const SETS: [&str; 3] = ["ballroom", "cellars", "backstage"];
+pub const SETS: [&str; 4] = ["ballroom", "cellars", "backstage", "foyer"];
 
 /// The set with this name, or `None` if there is no such set.
 pub fn set(name: &str, seed: u32, light: [u8; 3]) -> Option<Vec<Layer>> {
@@ -279,8 +279,130 @@ pub fn set(name: &str, seed: u32, light: [u8; 3]) -> Option<Vec<Layer>> {
         "ballroom" => Some(ballroom(seed, light)),
         "cellars" => Some(cellars(seed, light)),
         "backstage" => Some(backstage(seed, light)),
+        "foyer" => Some(foyer(seed, light)),
         _ => None,
     }
+}
+
+/// The foyer: panelled walls with tall doors that stay shut, a grand stair climbing the distance,
+/// and columns hung with sconces. Candlelight, seen from far off.
+pub fn foyer(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
+    let panel = tint([14, 11, 10], dominant_light, 18);
+    let moulding = tint([22, 16, 13], dominant_light, 28);
+    let shadow = tint([9, 7, 7], dominant_light, 8);
+    let door = tint([11, 8, 8], dominant_light, 12);
+    let glow = tint([40, 28, 18], dominant_light, 70);
+    let mut far = Canvas::new(panel);
+    // A dado rail and a cornice run the whole strip.
+    far.rect(0, 26, WIDTH as i32, 4, moulding);
+    far.rect(0, 30, WIDTH as i32, 2, shadow);
+    far.rect(0, 250, WIDTH as i32, 3, moulding);
+    far.rect(0, 330, WIDTH as i32, 70, shadow);
+    far.rect(0, 328, WIDTH as i32, 2, moulding);
+    // Panels between the doors.
+    for x in (20..WIDTH as i32 - 20).step_by(40) {
+        far.rect(x, 262, 28, 56, shadow);
+        far.rect(x + 1, 263, 26, 54, panel);
+    }
+    for bay in 0..4 {
+        let x = 120 + bay * 240;
+        let n = noise(seed, 600 + bay as u32);
+        // Tall double doors under a fanlight; a thread of light where they meet.
+        far.arch(x, 70, 92, 328, moulding);
+        far.arch(x, 76, 80, 328, door);
+        far.rect(x - 1, 120, 2, 208, shadow);
+        far.rect(x - 40, 118, 80, 3, moulding);
+        for i in 0..5 {
+            far.line((x, 116), (x - 34 + i * 17, 84), 1, moulding);
+        }
+        if n % 3 != 0 {
+            far.rect(x, 140, 1, 186, glow);
+        }
+        // Panels on the leaves.
+        for side in [-1, 1] {
+            let px = x + side * 20 - 12;
+            far.rect(px, 140, 24, 70, shadow);
+            far.rect(px, 224, 24, 90, shadow);
+        }
+        // A portrait between this door and the next, but not across the strip's seam.
+        if bay == 3 {
+            continue;
+        }
+        let fx = x + 120;
+        let fy = 110 + (n % 30) as i32;
+        far.rect(fx - 22, fy, 44, 56, moulding);
+        far.rect(fx - 18, fy + 4, 36, 48, shadow);
+        far.ellipse(fx, fy + 22, 8, 10, door);
+        far.rect(fx - 12, fy + 34, 24, 18, door);
+    }
+
+    // The grand stair: a flight climbing the distance, with its balusters.
+    let mut middle = Canvas::new([0; 4]);
+    let dark = [9, 7, 8, 255];
+    let edge = tint([16, 12, 11], dominant_light, 18);
+    for flight in 0..2 {
+        let x0 = 60 + flight * 480;
+        for step in 0..22 {
+            let x = x0 + step * 14;
+            let y = 340 - step * 9;
+            middle.rect(x, y, 16, 360 - y, dark);
+            middle.rect(x, y, 16, 1, edge);
+            // A baluster every other step, and the handrail over them.
+            if step % 2 == 0 {
+                middle.rect(x + 6, y - 22, 2, 22, dark);
+            }
+        }
+        middle.line((x0, 318), (x0 + 22 * 14, 318 - 22 * 9), 2, dark);
+        middle.line((x0, 317), (x0 + 22 * 14, 317 - 22 * 9), 1, edge);
+        // The landing at the top.
+        let lx = x0 + 22 * 14;
+        middle.rect(lx, 142, 90, 8, dark);
+        middle.rect(lx, 142, 90, 1, edge);
+        for b in (lx + 4..lx + 88).step_by(8) {
+            middle.rect(b, 122, 2, 20, dark);
+        }
+        middle.rect(lx, 120, 90, 3, dark);
+    }
+    middle.rect(0, 352, WIDTH as i32, 8, dark);
+
+    let mut near = Canvas::new([0; 4]);
+    let column = [6, 5, 6, 255];
+    let lit = [12, 9, 9, 255];
+    let flame = tint([60, 40, 22], dominant_light, 90);
+    for x in [180, 660] {
+        near.rect(x - 13, 0, 26, 400, column);
+        near.rect(x - 17, 18, 34, 10, lit);
+        near.rect(x - 17, 360, 34, 24, lit);
+        near.rect(x - 5, 28, 2, 332, lit);
+        // A sconce on the column, two candles, lit far off.
+        near.rect(x - 14, 200, 28, 3, lit);
+        for c in [-10, 10] {
+            near.rect(x + c - 1, 190, 3, 10, lit);
+            near.pixel(x + c, 188, flame);
+            near.pixel(x + c, 187, flame);
+        }
+    }
+
+    let mut front = Canvas::new([0; 4]);
+    // A fern on a stand, close and out of focus, in the bottom corner.
+    let (px, py) = (60, 352);
+    front.rect(px - 8, py, 16, 48, [3, 3, 4, 255]);
+    for (dx, dy) in [(-44, -30), (-30, -52), (-8, -62), (16, -56), (38, -36), (48, -10), (-50, -6)] {
+        for t in 0..=24 {
+            let x = px + dx * t / 24;
+            let y = py - 4 + (dy * t / 24) + (t * t) / 30;
+            let thickness = (6 * (24 - t) / 24).max(1);
+            front.rect(x, y, 2, thickness + 1, [5, 5, 6, 255]);
+            front.rect(x, y, 2, thickness, [3, 3, 4, 255]);
+        }
+    }
+
+    vec![
+        far.layer("doors", 0.12, false),
+        middle.layer("grand stair", 0.32, false),
+        near.layer("columns", 0.62, false),
+        front.layer("foreground", 1.18, true),
+    ]
 }
 
 /// The cellars: brick vaults of wine racks, heavy arches, barrels, and a cage lamp long out.

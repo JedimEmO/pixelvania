@@ -3,7 +3,7 @@
 // Its door is high on the grand stair's west wall. A Favour and the Host's card wait inside.
 [room]
 name = letter_room
-background = ballroom c07838
+background = foyer a06030
 music = ballroom
 
 [legend]

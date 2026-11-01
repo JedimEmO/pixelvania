@@ -3,7 +3,7 @@
 // East is the grand stair, west the portrait hall.
 [room]
 name = music_room
-background = ballroom c07838
+background = foyer a06030
 music = ballroom
 
 [legend]

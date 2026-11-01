@@ -5,7 +5,7 @@
 // A Favour waits on a ledge high on the east wall.
 [room]
 name = coat_lift
-background = ballroom c07838
+background = cellars 8a5a30
 music = ballroom
 
 [legend]

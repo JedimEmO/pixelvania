@@ -5,7 +5,7 @@
 // The opening in the ceiling is where the portrait hall above drops back down: a way home, one way.
 [room]
 name = vestibule
-background = ballroom c07838
+background = foyer a06030
 music = ballroom
 
 [legend]

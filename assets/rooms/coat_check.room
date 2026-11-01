@@ -4,7 +4,7 @@
 // Lunge across it to the high door east, into the coat lift.
 [room]
 name = coat_check
-background = ballroom c07838
+background = foyer a06030
 music = ballroom
 
 [legend]

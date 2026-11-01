@@ -3,7 +3,7 @@
 // West is the Doorman's hall, east the powder room, and past it the balcony and the ballroom.
 [room]
 name = inner_doors
-background = ballroom c07838
+background = foyer 8a3040
 music = ballroom
 
 [legend]

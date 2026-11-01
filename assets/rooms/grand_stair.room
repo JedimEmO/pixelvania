@@ -7,7 +7,7 @@
 // The letter room's door is high in the west wall, a Lunge from the platforms in the middle.
 [room]
 name = grand_stair
-background = ballroom c07838
+background = foyer a06030
 music = ballroom
 
 [legend]

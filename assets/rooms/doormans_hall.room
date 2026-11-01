@@ -4,7 +4,7 @@
 // and the doors stay shut while he stands. Low galleries on either side give room to get over a rush.
 [room]
 name = doormans_hall
-background = ballroom c07838
+background = foyer 8a3040
 music = ballroom
 
 [legend]

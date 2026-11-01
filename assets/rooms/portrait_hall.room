@@ -4,7 +4,7 @@
 // the way home to the first lounge.
 [room]
 name = portrait_hall
-background = ballroom c07838
+background = foyer a06030
 music = ballroom
 
 [legend]
