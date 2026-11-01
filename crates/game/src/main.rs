@@ -7,6 +7,7 @@ mod camera;
 mod combat;
 mod devtools;
 mod effects;
+mod encounter;
 mod enemies;
 mod fade;
 mod fire;
@@ -82,6 +83,7 @@ fn main() -> AppExit {
             map::MapPlugin,
             levels::LevelsPlugin,
             story::StoryPlugin,
+            encounter::EncounterPlugin,
         ))
         .run()
 }

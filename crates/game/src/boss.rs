@@ -56,6 +56,11 @@ impl Dancer {
             y + self.ctrl.body.h as f32,
         )
     }
+    /// Which phase of the fight it is in.
+    pub fn phase(&self) -> Phase {
+        self.phase
+    }
+
     pub fn finishable(&self, health: f32) -> bool {
         self.phase == Phase::Burnout && self.pause == 0 && world::boss::finisher(health)
     }

@@ -65,7 +65,6 @@ pub struct Words {
     cards: BTreeMap<String, String>,
     waking: String,
     ending: String,
-    #[allow(dead_code)]
     pub dancer: DancerLines,
 }
 
@@ -83,9 +82,7 @@ struct Lines {
 }
 
 /// What the Dancer says, one line per phase and one as she falls.
-/// Spoken by the boss; until that is wired, only the tests read them.
 #[derive(Deserialize, Clone)]
-#[allow(dead_code)]
 pub struct DancerLines {
     pub waltz: String,
     pub frenzy: String,
