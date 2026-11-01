@@ -684,7 +684,7 @@ pub fn banquet(seed: u32, dominant_light: [u8; 3]) -> Vec<Layer> {
             let fy = table - 6 - (i % 2) * 6;
             far.ellipse(fx, fy, 5, 5, fruit);
         }
-        if n % 2 == 0 {
+        if n.is_multiple_of(2) {
             // A pheasant hung by its feet.
             far.line((x + w / 3, top + 4), (x + w / 3, top + 18), 1, shadow);
             far.ellipse(x + w / 3, top + 28, 5, 11, shadow);
